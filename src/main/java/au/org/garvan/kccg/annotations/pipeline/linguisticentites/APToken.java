@@ -26,7 +26,7 @@ public class APToken extends LinguisticEntity{
     @Property
     @Setter
     @Getter
-    private String originalText;
+    private String modifiedText;
 
     @Property
     @Setter

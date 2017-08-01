@@ -1,4 +1,4 @@
-package au.org.garvan.kccg.annotations.pipeline.preprocessors;
+package au.org.garvan.kccg.annotations.pipeline.processors;
 
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;

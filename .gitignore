@@ -15,6 +15,7 @@ logs/
 target/
 build/
 out/
+Analysis/
 
 db_files/
 libs/

@@ -1,13 +1,11 @@
 package au.org.garvan.kccg.annotations.pipeline.linguisticentites;
 
-import au.org.garvan.kccg.annotations.pipeline.preprocessors.CoreNLPHanlder;
+import au.org.garvan.kccg.annotations.pipeline.processors.CoreNLPHanlder;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
-
-import static org.junit.Assert.*;
 
 /**
  * Created by ahmed on 13/7/17.
