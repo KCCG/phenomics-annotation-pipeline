@@ -100,7 +100,7 @@ public class APSentence extends LinguisticEntity {
 
     // Parse Tree generation
     // A sample parse tree visualization is given below for reference. Leaf
-    // nodes contain text and non-terminal nodes contain POS tags.
+    // nodes contain originalText and non-terminal nodes contain POS tags.
     //
     //						Root
     //						  |

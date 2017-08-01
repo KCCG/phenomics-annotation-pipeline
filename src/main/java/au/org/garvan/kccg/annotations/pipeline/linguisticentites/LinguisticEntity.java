@@ -23,7 +23,7 @@ public class LinguisticEntity {
     @Getter
     @Setter
     @Property
-    private String text;
+    private String originalText;
 
 
     public LinguisticEntity()
@@ -33,11 +33,11 @@ public class LinguisticEntity {
 
     public LinguisticEntity(int id, String text) {
         this.id = id;
-        this.text = text;
+        this.originalText = text;
     }
 
     public LinguisticEntity(String text) {
         this.id = count.incrementAndGet();
-        this.text = text;
+        this.originalText = text;
     }
 }

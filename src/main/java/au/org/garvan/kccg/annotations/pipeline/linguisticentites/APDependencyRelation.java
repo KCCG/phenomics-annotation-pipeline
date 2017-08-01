@@ -28,6 +28,6 @@ public class APDependencyRelation {
     @Override
     public String toString()
     {
-        return String.format("%s(%s-%s, %s-%s)", relation, governor.getText(),governor.getId(), dependent.getText(),dependent.getId());
+        return String.format("%s(%s-%s, %s-%s)", relation, governor.getOriginalText(),governor.getId(), dependent.getOriginalText(),dependent.getId());
     }
 }
