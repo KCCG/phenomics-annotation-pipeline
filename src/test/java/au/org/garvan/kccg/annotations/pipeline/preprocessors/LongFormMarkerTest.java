@@ -59,6 +59,15 @@ public class LongFormMarkerTest {
         Assert.assertFalse(apSentence.getSfLfLink().isEmpty());
     }
 
+    @Test
+    public void markLongFormsHyphenAndPrepositionWithThreeSubtexts()  {
+        doc = new APDocument(0, " This is a text doc. This will test abbreviation charcot-marie-tooth (CMT)");
+        doc.hatch();
+        APSentence apSentence = doc.getSentences().get(1);
+        LongFormMarker.markLongForms(apSentence);
+        Assert.assertFalse(apSentence.getSfLfLink().isEmpty());
+    }
+
 
     @Test
     public void markLongFormsOneWordInOrder()  {

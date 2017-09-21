@@ -56,7 +56,7 @@ public class SolrConnector implements BaseConnector {
                 .get()
                 .url(httpBuider.build().url())
                 .build();
-
+        System.out.println ("Calling solr to fetch articles for date:" + date.toEpochDay() );
         Response response = CLIENT.newCall(request).execute();
 
         if (response.code() == 200) {

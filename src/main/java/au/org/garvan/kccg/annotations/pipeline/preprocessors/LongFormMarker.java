@@ -144,17 +144,33 @@ public class LongFormMarker {
 
             boolean hyphonCase = false;
             if (tokenInAction.getOriginalText().indexOf('-') >= 0 && !stack.empty()) {
-                int hyphenIndex = tokenInAction.getOriginalText().indexOf('-');
-                String LW = tokenInAction.getOriginalText().substring(0, hyphenIndex);
-                String RW = tokenInAction.getOriginalText().substring(hyphenIndex + 1, tokenInAction.getOriginalText().length());
-                char siblingCharacter = Character.toLowerCase(stack.pop());
 
-                if (siblingCharacter == Character.toLowerCase(LW.charAt(0)) && charInAction == Character.toLowerCase(RW.charAt(0))) {
-                    finalLongForm.add(tokenInAction);
-                    LFindex++;
-                    hyphonCase = true;
-                } else {
-                    stack.push(siblingCharacter);
+                List<String> subTexts = getSubtextsFromText(tokenInAction.getOriginalText(), '-');
+                String subShortForm = "" + charInAction;
+                int items = 1;
+                while (!stack.isEmpty() && items < subTexts.size()) {
+                    subShortForm = Character.toLowerCase(stack.pop()) + subShortForm;
+                    items++;
+                }
+                if (subShortForm.length() == subTexts.size()) {
+
+                    String constructedFirstLetter = subTexts.stream()
+                            .map(s -> s.substring(0, 1).toLowerCase())
+                            .collect(Collectors.joining());
+
+                    if (constructedFirstLetter.equals(subShortForm)) {
+                        finalLongForm.add(tokenInAction);
+                        LFindex++;
+                        hyphonCase = true;
+                    }
+                }
+
+
+                if (!hyphonCase) {
+                    while (subShortForm.length() > 1) {
+                        stack.push(subShortForm.charAt(0));
+                        subShortForm = subShortForm.substring(1, subShortForm.length());
+                    }
                 }
 
             }
@@ -218,15 +234,14 @@ public class LongFormMarker {
 
     }
 
-    public static List<String> getSubtextsFromText(String strInput, char charDelim){
+    public static List<String> getSubtextsFromText(String strInput, char charDelim) {
         List<String> subTexts = new ArrayList<>();
         String strSliding = strInput;
 
-        while(strSliding.indexOf(charDelim)>0)
-        {
-            int index =  strSliding.indexOf(charDelim);
-            subTexts.add(strSliding.substring(0,index));
-            strSliding =  strSliding.substring(index+1,strSliding.length());
+        while (strSliding.indexOf(charDelim) > 0) {
+            int index = strSliding.indexOf(charDelim);
+            subTexts.add(strSliding.substring(0, index));
+            strSliding = strSliding.substring(index + 1, strSliding.length());
 
         }
         if (!strInput.equals(strSliding) && !strSliding.isEmpty())
