@@ -1,5 +1,8 @@
 package au.org.garvan.kccg.annotations.pipeline.linguisticentites;
 
+import au.org.garvan.kccg.annotations.pipeline.preprocessors.DocumentPreprocessor;
+import au.org.garvan.kccg.annotations.pipeline.preprocessors.LongFormMarker;
+import au.org.garvan.kccg.annotations.pipeline.preprocessors.ShortFormExtractor;
 import au.org.garvan.kccg.annotations.pipeline.processors.CoreNLPHanlder;
 import edu.stanford.nlp.ling.*;
 import edu.stanford.nlp.pipeline.Annotation;
@@ -13,6 +16,7 @@ import lombok.Setter;
 import java.awt.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,6 +30,12 @@ public class APDocument extends LinguisticEntity {
     @Getter
     @Setter
     private List<APSentence> sentences = new ArrayList<>();
+
+    @Property
+    @Getter
+    @Setter
+    private String cleanedText;
+
 
 
     public APDocument(int id, String text) {
@@ -43,30 +53,48 @@ public class APDocument extends LinguisticEntity {
 
 
     public void hatch() {
+        DocumentPreprocessor.preprocessDocument(this);
 
-        Annotation annotation = CoreNLPHanlder.annotateText(this.getOriginalText());
-        List<CoreMap> sentencesMap = annotation.get(CoreAnnotations.SentencesAnnotation.class);
+        //Using cleaned text after prepossessing is done
+        Annotation docAnnotation = CoreNLPHanlder.annotateDocText(cleanedText);
+
+        List<CoreMap> sentencesMap = docAnnotation.get(CoreAnnotations.SentencesAnnotation.class);
 
         for (CoreMap sentence : sentencesMap) {
             APSentence sent = new APSentence(sentence.toString());
             sent.setDocOffset(new Point(sentence.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class), sentence.get(CoreAnnotations.CharacterOffsetEndAnnotation.class)));
+            sentences.add(sent);
+        }
 
-            sent.setAnnotatedTree(sentence.get(TreeCoreAnnotations.TreeAnnotation.class));
-            sent.setSemanticGraph(sentence.get(SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation.class));
+        for (APSentence sent : sentences)
+        {
+            List<Character> punctuations = Arrays.asList(',','.',':',';','\'');
+            Annotation sentAnnotation = CoreNLPHanlder.annotateSentText(sent.getOriginalText());
+            List<CoreMap> localSentenceMap = sentAnnotation.get(CoreAnnotations.SentencesAnnotation.class);
+
+            if (localSentenceMap.size()>1)
+                System.out.println(String.format("More than one sentence splits. Sent id:%d",sent.getId()));
+            CoreMap aSent = localSentenceMap.get(0);
+
+            sent.setAnnotatedTree(aSent.get(TreeCoreAnnotations.TreeAnnotation.class));
+            sent.setSemanticGraph(aSent.get(SemanticGraphCoreAnnotations.EnhancedDependenciesAnnotation.class));
 
             int id = 1;
-            for (CoreLabel token : sentence.get(CoreAnnotations.TokensAnnotation.class)) {
-                APToken tok = new APToken(id, token.originalText(), token.get(CoreAnnotations.PartOfSpeechAnnotation.class).toString(), token.lemma());
+            for (CoreLabel token : aSent.get(CoreAnnotations.TokensAnnotation.class)) {
+                String text = token.originalText();
+                APToken tok = new APToken(id, text, token.get(CoreAnnotations.PartOfSpeechAnnotation.class).toString(), token.lemma());
                 tok.setSentOffset(new Point(token.beginPosition(), token.endPosition()));
-                tok.setOriginalText(token.originalText());
+                tok.setPunctuation(punctuations.contains(text.charAt(text.length()-1)));
                 sent.getTokens().add(tok);
                 id++;
 
             }
+            ShortFormExtractor.markShortForms(sent.getTokens());
+            LongFormMarker.markLongForms(sent);
 
-            this.sentences.add(sent);
         }
     }
+
 
     public APSentence getSentenceWithID(int id) {
         List<APSentence> lstSent= sentences.stream().filter(s->s.getId()==id).collect(Collectors.toList());

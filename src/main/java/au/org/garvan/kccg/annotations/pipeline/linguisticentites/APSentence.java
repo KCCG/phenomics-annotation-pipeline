@@ -11,10 +11,10 @@ import lombok.Setter;
 
 import java.awt.*;
 import java.io.PrintWriter;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -55,6 +55,12 @@ public class APSentence extends LinguisticEntity {
     @Getter
     @Setter
     private SemanticGraph semanticGraph;
+
+    @Property
+    @Getter
+    @Setter
+    private Map<APToken,APToken[]> SfLfLink;
+
 
 
     public APSentence(int id, String text) {
@@ -135,4 +141,13 @@ public class APSentence extends LinguisticEntity {
         }
     }
 
+    public List<APToken> getSortedTokens(){
+
+        return tokens.stream().sorted(Comparator.comparing(t-> t.getSentOffset().x)).collect(Collectors.toList());
+    }
+
+
+
 }
+
+

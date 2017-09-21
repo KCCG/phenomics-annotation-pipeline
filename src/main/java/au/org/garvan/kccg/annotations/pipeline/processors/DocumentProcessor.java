@@ -19,6 +19,8 @@ public class DocumentProcessor {
 
 
     private static SolrConnector instSolrConnector = new SolrConnector();
+    //TODO: Shift ownership of documents to processor instead of consumer
+    private List<APDocument> lstDocuments;
 
 
     public static void main(String[] args) throws IOException {
@@ -54,10 +56,7 @@ public class DocumentProcessor {
 
     public static APDocument processDocument(String PMID) throws IOException {
         CoreNLPHanlder.init();
-        APDocument doc = instSolrConnector.getDocument(PMID);
-
-        doc.hatch();
-        return doc;
+        return instSolrConnector.getDocument(PMID);
 
 
     }
