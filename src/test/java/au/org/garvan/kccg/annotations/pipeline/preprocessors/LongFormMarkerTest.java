@@ -71,7 +71,17 @@ public class LongFormMarkerTest {
 
     @Test
     public void markLongFormsOneWordInOrder()  {
-        doc = new APDocument(0, " This is a text doc. This will test abbreviation Bromodeoxyuridine (BrdU)");
+        doc = new APDocument(0, " This is a text doc. This will test abbreviation Concurrent Chemoradiotherapy (CCRT)");
+        doc.hatch();
+        APSentence apSentence = doc.getSentences().get(1);
+        LongFormMarker.markLongForms(apSentence);
+        Assert.assertFalse(apSentence.getSfLfLink().isEmpty());
+    }
+
+
+    @Test
+    public void markLongFormsOneWordInOrderCase2()  {
+        doc = new APDocument(0, " This is a text doc. This will test abbreviation frontotemporal labor degenration (FTLD)");
         doc.hatch();
         APSentence apSentence = doc.getSentences().get(1);
         LongFormMarker.markLongForms(apSentence);

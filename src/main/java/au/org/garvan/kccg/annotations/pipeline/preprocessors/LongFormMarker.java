@@ -57,6 +57,8 @@ public class LongFormMarker {
             finalLongForm = R4_firstLetterWithHyphensAndSkipPrepositions(potentialLongFormTokens, shortText);
         if (finalLongForm.isEmpty())
             finalLongForm = R5_allSFOrderedInOneToken(potentialLongFormTokens, shortText);
+        if (finalLongForm.isEmpty())
+            finalLongForm = R6_multipleSFOrderedInMultipleTokens(potentialLongFormTokens, shortText);
 
         return finalLongForm;
     }
@@ -207,7 +209,7 @@ public class LongFormMarker {
         int index = -1;
         for (char charInAction : strSF.toCharArray()) {
             int actionIndex = tokenInAction.getOriginalText().toLowerCase().indexOf(Character.toLowerCase(charInAction));
-            if (index > actionIndex || actionIndex < 0) {
+            if (index >= actionIndex || actionIndex < 0) {
                 violation = true;
                 break;
             } else {
@@ -221,6 +223,62 @@ public class LongFormMarker {
         return finalLongForm;
     }
 
+    private static List<APToken> R6_multipleSFOrderedInMultipleTokens(List<APToken> potentialLongFormTokens, String strSF) {
+        List<APToken> finalLongForm = new ArrayList<>();
+        int LFindex = potentialLongFormTokens.size() - 1;
+        String runningSF = strSF.toLowerCase();
+        boolean violation = false;
+
+        while (LFindex > -1 && !violation && !runningSF.isEmpty()) {
+            APToken tokenInAction = potentialLongFormTokens.get(LFindex);
+            int cuttingIndex = 0;
+            boolean  found = false;
+            while (cuttingIndex < runningSF.length() && !found) {
+                boolean caseResult = isOrderedNonConcurrentSubstring(tokenInAction.getOriginalText().toLowerCase(), runningSF.substring(cuttingIndex, runningSF.length()).toCharArray());
+                if (caseResult) {
+                    found = true;
+                    finalLongForm.add(tokenInAction);
+                    runningSF = runningSF.substring(0,cuttingIndex);
+                }
+                else
+                    cuttingIndex ++;
+            }// inner while
+
+            if(!finalLongForm.isEmpty() && !found)
+                violation = true;
+
+            LFindex--;
+
+        }
+        if (!violation && runningSF.isEmpty()) {
+            Collections.reverse(finalLongForm);
+            return finalLongForm;
+        } else {
+            return new ArrayList<>();
+        }
+
+    }
+
+
+    private static boolean isOrderedNonConcurrentSubstring(String target, char[] substring) {
+        boolean violation = false;
+        int index = -1;
+
+        //in case only one SF is there then it should be the first character of the target string
+        if (substring.length == 1)
+            return Character.toLowerCase(target.charAt(0)) == Character.toLowerCase(substring[0]);
+
+        for (char charInAction : substring) {
+            int actionIndex = target.toLowerCase().indexOf(Character.toLowerCase(charInAction));
+            if (index >= actionIndex || actionIndex < 0) {
+                violation = true;
+                break;
+            } else {
+                index = actionIndex;
+            }
+        }
+        return !violation;
+    }
 
     private static String getShortForm(APToken token) {
         return token.getOriginalText()
@@ -230,6 +288,8 @@ public class LongFormMarker {
                 .replace(".", "")
                 .replace(";", "")
                 .replace(":", "")
+                .replace(",", "")
+                .replace("-", "")
                 .trim();
 
     }
