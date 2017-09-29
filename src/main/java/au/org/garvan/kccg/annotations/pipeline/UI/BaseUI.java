@@ -31,10 +31,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class BaseUI extends Application {
@@ -81,7 +78,7 @@ public class BaseUI extends Application {
         });
 
         Label lblDate = new Label("Date:");
-        TextField txtDate = new TextField("29/07/2017");
+        TextField txtDate = new TextField("01/09/2017");
         txtDate.setId("txtDate");
 
         Label lblTotalDocs = new Label("Total Articles:");
@@ -106,9 +103,27 @@ public class BaseUI extends Application {
         txtGoToIndex.setId("txtGoToIndex");
 
 
+
+        Button btnProcessPMID = new Button("Fetch Article");
+        btnProcessPMID.setOnAction(e -> {
+            try {
+                fetchDocument();
+            } catch (IOException e1) {
+                e1.printStackTrace();
+            }
+        });
+
+        Label lblPMID = new Label("PMID:");
+        TextField txtPMID = new TextField("");
+        txtPMID.setId("txtPMID");
+
         root.add(lblDate, 1, 1);
         root.add(txtDate, 2, 1);
         root.add(btnProcess, 3, 1);
+
+
+
+
         root.add(lblTotalDocs, 4, 1);
         root.add(txtTotalDocs, 5, 1);
         root.add(lblCurrentDocIndex, 6, 1);
@@ -117,6 +132,10 @@ public class BaseUI extends Application {
         root.add(btnNext, 9, 1);
         root.add(btnGoToIndex,10,1);
         root.add(txtGoToIndex,11,1);
+        root.add(lblPMID, 12, 1);
+        root.add(txtPMID, 13, 1);
+        root.add(btnProcessPMID, 14, 1);
+
 
 
         VBox verticleBox = new VBox();
@@ -180,6 +199,18 @@ public class BaseUI extends Application {
 
     }
 
+    private void fetchDocument() throws IOException {
+
+        String strPMID = ((TextField) root.lookup("#txtPMID")).getText();
+        allDocs = new ArrayList<>();
+        allDocs.add(DocumentProcessor.processDocument(strPMID));
+        currentDocIndex = 0;
+        totalDocs = allDocs.size();
+        processDocument();
+
+
+    }
+
     private void processDocument() throws IOException {
 
         currentDoc = allDocs.get(currentDocIndex);
@@ -190,7 +221,9 @@ public class BaseUI extends Application {
 
         List<LinguisticCellContent> list = new ArrayList<>();
         if (currentDoc != null) {
-            currentDoc.hatch();
+
+            if (currentDoc.getSentences().size()==0)
+                currentDoc.hatch();
             for (APSentence sent : currentDoc.getSentences()) {
                 list.add(new LinguisticCellContent(sent.getId(), sent.getOriginalText()));
             }
@@ -223,6 +256,10 @@ public class BaseUI extends Application {
         APSentence activeSent = currentDoc.getSentenceWithID(id);
         FlowPane tokenPane = new FlowPane();
 
+
+        //Flatten map structure to collect IDs of long forms; This is not meant to link anything but just for highlighting
+        List<Integer> longFormTokenIndices = activeSent.getSfLfLink().values().stream().filter(x-> x.length>0).flatMap(Arrays::stream).map(x->x.getId()).collect(Collectors.toList());
+
         activeSent.getTokens().stream().forEach(tok ->
                 {
                     Button btnToken = new Button();
@@ -230,6 +267,14 @@ public class BaseUI extends Application {
 
                     btnToken.setText(tok.getOriginalText());
                     btnToken.setTooltip(new Tooltip(String.format("%s:%s", tok.getLemma(), tok.getPartOfSpeech())));
+                    if(tok.isShortForm()) {
+                        btnToken.setStyle("-fx-base: #b6e7c9;");
+
+                    }
+                    else if (longFormTokenIndices.contains(tok.getId())){
+                        btnToken.setStyle("-fx-base: #e6d7f2;");
+                    }
+
                     btnToken.setOnAction(new EventHandler<ActionEvent>() {
 
                         @Override

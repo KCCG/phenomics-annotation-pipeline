@@ -33,6 +33,18 @@ public class APToken extends LinguisticEntity{
     @Getter
     private Point sentOffset;
 
+
+    @Property
+    @Setter
+    @Getter
+    private boolean shortForm;
+
+
+    @Setter
+    @Getter
+    private boolean punctuation;
+
+
     public APToken(int id, String text, String POS, String lemmaText)
     {
         super(id, text);
