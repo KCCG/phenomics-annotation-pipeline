@@ -1,5 +1,7 @@
-package au.org.garvan.kccg.annotations.pipeline.linguisticentites;
+package au.org.garvan.kccg.annotations.pipeline.entities;
 
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APDocument;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APSentence;
 import au.org.garvan.kccg.annotations.pipeline.processors.CoreNLPHanlder;
 import org.junit.After;
 import org.junit.Assert;

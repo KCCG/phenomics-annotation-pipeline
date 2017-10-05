@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import au.org.garvan.kccg.annotations.pipeline.Enums.CommonParams;
-import au.org.garvan.kccg.annotations.pipeline.linguisticentites.APDocument;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APDocument;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;

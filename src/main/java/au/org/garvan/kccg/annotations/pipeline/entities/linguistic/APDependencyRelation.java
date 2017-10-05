@@ -1,4 +1,4 @@
-package au.org.garvan.kccg.annotations.pipeline.linguisticentites;
+package au.org.garvan.kccg.annotations.pipeline.entities.linguistic;
 
 import jdk.nashorn.internal.objects.annotations.Property;
 import lombok.Getter;

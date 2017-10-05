@@ -4,10 +4,9 @@ package au.org.garvan.kccg.annotations.pipeline.UI;
  * Created by ahmed on 26/7/17.
  */
 
-import au.org.garvan.kccg.annotations.pipeline.linguisticentites.APDocument;
-import au.org.garvan.kccg.annotations.pipeline.linguisticentites.APSentence;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APDocument;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APSentence;
 import au.org.garvan.kccg.annotations.pipeline.processors.DocumentProcessor;
-import com.sun.tools.javac.comp.Flow;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -15,20 +14,15 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.geometry.Rectangle2D;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.scene.shape.Line;
 import javafx.scene.text.Text;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Callback;
-import sun.jvm.hotspot.asm.sparc.SPARCArgument;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;

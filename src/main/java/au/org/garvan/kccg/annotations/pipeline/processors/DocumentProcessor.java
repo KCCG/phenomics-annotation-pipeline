@@ -2,8 +2,8 @@ package au.org.garvan.kccg.annotations.pipeline.processors;
 
 import au.org.garvan.kccg.annotations.pipeline.Utils.APFileWriter;
 import au.org.garvan.kccg.annotations.pipeline.connectors.SolrConnector;
-import au.org.garvan.kccg.annotations.pipeline.linguisticentites.APDocument;
-import au.org.garvan.kccg.annotations.pipeline.linguisticentites.APSentence;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APDocument;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APSentence;
 
 import java.io.IOException;
 import java.time.LocalDate;

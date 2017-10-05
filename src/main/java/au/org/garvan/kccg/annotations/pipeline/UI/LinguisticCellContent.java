@@ -1,6 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.UI;
 
-import au.org.garvan.kccg.annotations.pipeline.linguisticentites.LinguisticEntity;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.LinguisticEntity;
 
 /**
  * Created by ahmed on 28/7/17.

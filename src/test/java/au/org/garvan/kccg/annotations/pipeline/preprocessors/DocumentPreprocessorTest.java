@@ -1,11 +1,8 @@
 package au.org.garvan.kccg.annotations.pipeline.preprocessors;
 
-import au.org.garvan.kccg.annotations.pipeline.linguisticentites.APDocument;
-import au.org.garvan.kccg.annotations.pipeline.processors.DocumentProcessor;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APDocument;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 /**
  * Created by ahmed on 1/8/17.

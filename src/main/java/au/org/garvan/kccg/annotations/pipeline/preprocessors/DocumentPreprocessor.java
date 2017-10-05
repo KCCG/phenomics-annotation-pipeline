@@ -1,8 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.preprocessors;
 
-import au.org.garvan.kccg.annotations.pipeline.linguisticentites.APDocument;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APDocument;
 
-import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

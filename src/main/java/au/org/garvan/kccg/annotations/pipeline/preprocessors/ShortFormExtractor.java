@@ -1,6 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.preprocessors;
 
-import au.org.garvan.kccg.annotations.pipeline.linguisticentites.APToken;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APToken;
 
 import java.util.Arrays;
 import java.util.List;

@@ -1,6 +1,5 @@
 package au.org.garvan.kccg.annotations.pipeline.processors;
 
-import au.org.garvan.kccg.annotations.pipeline.linguisticentites.APSentence;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.util.PropertiesUtils;

@@ -1,4 +1,4 @@
-package au.org.garvan.kccg.annotations.pipeline.linguisticentites;
+package au.org.garvan.kccg.annotations.pipeline.entities.linguistic;
 
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.ling.IndexedWord;
@@ -10,12 +10,10 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.awt.*;
-import java.io.PrintWriter;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Created by ahmed on 7/7/17.

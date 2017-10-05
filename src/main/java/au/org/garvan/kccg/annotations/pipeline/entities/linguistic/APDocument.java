@@ -1,4 +1,4 @@
-package au.org.garvan.kccg.annotations.pipeline.linguisticentites;
+package au.org.garvan.kccg.annotations.pipeline.entities.linguistic;
 
 import au.org.garvan.kccg.annotations.pipeline.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.preprocessors.LongFormMarker;
@@ -73,7 +73,7 @@ public class APDocument extends LinguisticEntity {
             List<CoreMap> localSentenceMap = sentAnnotation.get(CoreAnnotations.SentencesAnnotation.class);
 
             if (localSentenceMap.size()>1)
-                System.out.println(String.format("More than one sentence splits. Sent id:%d",sent.getId()));
+                System.out.println(String.format("More than one sentence splits. Sent entityId:%d",sent.getId()));
             CoreMap aSent = localSentenceMap.get(0);
 
             sent.setAnnotatedTree(aSent.get(TreeCoreAnnotations.TreeAnnotation.class));
