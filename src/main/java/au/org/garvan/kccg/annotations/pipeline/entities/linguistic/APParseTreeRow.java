@@ -9,17 +9,17 @@ import lombok.Setter;
  */
 public class APParseTreeRow extends LinguisticEntity {
 
-    @Property
+
     @Getter
     @Setter
     public int parentID; // required
 
-    @Property
+
     @Getter
     @Setter
     public boolean isLeafNode; // required
 
-    @Property
+
     @Getter
     @Setter
     public int offsetBegin; // required

@@ -9,17 +9,17 @@ import lombok.Setter;
  */
 public class APDependencyRelation {
 
-    @Property
+
     @Getter
     @Setter
     private String relation; // required
 
-    @Property
+
     @Getter
     @Setter
     private APToken governor; // required
 
-    @Property
+
     @Getter
     @Setter
     private APToken dependent; // required

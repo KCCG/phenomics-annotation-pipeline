@@ -12,74 +12,74 @@ import java.util.List;
  */
 
 @AllArgsConstructor
-public class APGene {
+public class APGene extends LexicalEntity {
 
 
-    @Property
+
     @Getter
     @Setter
     private int HGNCID;
 
-    @Property
+
     @Getter
     @Setter
     private String approvedSymbol;
 
-    @Property
+
     @Getter
     @Setter
     private String approvedName;
 
-    @Property
+
     @Getter
     @Setter
     private String status;
 
-    @Property
+
     @Getter
     @Setter
     private List<String> previousSymbols;
 
 
-    @Property
+
     @Getter
     @Setter
     private List<String> Synonyms;
 
 
-    @Property
+
     @Getter
     @Setter
     private List<String> chromosome;
 
 
-    @Property
+
     @Getter
     @Setter
     private List<String> accessionNumbers;
 
 
-    @Property
+
     @Getter
     @Setter
     private List<String> refSeqIds;
 
 
-    @Property
+
     @Getter
     @Setter
-    private String geneFamilyTag;
+    private List<String> geneFamilyTag;
 
-    @Property
+
     @Getter
     @Setter
-    private String geneFamilyDescription;
+    private List<String> geneFamilyDescription;
 
 
-    @Property
+
     @Getter
     @Setter
-    private int geneFamilyID;
+    private List<Integer> geneFamilyID;
 
 
 }

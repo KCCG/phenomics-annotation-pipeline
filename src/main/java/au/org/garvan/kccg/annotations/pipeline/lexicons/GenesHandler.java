@@ -28,7 +28,7 @@ public class GenesHandler extends BaseLexiconHandler {
 
 
     public void loadGenes() {
-        int[] arr = {0};
+        //Load Genes and process them to store in order form.
         try {
             readFile("\t");
         } catch (FileNotFoundException e) {
@@ -36,35 +36,34 @@ public class GenesHandler extends BaseLexiconHandler {
         }
         if (verifyHeader()) {
             for (List<String> d : data) {
-                arr[0]++;
                 String geneSymbol = d.get(headerMap.get("Approved Symbol"));
-                if (geneList.containsKey(geneSymbol))
-                    System.out.print(String.format("Found Duplicate ID %s", geneSymbol));
-                if (geneSymbol.isEmpty())
-                    System.out.print(String.format("Found Empty ID %s", d.get(headerMap.get("HGNC ID"))));
+                if (geneList.containsKey(geneSymbol)) {
+                    APGene preExistedGene = geneList.get(geneSymbol);
+                    preExistedGene.getGeneFamilyTag().add(d.get(headerMap.get("Gene Family Tag")));
+                    preExistedGene.getGeneFamilyDescription().add(d.get(headerMap.get("Gene family description")));
+                    preExistedGene.getGeneFamilyID().add(Integer.parseInt(d.get(headerMap.get("Gene family ID"))));
 
-                System.out.print(arr[0] + ":" + geneSymbol + "\n" );
+                } else {
 
-                APGene tempGene = new APGene(
-                        Integer.parseInt(d.get(headerMap.get("HGNC ID"))),
-                        d.get(headerMap.get("Approved Symbol")),
-                        d.get(headerMap.get("Approved Name")),
-                        d.get(headerMap.get("Status")),
-                        Arrays.asList(d.get(headerMap.get("Previous Symbols")).split(",")),
-                        Arrays.asList(d.get(headerMap.get("Synonyms")).split(",")),
-                        Arrays.asList(d.get(headerMap.get("Chromosome")).split(",")),
-                        Arrays.asList(d.get(headerMap.get("Accession Numbers")).split(",")),
-                        Arrays.asList(d.get(headerMap.get("RefSeq IDs")).split(",")),
-                        d.get(headerMap.get("Gene Family Tag")),
-                        d.get(headerMap.get("Gene family description")),
-                        Integer.parseInt(d.get(headerMap.get("Gene family ID")))
-                );
-                geneList.put(geneSymbol, tempGene);
+                    APGene tempGene = new APGene(
+                            Integer.parseInt(d.get(headerMap.get("HGNC ID"))),
+                            d.get(headerMap.get("Approved Symbol")),
+                            d.get(headerMap.get("Approved Name")),
+                            d.get(headerMap.get("Status")),
+                            Arrays.asList(d.get(headerMap.get("Previous Symbols")).split(",")),
+                            Arrays.asList(d.get(headerMap.get("Synonyms")).split(",")),
+                            Arrays.asList(d.get(headerMap.get("Chromosome")).split(",")),
+                            Arrays.asList(d.get(headerMap.get("Accession Numbers")).split(",")),
+                            Arrays.asList(d.get(headerMap.get("RefSeq IDs")).split(",")),
+                            //Point: Next three are string but to handle duplicate entries they are stored as editable lists.
+                            new ArrayList<> (Arrays.asList(d.get(headerMap.get("Gene Family Tag")))),
+                            new ArrayList<> (Arrays.asList(d.get(headerMap.get("Gene family description")))),
+                            new ArrayList<> (Arrays.asList(Integer.parseInt(d.get(headerMap.get("Gene family ID")))))
+                    );
+                    geneList.put(geneSymbol, tempGene);
+                }
             }
-
-
         }
-
 
     }
 

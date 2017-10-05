@@ -15,7 +15,6 @@ public class LexicalEntity {
 
     @Getter
     @Setter
-    @Property
     private int entityId;
 
     public LexicalEntity()

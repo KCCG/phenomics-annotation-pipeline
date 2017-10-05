@@ -1,5 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.preprocessors;
 
+import au.org.garvan.kccg.annotations.pipeline.Utils.Common;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APSentence;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APToken;
 
@@ -41,7 +42,7 @@ public class LongFormMarker {
     }
 
     private static List<APToken> processRules(List<APToken> potentialLongFormTokens, APToken shortToken) {
-        String shortText = getShortForm(shortToken);
+        String shortText = Common.getTrimmedText(shortToken);
         List<APToken> finalLongForm;
 
         //Process R1: FirstLetter for all tokens
@@ -278,19 +279,7 @@ public class LongFormMarker {
         return !violation;
     }
 
-    private static String getShortForm(APToken token) {
-        return token.getOriginalText()
-                .trim()
-                .replace("(", "")
-                .replace(")", "")
-                .replace(".", "")
-                .replace(";", "")
-                .replace(":", "")
-                .replace(",", "")
-                .replace("-", "")
-                .trim();
 
-    }
 
     public static List<String> getSubtextsFromText(String strInput, char charDelim) {
         List<String> subTexts = new ArrayList<>();

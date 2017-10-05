@@ -21,44 +21,39 @@ import java.util.stream.Collectors;
 public class APSentence extends LinguisticEntity {
 
 
-    @Property
     @Getter
     @Setter
     private List<APToken> tokens = new ArrayList<>();
 
-    @Property
+
     @Getter
     @Setter
     private Point docOffset = new Point();
 
 
-    @Property
     @Getter
     @Setter
     private List<APParseTreeRow> parseTree;
 
 
-    @Property
     @Getter
     @Setter
     private List<APDependencyRelation> dependencyRelations;
 
 
-    @Property
     @Getter
     @Setter
     private Tree annotatedTree;
 
-    @Property
+
     @Getter
     @Setter
     private SemanticGraph semanticGraph;
 
-    @Property
+
     @Getter
     @Setter
-    private Map<APToken,APToken[]> SfLfLink;
-
+    private Map<APToken, APToken[]> SfLfLink;
 
 
     public APSentence(int id, String text) {
@@ -139,11 +134,10 @@ public class APSentence extends LinguisticEntity {
         }
     }
 
-    public List<APToken> getSortedTokens(){
+    public List<APToken> getSortedTokens() {
 
-        return tokens.stream().sorted(Comparator.comparing(t-> t.getSentOffset().x)).collect(Collectors.toList());
+        return tokens.stream().sorted(Comparator.comparing(t -> t.getSentOffset().x)).collect(Collectors.toList());
     }
-
 
 
 }

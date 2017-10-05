@@ -25,7 +25,7 @@ public class LongFormMarkerTest {
     @Test
     public void getSubtextsFromText() throws Exception {
         List<String> result =  LongFormMarker.getSubtextsFromText("Hyphon-split-", '-');
-        Assert.assertEquals(result.size(),3);
+        Assert.assertEquals(result.size(),2);
 
     }
 

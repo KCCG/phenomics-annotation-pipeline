@@ -17,12 +17,10 @@ public class LinguisticEntity {
 
     @Getter
     @Setter
-    @Property
     private int id;
 
     @Getter
     @Setter
-    @Property
     private String originalText;
 
 
