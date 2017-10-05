@@ -54,8 +54,6 @@ public class APDocument extends LinguisticEntity {
 
     public void hatch() {
         DocumentPreprocessor.preprocessDocument(this);
-
-
     }
 
 

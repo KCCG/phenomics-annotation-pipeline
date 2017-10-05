@@ -269,6 +269,11 @@ public class BaseUI extends Application {
                         btnToken.setStyle("-fx-base: #e6d7f2;");
                     }
 
+                    if(!tok.getLexicalEntityList().isEmpty())
+                        btnToken.setStyle("-fx-text-fill: #800080;");
+
+
+
                     btnToken.setOnAction(new EventHandler<ActionEvent>() {
 
                         @Override

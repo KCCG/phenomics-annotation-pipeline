@@ -1,5 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.preprocessors;
 
+import au.org.garvan.kccg.annotations.pipeline.Utils.Common;
+import au.org.garvan.kccg.annotations.pipeline.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APDocument;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APSentence;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APToken;
@@ -11,6 +13,7 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations;
 import edu.stanford.nlp.trees.TreeCoreAnnotations;
 import edu.stanford.nlp.util.CoreMap;
+import nu.xom.jaxen.expr.CommentNodeStep;
 
 import java.awt.*;
 import java.util.Arrays;
@@ -28,6 +31,9 @@ public class DocumentPreprocessor {
 
         HGNCGeneHandler = new GenesHandler("genes.txt");
         HGNCGeneHandler.loadGenes();
+
+        if(!CoreNLPHanlder.isInitialized())
+            CoreNLPHanlder.init();
 
     }
 
@@ -68,7 +74,9 @@ public class DocumentPreprocessor {
                 APToken tok = new APToken(id, text, token.get(CoreAnnotations.PartOfSpeechAnnotation.class).toString(), token.lemma());
                 tok.setSentOffset(new Point(token.beginPosition(), token.endPosition()));
                 tok.setPunctuation(punctuations.contains(text.charAt(text.length()-1)));
-
+                APGene geneCheck = HGNCGeneHandler.getGene(Common.getTrimmedText(tok));
+                if(geneCheck!=null)
+                    tok.getLexicalEntityList().add(geneCheck);
 
                 sent.getTokens().add(tok);
                 id++;

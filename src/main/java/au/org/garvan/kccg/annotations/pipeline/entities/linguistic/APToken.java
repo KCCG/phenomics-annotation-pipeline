@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.awt.Point;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -49,6 +50,7 @@ public class APToken extends LinguisticEntity {
         super(id, text);
         partOfSpeech = POS;
         lemma = lemmaText;
+        lexicalEntityList = new ArrayList<>();
 
     }
 
