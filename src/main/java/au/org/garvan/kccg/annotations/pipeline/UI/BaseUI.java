@@ -4,8 +4,10 @@ package au.org.garvan.kccg.annotations.pipeline.UI;
  * Created by ahmed on 26/7/17.
  */
 
+import au.org.garvan.kccg.annotations.pipeline.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APDocument;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APSentence;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APToken;
 import au.org.garvan.kccg.annotations.pipeline.processors.DocumentProcessor;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
@@ -292,6 +294,7 @@ public class BaseUI extends Application {
         ListView<String> dependencyList = new ListView<String>();
         ObservableList<String> items = FXCollections.observableArrayList(activeSent.getDependencyRelations().stream().map(d -> d.toString()).collect(Collectors.toList()));
         dependencyList.setItems(items);
+        dependencyList.setPrefWidth(300);
 
         Text parseTree = new Text();
         parseTree.setText(activeSent.getAnnotatedTree().toString());
@@ -330,8 +333,29 @@ public class BaseUI extends Application {
                 .filter(g -> (g.getDependent().getId() == id || g.getGovernor().getId() == id))
                 .map(d -> d.toString()).collect(Collectors.toList()));
         dependencyList.setItems(items);
+
+
+        //Point: Get token and see if Lexical Entities are there
+        APToken tok = sent.getTokens().stream().filter(x->x.getId() == id).collect(Collectors.toList()).get(0);
+
         GPSentences.getChildren().remove(DEPENDENCIES_INDEX);
-        GPSentences.addRow(DEPENDENCIES_INDEX, dependencyList);
+
+        if(!tok.getLexicalEntityList().isEmpty())
+        {
+            ListView<String> entityList = new ListView<String>();
+            entityList.setItems(FXCollections.observableArrayList(((APGene)tok.getLexicalEntityList().get(0)).stringList()));
+            HBox depLexHolder = new HBox();
+            dependencyList.setPrefWidth(450);
+            entityList.setPrefWidth(450);
+            depLexHolder.getChildren().addAll(dependencyList,entityList);
+            GPSentences.addRow(DEPENDENCIES_INDEX, depLexHolder);
+        }
+        else{
+            GPSentences.addRow(DEPENDENCIES_INDEX, dependencyList);
+        }
+
+
+
 
     }
 

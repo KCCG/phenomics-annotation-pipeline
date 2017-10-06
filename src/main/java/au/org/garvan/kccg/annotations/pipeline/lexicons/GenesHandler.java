@@ -56,9 +56,9 @@ public class GenesHandler extends BaseLexiconHandler {
                             Arrays.asList(d.get(headerMap.get("Accession Numbers")).split(",")),
                             Arrays.asList(d.get(headerMap.get("RefSeq IDs")).split(",")),
                             //Point: Next three are string but to handle duplicate entries they are stored as editable lists.
-                            new ArrayList<> (Arrays.asList(d.get(headerMap.get("Gene Family Tag")))),
-                            new ArrayList<> (Arrays.asList(d.get(headerMap.get("Gene family description")))),
-                            new ArrayList<> (Arrays.asList(Integer.parseInt(d.get(headerMap.get("Gene family ID")))))
+                            new ArrayList<> (Arrays.asList(d.get(headerMap.get("Gene Family Tag")).isEmpty()?"None" : d.get(headerMap.get("Gene Family Tag")))),
+                            new ArrayList<> (Arrays.asList(d.get(headerMap.get("Gene family description")).isEmpty()?"None":d.get(headerMap.get("Gene family description")))),
+                            new ArrayList<> (Arrays.asList(Integer.parseInt(d.get(headerMap.get("Gene family ID")).isEmpty()? "0" : d.get(headerMap.get("Gene family ID")))))
                     );
                     geneList.put(geneSymbol, tempGene);
                 }
