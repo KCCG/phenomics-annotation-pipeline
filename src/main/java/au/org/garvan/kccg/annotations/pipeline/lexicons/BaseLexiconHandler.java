@@ -32,7 +32,7 @@ public class BaseLexiconHandler {
     }
 
 
-    public void readFile(String delim) throws FileNotFoundException {
+    protected void readFile(String delim) throws FileNotFoundException {
         File file = new File(getClass().getClassLoader().getResource("lexicons/" + fileName).getFile());
         Scanner scan = new Scanner(file);
         String headerLine = scan.nextLine();
@@ -42,6 +42,13 @@ public class BaseLexiconHandler {
             data.add(Arrays.asList(curLine.split(delim)));
             }
         scan.close();
+    }
+
+
+     protected boolean verifyHeader(List<String> customeHeader) {
+        //Point: Check the Header and in case file got different header than reject the file.
+        return fileHeader.toString().equals(customeHeader.toString());
+
     }
 
 

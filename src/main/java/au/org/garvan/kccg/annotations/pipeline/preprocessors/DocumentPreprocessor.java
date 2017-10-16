@@ -6,6 +6,7 @@ import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APDocument;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APSentence;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APToken;
 import au.org.garvan.kccg.annotations.pipeline.lexicons.GenesHandler;
+import au.org.garvan.kccg.annotations.pipeline.lexicons.NormalizationHandler;
 import au.org.garvan.kccg.annotations.pipeline.processors.CoreNLPHanlder;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
@@ -13,7 +14,6 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations;
 import edu.stanford.nlp.trees.TreeCoreAnnotations;
 import edu.stanford.nlp.util.CoreMap;
-import nu.xom.jaxen.expr.CommentNodeStep;
 
 import java.awt.*;
 import java.util.Arrays;
@@ -27,10 +27,15 @@ import java.util.regex.Pattern;
 public class DocumentPreprocessor {
 
     private static  GenesHandler  HGNCGeneHandler;
+    private static NormalizationHandler LVGNormalizationHandler;
     static {
 
         HGNCGeneHandler = new GenesHandler("genes.txt");
         HGNCGeneHandler.loadGenes();
+
+        LVGNormalizationHandler = new NormalizationHandler("lvg_normalizations.txt");
+        LVGNormalizationHandler.loadLVGNormalizedList();
+
 
         if(!CoreNLPHanlder.isInitialized())
             CoreNLPHanlder.init();
@@ -77,6 +82,10 @@ public class DocumentPreprocessor {
                 APGene geneCheck = HGNCGeneHandler.getGene(Common.getTrimmedText(tok));
                 if(geneCheck!=null)
                     tok.getLexicalEntityList().add(geneCheck);
+
+                String normalizedText = LVGNormalizationHandler.getNormalizedText(Common.getTrimmedText(tok));
+                if (normalizedText!=null)
+                    tok.setNormalizedText(normalizedText);
 
                 sent.getTokens().add(tok);
                 id++;

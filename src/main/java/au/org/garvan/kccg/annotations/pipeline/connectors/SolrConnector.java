@@ -35,11 +35,6 @@ public class SolrConnector implements BaseConnector {
             .build();
 
     @Override
-    public List<APDocument> getDocuments(String param, CommonParams type) {
-        return null;
-    }
-
-    @Override
     public List<APDocument> getDocuments(LocalDate date) throws IOException {
         List<APDocument> docs = new ArrayList<>();
 
@@ -74,6 +69,42 @@ public class SolrConnector implements BaseConnector {
         return docs;
 
     }
+
+    @Override
+    public List<APDocument> getDocuments(String queryText, CommonParams type) throws IOException {
+        List<APDocument> docs = new ArrayList<>();
+
+        HttpUrl.Builder httpBuider = HttpUrl.parse(documentPoolURL + selectQuery).newBuilder();
+        httpBuider.addQueryParameter("wt", "json");
+        httpBuider.addQueryParameter("q", queryText);
+        httpBuider.addQueryParameter("rows", Integer.toString(50000));
+
+
+        Request request = new Request.Builder()
+                .get()
+                .url(httpBuider.build().url())
+                .build();
+        System.out.println ("Calling solr to fetch articles for query:" + queryText);
+        Response response = null;
+            response = CLIENT.newCall(request).execute();
+
+
+        if (response.code() == 200) {
+            JSONObject jsonObject =new JSONObject(response.body().string().trim());
+            JSONArray jsonDocumentsArray = jsonObject.getJSONObject("response").getJSONArray("docs");
+            for (Object jsonDoc : jsonDocumentsArray) {
+                if ( ((JSONObject) jsonDoc).has("articleAbstract") ) {
+                    int ID = Integer.parseInt(((JSONObject) jsonDoc).getJSONArray("PMID").get(0).toString());
+                    String articleAbstract = ((JSONObject) jsonDoc).getJSONArray("articleAbstract").get(0).toString();
+                    docs.add(new APDocument(ID, articleAbstract));
+                }
+            }
+
+        }
+        return docs;
+
+    }
+
 
     @Override
     public APDocument getDocument(String PMID) throws IOException {

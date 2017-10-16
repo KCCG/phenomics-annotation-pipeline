@@ -41,6 +41,10 @@ public class APToken extends LinguisticEntity {
 
     @Setter
     @Getter
+    private String normalizedText;
+
+    @Setter
+    @Getter
     private List<LexicalEntity> lexicalEntityList;
 
 
@@ -48,6 +52,7 @@ public class APToken extends LinguisticEntity {
 
     public APToken(int id, String text, String POS, String lemmaText) {
         super(id, text);
+        normalizedText = "";
         partOfSpeech = POS;
         lemma = lemmaText;
         lexicalEntityList = new ArrayList<>();

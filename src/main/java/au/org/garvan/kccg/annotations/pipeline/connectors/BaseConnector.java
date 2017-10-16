@@ -12,7 +12,7 @@ import java.util.List;
  */
 public interface BaseConnector {
 
-    List<APDocument> getDocuments(String param, CommonParams type);
+    List<APDocument> getDocuments(String param, CommonParams type)throws IOException;
     List<APDocument> getDocuments(LocalDate date) throws IOException;
     APDocument getDocument(String PMID) throws IOException;
 

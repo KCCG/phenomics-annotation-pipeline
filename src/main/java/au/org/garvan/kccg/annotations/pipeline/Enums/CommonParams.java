@@ -6,6 +6,7 @@ package au.org.garvan.kccg.annotations.pipeline.Enums;
 public enum CommonParams {
 
     PMID,
-    FILENAME
+    FILENAME,
+    QUERY
 
 }

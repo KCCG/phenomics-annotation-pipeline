@@ -16,16 +16,14 @@ import java.util.stream.IntStream;
 public class GenesHandler extends BaseLexiconHandler {
     private final List<String> HGNCFileHeader = Arrays.asList("HGNC ID", "Approved Symbol", "Approved Name", "Status", "Previous Symbols", "Synonyms", "Chromosome", "Accession Numbers", "RefSeq IDs", "Gene Family Tag", "Gene family description", "Gene family ID");
     private Map<String, Integer> headerMap;
-
-
     private Map<String, APGene> geneList = new HashMap<>();
+
 
     public GenesHandler(String fName) {
 
         fileName = fName;
         headerMap = IntStream.range(0, HGNCFileHeader.size()).boxed().collect(Collectors.toMap(HGNCFileHeader::get, Function.identity()));
     }
-
 
     public void loadGenes() {
         //Load Genes and process them to store in order form.
@@ -34,7 +32,7 @@ public class GenesHandler extends BaseLexiconHandler {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        if (verifyHeader()) {
+        if (verifyHeader(HGNCFileHeader)) {
             for (List<String> d : data) {
                 String geneSymbol = d.get(headerMap.get("Approved Symbol"));
                 if (geneList.containsKey(geneSymbol)) {
@@ -74,11 +72,7 @@ public class GenesHandler extends BaseLexiconHandler {
             return null;
     }
 
-    private boolean verifyHeader() {
-        //Point: Check the Header and in case file got different header than reject the file.
-        return fileHeader.toString().equals(HGNCFileHeader.toString());
 
-    }
 
 
 }
