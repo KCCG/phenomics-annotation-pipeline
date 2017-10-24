@@ -1,9 +1,10 @@
 package au.org.garvan.kccg.annotations.pipeline.processors;
 
+import au.org.garvan.kccg.annotations.pipeline.Enums.CommonParams;
 import au.org.garvan.kccg.annotations.pipeline.Utils.APFileWriter;
 import au.org.garvan.kccg.annotations.pipeline.connectors.SolrConnector;
-import au.org.garvan.kccg.annotations.pipeline.linguisticentites.APDocument;
-import au.org.garvan.kccg.annotations.pipeline.linguisticentites.APSentence;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APDocument;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APSentence;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -65,6 +66,12 @@ public class DocumentProcessor {
     public static List<APDocument> processDocuments(LocalDate date) throws IOException {
         CoreNLPHanlder.init();
          return instSolrConnector.getDocuments(date);
+
+    }
+
+    public static List<APDocument> processDocuments(String query) throws IOException {
+        CoreNLPHanlder.init();
+        return instSolrConnector.getDocuments(query, CommonParams.QUERY);
 
     }
 

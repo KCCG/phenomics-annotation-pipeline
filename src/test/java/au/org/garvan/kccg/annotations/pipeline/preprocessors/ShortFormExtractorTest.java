@@ -1,13 +1,10 @@
 package au.org.garvan.kccg.annotations.pipeline.preprocessors;
 
-import au.org.garvan.kccg.annotations.pipeline.linguisticentites.APDocument;
-import au.org.garvan.kccg.annotations.pipeline.linguisticentites.APToken;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APToken;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.List;
-
-import static org.junit.Assert.*;
 
 /**
  * Created by ahmed on 24/8/17.

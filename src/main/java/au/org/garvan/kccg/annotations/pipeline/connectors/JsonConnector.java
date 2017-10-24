@@ -1,7 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.connectors;
 
 import au.org.garvan.kccg.annotations.pipeline.Enums.CommonParams;
-import au.org.garvan.kccg.annotations.pipeline.linguisticentites.APDocument;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APDocument;
 
 import java.io.File;
 import java.io.FileReader;

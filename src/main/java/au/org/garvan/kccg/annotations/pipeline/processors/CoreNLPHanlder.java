@@ -1,9 +1,11 @@
 package au.org.garvan.kccg.annotations.pipeline.processors;
 
-import au.org.garvan.kccg.annotations.pipeline.linguisticentites.APSentence;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.util.PropertiesUtils;
+import lombok.Getter;
+import lombok.Setter;
+
 import java.util.Properties;
 
 /**
@@ -13,6 +15,11 @@ public final class CoreNLPHanlder {
 
     private static StanfordCoreNLP documentPipeline;
     private static StanfordCoreNLP sentencePipeline;
+
+
+    @Setter
+    @Getter
+    private static boolean isInitialized = false;
 
 
     private CoreNLPHanlder(){}
@@ -29,6 +36,7 @@ public final class CoreNLPHanlder {
                 "tokenize.language", "en");
         sentProps.setProperty("tokenize.whitespace", "true");
         sentencePipeline = new StanfordCoreNLP(sentProps);
+        isInitialized = true;
 
     }
 

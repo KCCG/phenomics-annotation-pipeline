@@ -4,10 +4,11 @@ package au.org.garvan.kccg.annotations.pipeline.UI;
  * Created by ahmed on 26/7/17.
  */
 
-import au.org.garvan.kccg.annotations.pipeline.linguisticentites.APDocument;
-import au.org.garvan.kccg.annotations.pipeline.linguisticentites.APSentence;
+import au.org.garvan.kccg.annotations.pipeline.entities.lexical.APGene;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APDocument;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APSentence;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APToken;
 import au.org.garvan.kccg.annotations.pipeline.processors.DocumentProcessor;
-import com.sun.tools.javac.comp.Flow;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -15,20 +16,15 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.geometry.Rectangle2D;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.scene.shape.Line;
 import javafx.scene.text.Text;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Callback;
-import sun.jvm.hotspot.asm.sparc.SPARCArgument;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -98,22 +94,21 @@ public class BaseUI extends Application {
 
 
         Button btnGoToIndex = new Button("Go To:");
-        btnGoToIndex.setOnAction(e->goToDocument());
+        btnGoToIndex.setOnAction(e -> goToDocument());
         TextField txtGoToIndex = new TextField("0");
         txtGoToIndex.setId("txtGoToIndex");
-
 
 
         Button btnProcessPMID = new Button("Fetch Article");
         btnProcessPMID.setOnAction(e -> {
             try {
-                fetchDocument();
+                fetchDocumentBySearch();
             } catch (IOException e1) {
                 e1.printStackTrace();
             }
         });
 
-        Label lblPMID = new Label("PMID:");
+        Label lblPMID = new Label("Search by PMID/Query:");
         TextField txtPMID = new TextField("");
         txtPMID.setId("txtPMID");
 
@@ -122,20 +117,18 @@ public class BaseUI extends Application {
         root.add(btnProcess, 3, 1);
 
 
-
-
         root.add(lblTotalDocs, 4, 1);
         root.add(txtTotalDocs, 5, 1);
         root.add(lblCurrentDocIndex, 6, 1);
         root.add(txtCurrentDocIndex, 7, 1);
         root.add(btnPrevious, 8, 1);
         root.add(btnNext, 9, 1);
-        root.add(btnGoToIndex,10,1);
-        root.add(txtGoToIndex,11,1);
-        root.add(lblPMID, 12, 1);
-        root.add(txtPMID, 13, 1);
-        root.add(btnProcessPMID, 14, 1);
+        root.add(btnGoToIndex, 10, 1);
+        root.add(txtGoToIndex, 11, 1);
 
+        root.add(lblPMID, 1, 2);
+        root.add(txtPMID, 2, 2);
+        root.add(btnProcessPMID, 3, 2);
 
 
         VBox verticleBox = new VBox();
@@ -149,8 +142,8 @@ public class BaseUI extends Application {
 
     private void goToDocument() {
 
-        int goToID = Integer.parseInt(((TextField)root.lookup("#txtGoToIndex")).getText());
-        if (goToID >=0 && goToID<totalDocs) {
+        int goToID = Integer.parseInt(((TextField) root.lookup("#txtGoToIndex")).getText());
+        if (goToID >= 0 && goToID < totalDocs) {
             currentDocIndex = goToID;
             try {
                 processDocument();
@@ -199,11 +192,18 @@ public class BaseUI extends Application {
 
     }
 
-    private void fetchDocument() throws IOException {
+    private void fetchDocumentBySearch() throws IOException {
 
-        String strPMID = ((TextField) root.lookup("#txtPMID")).getText();
         allDocs = new ArrayList<>();
-        allDocs.add(DocumentProcessor.processDocument(strPMID));
+        String strSearch = ((TextField) root.lookup("#txtPMID")).getText();
+
+        try {
+            Integer PMID = Integer.parseInt(strSearch);
+            allDocs.add(DocumentProcessor.processDocument(strSearch));
+        } catch (NumberFormatException e) {
+            allDocs = DocumentProcessor.processDocuments(strSearch);
+        }
+
         currentDocIndex = 0;
         totalDocs = allDocs.size();
         processDocument();
@@ -212,34 +212,36 @@ public class BaseUI extends Application {
     }
 
     private void processDocument() throws IOException {
+        if (totalDocs > 0) {
+            currentDoc = allDocs.get(currentDocIndex);
+            textUpdate("txtTotalDocs", Integer.toString(totalDocs));
+            textUpdate("txtCurrentDocsIndex", Integer.toString(currentDocIndex));
 
-        currentDoc = allDocs.get(currentDocIndex);
-        textUpdate("txtTotalDocs", Integer.toString(totalDocs));
-        textUpdate("txtCurrentDocsIndex", Integer.toString(currentDocIndex));
+            clearGPSentences(SENTENCES_INDEX, true);
 
-        clearGPSentences(SENTENCES_INDEX, true);
+            List<LinguisticCellContent> list = new ArrayList<>();
+            if (currentDoc != null) {
 
-        List<LinguisticCellContent> list = new ArrayList<>();
-        if (currentDoc != null) {
-
-            if (currentDoc.getSentences().size()==0)
-                currentDoc.hatch();
-            for (APSentence sent : currentDoc.getSentences()) {
-                list.add(new LinguisticCellContent(sent.getId(), sent.getOriginalText()));
-            }
-
-            ObservableList<LinguisticCellContent> ObList = FXCollections.observableList(list);
-            ListView<LinguisticCellContent> lv = new ListView<>(ObList);
-            lv.setCellFactory(new Callback<ListView<LinguisticCellContent>, ListCell<LinguisticCellContent>>() {
-                @Override
-                public ListCell<LinguisticCellContent> call(ListView<LinguisticCellContent> param) {
-                    return new XCell();
+                if (currentDoc.getSentences().size() == 0)
+                    currentDoc.hatch();
+                for (APSentence sent : currentDoc.getSentences()) {
+                    list.add(new LinguisticCellContent(sent.getId(), sent.getOriginalText()));
                 }
-            });
-            lv.setMinWidth(width);
-            lv.setMaxHeight(height * .25);
-            GPSentences.addRow(SENTENCES_INDEX, lv);
+
+                ObservableList<LinguisticCellContent> ObList = FXCollections.observableList(list);
+                ListView<LinguisticCellContent> lv = new ListView<>(ObList);
+                lv.setCellFactory(new Callback<ListView<LinguisticCellContent>, ListCell<LinguisticCellContent>>() {
+                    @Override
+                    public ListCell<LinguisticCellContent> call(ListView<LinguisticCellContent> param) {
+                        return new XCell();
+                    }
+                });
+                lv.setMinWidth(width);
+                lv.setMaxHeight(height * .4);
+                GPSentences.addRow(SENTENCES_INDEX, lv);
+            }
         }
+
 
     }
 
@@ -258,7 +260,7 @@ public class BaseUI extends Application {
 
 
         //Flatten map structure to collect IDs of long forms; This is not meant to link anything but just for highlighting
-        List<Integer> longFormTokenIndices = activeSent.getSfLfLink().values().stream().filter(x-> x.length>0).flatMap(Arrays::stream).map(x->x.getId()).collect(Collectors.toList());
+        List<Integer> longFormTokenIndices = activeSent.getSfLfLink().values().stream().filter(x -> x.length > 0).flatMap(Arrays::stream).map(x -> x.getId()).collect(Collectors.toList());
 
         activeSent.getTokens().stream().forEach(tok ->
                 {
@@ -266,14 +268,32 @@ public class BaseUI extends Application {
                     btnToken.setId(Integer.toString(tok.getId()));
 
                     btnToken.setText(tok.getOriginalText());
-                    btnToken.setTooltip(new Tooltip(String.format("%s:%s", tok.getLemma(), tok.getPartOfSpeech())));
-                    if(tok.isShortForm()) {
-                        btnToken.setStyle("-fx-base: #b6e7c9;");
+
+                    String buttonStyle = "";
+
+                    if (tok.isShortForm()) {
+                        buttonStyle = buttonStyle + "-fx-base: #b6e7c9;";
+
+                    } else if (longFormTokenIndices.contains(tok.getId())) {
+                        buttonStyle = buttonStyle + "-fx-base: #e6d7f2;";
+                    }
+
+                    if (!tok.getLexicalEntityList().isEmpty()) {
+                        buttonStyle = buttonStyle + "-fx-text-fill: #800080;";
 
                     }
-                    else if (longFormTokenIndices.contains(tok.getId())){
-                        btnToken.setStyle("-fx-base: #e6d7f2;");
+
+                    if (!tok.getNormalizedText().isEmpty()) {
+                        buttonStyle = buttonStyle + "-fx-underline: true;";
+                        btnToken.setTooltip(new Tooltip(String.format("%s:%s -> %s", tok.getLemma(), tok.getPartOfSpeech(), tok.getNormalizedText() )));
                     }
+                    else
+                    {                    btnToken.setTooltip(new Tooltip(String.format("%s:%s", tok.getLemma(), tok.getPartOfSpeech())));
+
+
+                    }
+                        btnToken.setStyle(buttonStyle);
+
 
                     btnToken.setOnAction(new EventHandler<ActionEvent>() {
 
@@ -293,6 +313,7 @@ public class BaseUI extends Application {
         ListView<String> dependencyList = new ListView<String>();
         ObservableList<String> items = FXCollections.observableArrayList(activeSent.getDependencyRelations().stream().map(d -> d.toString()).collect(Collectors.toList()));
         dependencyList.setItems(items);
+        dependencyList.setPrefWidth(300);
 
         Text parseTree = new Text();
         parseTree.setText(activeSent.getAnnotatedTree().toString());
@@ -304,7 +325,6 @@ public class BaseUI extends Application {
         GPSentences.addRow(DEPENDENCIES_INDEX, dependencyList);
         GPSentences.setVgap(5);
         GPSentences.setMargin(tokenPane, new Insets(10, 5, 10, 5));
-
 
     }
 
@@ -331,8 +351,24 @@ public class BaseUI extends Application {
                 .filter(g -> (g.getDependent().getId() == id || g.getGovernor().getId() == id))
                 .map(d -> d.toString()).collect(Collectors.toList()));
         dependencyList.setItems(items);
+
+
+        //Point: Get token and see if Lexical Entities are there
+        APToken tok = sent.getTokens().stream().filter(x -> x.getId() == id).collect(Collectors.toList()).get(0);
+
         GPSentences.getChildren().remove(DEPENDENCIES_INDEX);
-        GPSentences.addRow(DEPENDENCIES_INDEX, dependencyList);
+
+        if (!tok.getLexicalEntityList().isEmpty()) {
+            ListView<String> entityList = new ListView<String>();
+            entityList.setItems(FXCollections.observableArrayList(((APGene) tok.getLexicalEntityList().get(0)).stringList()));
+            HBox depLexHolder = new HBox();
+            dependencyList.setPrefWidth(450);
+            entityList.setPrefWidth(450);
+            depLexHolder.getChildren().addAll(dependencyList, entityList);
+            GPSentences.addRow(DEPENDENCIES_INDEX, depLexHolder);
+        } else {
+            GPSentences.addRow(DEPENDENCIES_INDEX, dependencyList);
+        }
 
     }
 
