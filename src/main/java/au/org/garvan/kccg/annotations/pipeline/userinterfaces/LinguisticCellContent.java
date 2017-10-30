@@ -1,4 +1,4 @@
-package au.org.garvan.kccg.annotations.pipeline.UI;
+package au.org.garvan.kccg.annotations.pipeline.userinterfaces;
 
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.LinguisticEntity;
 

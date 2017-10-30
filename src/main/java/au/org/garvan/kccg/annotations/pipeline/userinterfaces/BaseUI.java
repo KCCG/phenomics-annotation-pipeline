@@ -1,4 +1,4 @@
-package au.org.garvan.kccg.annotations.pipeline.UI;
+package au.org.garvan.kccg.annotations.pipeline.userinterfaces;
 
 /**
  * Created by ahmed on 26/7/17.
@@ -74,7 +74,7 @@ public class BaseUI extends Application {
         });
 
         Label lblDate = new Label("Date:");
-        TextField txtDate = new TextField("01/09/2017");
+        TextField txtDate = new TextField("01/10/2017");
         txtDate.setId("txtDate");
 
         Label lblTotalDocs = new Label("Total Articles:");

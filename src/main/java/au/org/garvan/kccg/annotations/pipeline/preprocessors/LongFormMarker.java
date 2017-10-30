@@ -1,6 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.preprocessors;
 
-import au.org.garvan.kccg.annotations.pipeline.Utils.Common;
+import au.org.garvan.kccg.annotations.pipeline.utilities.Common;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APSentence;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APToken;
 

@@ -1,7 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.processors;
 
-import au.org.garvan.kccg.annotations.pipeline.Enums.CommonParams;
-import au.org.garvan.kccg.annotations.pipeline.Utils.APFileWriter;
+import au.org.garvan.kccg.annotations.pipeline.enums.CommonParams;
+import au.org.garvan.kccg.annotations.pipeline.utilities.APFileWriter;
 import au.org.garvan.kccg.annotations.pipeline.connectors.SolrConnector;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APDocument;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APSentence;

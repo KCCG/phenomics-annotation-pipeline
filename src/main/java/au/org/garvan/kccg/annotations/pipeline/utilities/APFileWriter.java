@@ -1,6 +1,4 @@
-package au.org.garvan.kccg.annotations.pipeline.Utils;
-
-import org.omg.CORBA.Environment;
+package au.org.garvan.kccg.annotations.pipeline.utilities;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

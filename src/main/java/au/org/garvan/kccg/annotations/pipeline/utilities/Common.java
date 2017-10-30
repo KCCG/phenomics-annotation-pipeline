@@ -1,4 +1,4 @@
-package au.org.garvan.kccg.annotations.pipeline.Utils;
+package au.org.garvan.kccg.annotations.pipeline.utilities;
 
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APToken;
 
