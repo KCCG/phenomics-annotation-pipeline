@@ -1,5 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.connectors;
 
+import au.org.garvan.kccg.annotations.pipeline.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.enums.CommonParams;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APDocument;
 
@@ -33,7 +34,8 @@ public class JsonConnector implements BaseConnector {
                 File file = new File(getClass().getClassLoader().getResource("docs/" + fileName).getFile());
                 Object obj = parser.parse(new FileReader(file.getAbsolutePath()));
                 JSONArray jsonDocs = (JSONArray) obj;
-                jsonDocs.stream().forEach(x -> collectedDocs.add(new APDocument(Integer.parseInt(((JSONObject) x).get("PMID").toString()), ((JSONObject) x).get("articleAbstract").toString())));
+
+                jsonDocs.forEach(x -> collectedDocs.add(new APDocument(Integer.parseInt(((JSONObject) x).get("PMID").toString()), ((JSONObject) x).get("articleAbstract").toString())));
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -59,5 +61,37 @@ public class JsonConnector implements BaseConnector {
     @Override
     public APDocument getDocument(String PMID) {
         return null;
+    }
+
+
+    @Override
+    public List<Article> getArticles(String fileName, CommonParams type) {
+        if (type.equals(CommonParams.FILENAME)) {
+            JSONParser parser = new JSONParser();
+            List<Article> collectedArticles = new ArrayList<>();
+            try {
+
+                File file = new File(getClass().getClassLoader().getResource("docs/" + fileName).getFile());
+                Object obj = parser.parse(new FileReader(file.getAbsolutePath()));
+                JSONArray jsonDocs = (JSONArray) obj;
+
+
+                for (Object jd:jsonDocs ){
+                    JSONObject jsonDoc = (JSONObject) jd;
+                    Article article = new Article(jsonDoc);
+                    collectedArticles.add(article);
+
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return collectedArticles;
+        }
+        else
+        {
+            log.warn(String.format("Invalid param type:%s for this connector class:", type.toString(), JsonConnector.class.toString()));
+            return new ArrayList<>();
+        }
     }
 }

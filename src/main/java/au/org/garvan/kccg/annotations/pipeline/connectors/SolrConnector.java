@@ -6,14 +6,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import au.org.garvan.kccg.annotations.pipeline.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.enums.CommonParams;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APDocument;
+import jdk.nashorn.internal.parser.JSONParser;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,12 +58,14 @@ public class SolrConnector implements BaseConnector {
         Response response = CLIENT.newCall(request).execute();
 
         if (response.code() == 200) {
-            JSONObject jsonObject = new JSONObject(response.body().string().trim());
-            JSONArray jsonDocumentsArray = jsonObject.getJSONObject("response").getJSONArray("docs");
-            for (Object jsonDoc : jsonDocumentsArray) {
-                if ( ((JSONObject) jsonDoc).has("articleAbstract") ) {
-                    int ID = Integer.parseInt(((JSONObject) jsonDoc).getJSONArray("PMID").get(0).toString());
-                    String articleAbstract = ((JSONObject) jsonDoc).getJSONArray("articleAbstract").get(0).toString();
+
+            JSONObject jsonObject = (JSONObject) JSONValue.parse( response.body().string().trim()) ;
+            JSONArray jsonDocumentsArray =  (JSONArray)((JSONObject)jsonObject.get("response")).get("docs");
+            for (Object obj : jsonDocumentsArray) {
+                JSONObject jsonDoc = (JSONObject) obj;
+                if ( jsonDoc.containsKey("articleAbstract") ) {
+                    int ID = Integer.parseInt(((JSONArray)jsonDoc.get("PMID")).get(0).toString());
+                    String articleAbstract = ((JSONArray)jsonDoc.get("articleAbstract")).get(0).toString();
                     docs.add(new APDocument(ID, articleAbstract));
                 }
             }
@@ -90,12 +95,13 @@ public class SolrConnector implements BaseConnector {
 
 
         if (response.code() == 200) {
-            JSONObject jsonObject =new JSONObject(response.body().string().trim());
-            JSONArray jsonDocumentsArray = jsonObject.getJSONObject("response").getJSONArray("docs");
-            for (Object jsonDoc : jsonDocumentsArray) {
-                if ( ((JSONObject) jsonDoc).has("articleAbstract") ) {
-                    int ID = Integer.parseInt(((JSONObject) jsonDoc).getJSONArray("PMID").get(0).toString());
-                    String articleAbstract = ((JSONObject) jsonDoc).getJSONArray("articleAbstract").get(0).toString();
+            JSONObject jsonObject = (JSONObject) JSONValue.parse( response.body().string().trim()) ;
+            JSONArray jsonDocumentsArray =  (JSONArray)((JSONObject)jsonObject.get("response")).get("docs");
+            for (Object obj : jsonDocumentsArray) {
+                JSONObject jsonDoc = (JSONObject) obj;
+                if ( jsonDoc.containsKey("articleAbstract") ) {
+                    int ID = Integer.parseInt(((JSONArray)jsonDoc.get("PMID")).get(0).toString());
+                    String articleAbstract = ((JSONArray)jsonDoc.get("articleAbstract")).get(0).toString();
                     docs.add(new APDocument(ID, articleAbstract));
                 }
             }
@@ -124,12 +130,13 @@ public class SolrConnector implements BaseConnector {
 
         if (response.code() == 200) {
             APDocument collectedDoc;
-            JSONObject jsonObject = new JSONObject(response.body().string().trim());
-            JSONArray jsonDocumentsArray = jsonObject.getJSONObject("response").getJSONArray("docs");
-            Object jsonDoc = jsonDocumentsArray.get(0);
-            if ( ((JSONObject) jsonDoc).has("PMID")  &&  ((JSONObject) jsonDoc).getJSONArray("PMID").get(0).toString().equals(PMID)) {
-                    int ID = Integer.parseInt(((JSONObject) jsonDoc).getJSONArray("PMID").get(0).toString());
-                    String articleAbstract = ((JSONObject) jsonDoc).getJSONArray("articleAbstract").get(0).toString();
+            JSONObject jsonObject = (JSONObject) JSONValue.parse( response.body().string().trim()) ;
+            JSONArray jsonDocumentsArray =  (JSONArray)((JSONObject)jsonObject.get("response")).get("docs");
+            JSONObject jsonDoc = (JSONObject)jsonDocumentsArray.get(0);
+
+            if ( jsonDoc.containsKey("PMID")  &&  jsonDoc.get("PMID").toString().equals(PMID)) {
+                    int ID = Integer.parseInt(((JSONArray)jsonDoc.get("PMID")).get(0).toString());
+                    String articleAbstract = ((JSONArray)jsonDoc.get("articleAbstract")).get(0).toString();
                     collectedDoc = new APDocument(ID, articleAbstract);
                     return  collectedDoc;
             }
@@ -141,6 +148,11 @@ public class SolrConnector implements BaseConnector {
 
         return new APDocument(0,"");
 
+    }
+
+    @Override
+    public List<Article> getArticles(String param, CommonParams type) {
+        return null;
     }
 
 
@@ -163,8 +175,8 @@ public class SolrConnector implements BaseConnector {
 
 
         if (response.code() == 200) {
-            JSONObject jsonObject = new JSONObject(response.body().string().trim());
-            count = (int) jsonObject.getJSONObject("response").get("numFound");
+            JSONObject jsonObject = (JSONObject) JSONValue.parse( response.body().string().trim()) ;
+            count = Integer.parseInt(((JSONObject) jsonObject.get("response")) .get("numFound").toString());
 
         }
 

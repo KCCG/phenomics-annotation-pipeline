@@ -9,6 +9,7 @@ import org.junit.Test;
  */
 public class JsonConnectorTest {
 
+
     BaseConnector testConnector = new JsonConnector();
 
     @Before
@@ -21,6 +22,14 @@ public class JsonConnectorTest {
     public void getDocuments() throws Exception {
         testConnector.getDocuments("1500949368578.json", CommonParams.FILENAME);
     }
+
+    @Test
+    public void getArticles() throws Exception {
+        testConnector.getArticles("1500949368578.json", CommonParams.FILENAME);
+
+    }
+
+
 
 
 }

@@ -15,9 +15,7 @@ import lombok.Setter;
 
 import java.awt.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -37,9 +35,13 @@ public class APDocument extends LinguisticEntity {
     private String cleanedText;
 
 
-
     public APDocument(int id, String text) {
         super(id, text);
+    }
+
+
+    public APDocument(String text) {
+        super(text);
     }
 
 
@@ -51,6 +53,19 @@ public class APDocument extends LinguisticEntity {
 
     }
 
+    //This function is created to help graph db absorb all entities from an APdoc
+    public Map<APSentence, APToken> getTokensWithEntities() {
+        Map<APSentence, APToken> returnData = new HashMap<>();
+        for (APSentence sent : this.getSentences()) {
+            List<APToken> selectTokens = sent.getTokens().stream().filter(t -> t.getLexicalEntityList().size() > 0).collect(Collectors.toList());
+            if (selectTokens.size() > 0) {
+                selectTokens.stream().forEach(t -> returnData.put(sent, t));
+            }
+
+        }
+        return returnData;
+    }
+
 
     public void hatch() {
         DocumentPreprocessor.preprocessDocument(this);
@@ -58,13 +73,10 @@ public class APDocument extends LinguisticEntity {
 
 
     public APSentence getSentenceWithID(int id) {
-        List<APSentence> lstSent= sentences.stream().filter(s->s.getId()==id).collect(Collectors.toList());
-        if (lstSent.size()>0)
-        {
+        List<APSentence> lstSent = sentences.stream().filter(s -> s.getId() == id).collect(Collectors.toList());
+        if (lstSent.size() > 0) {
             return lstSent.get(0);
-        }
-        else
-        {
+        } else {
             return null;
         }
     }

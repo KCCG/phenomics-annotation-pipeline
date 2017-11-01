@@ -15,9 +15,10 @@ dependencies {
             'com.googlecode.json-simple:json-simple:1.1.1',
             'org.projectlombok:lombok:1.16.14',
             'com.squareup.okhttp3:okhttp:3.6.0',
-            'org.json:json:20170516',
             'edu.stanford.nlp:stanford-corenlp:3.8.0',
-            'edu.stanford.nlp:stanford-corenlp:3.8.0:models'
+            'edu.stanford.nlp:stanford-corenlp:3.8.0:models',
+            'net.iot-solutions.graphdb:jcypher:3.8.0'
+
 
 
     )
