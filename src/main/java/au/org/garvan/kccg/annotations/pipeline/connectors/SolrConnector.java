@@ -26,7 +26,8 @@ import org.slf4j.LoggerFactory;
 public class SolrConnector implements BaseConnector {
     protected final Logger log = LoggerFactory.getLogger(SolrConnector.class);
 
-    private static String documentPoolURL = "http://52.65.79.178:8983/solr/Articles";
+//    private static String documentPoolURL = "http://52.65.79.178:8983/solr/Articles";
+    private static String documentPoolURL = "http://localhost:8983/solr/Articles";
     private static String selectQuery = "/select";
 
 
@@ -134,7 +135,7 @@ public class SolrConnector implements BaseConnector {
             JSONArray jsonDocumentsArray =  (JSONArray)((JSONObject)jsonObject.get("response")).get("docs");
             JSONObject jsonDoc = (JSONObject)jsonDocumentsArray.get(0);
 
-            if ( jsonDoc.containsKey("PMID")  &&  jsonDoc.get("PMID").toString().equals(PMID)) {
+            if ( jsonDoc.containsKey("PMID")  &&  ((JSONArray)jsonDoc.get("PMID")).get(0).toString().equals(PMID)) {
                     int ID = Integer.parseInt(((JSONArray)jsonDoc.get("PMID")).get(0).toString());
                     String articleAbstract = ((JSONArray)jsonDoc.get("articleAbstract")).get(0).toString();
                     collectedDoc = new APDocument(ID, articleAbstract);

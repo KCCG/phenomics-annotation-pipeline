@@ -15,6 +15,8 @@ import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.clause.CREATE;
 import iot.jcypher.query.factories.clause.MERGE;
 import iot.jcypher.query.values.JcNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +27,9 @@ import java.util.Properties;
  * Created by ahmed on 30/10/17.
  */
 public class GraphDBHandler {
+
+    private final Logger slf4jLogger = LoggerFactory.getLogger(GraphDBHandler.class);
+
 
     Properties props = new Properties();
     IDBAccess remote ;
@@ -101,6 +106,13 @@ public class GraphDBHandler {
         JcQueryResult result = remote.execute(query);
 
 
+        if(result.getDBErrors().size()>0)
+            slf4jLogger.info(String.format( "Graph DB Insertion Done. DB Error:%s ", result.getDBErrors().toString() ));
+        else
+            slf4jLogger.info(String.format( "Graph DB Insertion done without errors."));
+
+
+
 
     }
 
@@ -116,7 +128,7 @@ public class GraphDBHandler {
                 for(LexicalEntity lex:token.getLexicalEntityList()){
                     if(lex instanceof APGene){
                         APGene gene = (APGene) lex;
-                        JcNode nodeGene = new JcNode("nodeGene" + Integer.toString(token.getId()));
+                        JcNode nodeGene = new JcNode( String.format("nodeGene%d_%d",sent.getId(),token.getId()));
                         IClause geneClause = MERGE.node(nodeGene).label("Gene").label("Entity")
                                 .property("HGNCID").value(gene.getHGNCID())
                                 .property("Symbol").value(gene.getApprovedSymbol());

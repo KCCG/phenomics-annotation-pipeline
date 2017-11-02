@@ -68,14 +68,15 @@ public class Article {
         articleAbstract = new APDocument(inputObject.get("articleAbstract").toString());
         publication = inputObject.containsKey("publication") ? new Publication((JSONObject) inputObject.get("publication")) : null;
 
+
+        authors = new ArrayList<>();
         if (inputObject.containsKey("authors")) {
             JSONArray jsonArrayAuthor = (JSONArray) inputObject.get("authors");
-            authors = new ArrayList<>();
+
             for (Object jsonAuthor : jsonArrayAuthor) {
                 authors.add(new Author((JSONObject) jsonAuthor));
             }
         }
-
         dateCreated = LocalDate.parse(inputObject.get("dateCreated").toString());
         datePublished = LocalDate.parse(inputObject.get("articleDate").toString());
         dateRevised = LocalDate.parse(inputObject.get("dateRevised").toString());

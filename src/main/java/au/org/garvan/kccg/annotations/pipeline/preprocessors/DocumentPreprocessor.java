@@ -54,10 +54,14 @@ public class DocumentPreprocessor {
 
         List<CoreMap> sentencesMap = docAnnotation.get(CoreAnnotations.SentencesAnnotation.class);
 
+
+        int sentID=1;
         for (CoreMap sentence : sentencesMap) {
-            APSentence sent = new APSentence(sentence.toString());
+
+            APSentence sent = new APSentence(sentID,sentence.toString());
             sent.setDocOffset(new Point(sentence.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class), sentence.get(CoreAnnotations.CharacterOffsetEndAnnotation.class)));
             doc.getSentences().add(sent);
+            sentID++;
         }
 
         for (APSentence sent : doc.getSentences())
