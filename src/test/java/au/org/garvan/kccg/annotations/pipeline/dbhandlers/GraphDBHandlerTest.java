@@ -4,6 +4,7 @@ import au.org.garvan.kccg.annotations.pipeline.connectors.BaseConnector;
 import au.org.garvan.kccg.annotations.pipeline.connectors.JsonConnector;
 import au.org.garvan.kccg.annotations.pipeline.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.enums.CommonParams;
+import org.json.simple.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -40,7 +41,8 @@ public class GraphDBHandlerTest {
         {
             slf4jLogger.info(String.format("Processing Article index:%d and ID:%d", index, a.getPubMedID()));
             a.getArticleAbstract().hatch();
-            gdb.createArticleQuery(a);
+            JSONObject temp = a.constructJson();
+//            gdb.createArticleQuery(a);
             index ++;
         }
 

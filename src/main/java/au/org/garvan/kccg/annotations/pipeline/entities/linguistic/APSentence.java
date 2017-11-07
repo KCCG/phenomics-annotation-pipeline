@@ -1,5 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.entities.linguistic;
 
+import au.org.garvan.kccg.annotations.pipeline.entities.database.DynamoDBObject;
+import au.org.garvan.kccg.annotations.pipeline.enums.EntityType;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.semgraph.SemanticGraph;
@@ -8,6 +10,8 @@ import edu.stanford.nlp.trees.Tree;
 import jdk.nashorn.internal.objects.annotations.Property;
 import lombok.Getter;
 import lombok.Setter;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 import java.awt.*;
 import java.util.*;
@@ -138,6 +142,63 @@ public class APSentence extends LinguisticEntity {
 
         return tokens.stream().sorted(Comparator.comparing(t -> t.getSentOffset().x)).collect(Collectors.toList());
     }
+
+    public APSentence(DynamoDBObject dbObject){
+        if(dbObject.getEntityType().equals(EntityType.APSentence))
+        {
+
+        }
+        else{
+
+        }
+
+    }
+
+    @Override
+    public JSONObject constructJson(){
+        JSONObject returnObject = super.constructJson();
+
+        JSONArray jsonTokens = new JSONArray();
+        tokens.forEach(t-> jsonTokens.add(t.constructJson()));
+        returnObject.put("tokens",jsonTokens);
+
+
+        JSONObject jsonPoint = new JSONObject();
+        jsonPoint.put("x",docOffset.getX());
+        jsonPoint.put("y",docOffset.getY());
+        returnObject.put("docOffset",jsonPoint);
+
+
+        JSONArray jsonAPParseTreeRows = new JSONArray();
+        parseTree.forEach(pt-> jsonAPParseTreeRows.add(pt.constructJson()));
+        returnObject.put("parseTree",jsonAPParseTreeRows);
+
+
+        JSONArray jsonAPDependencyRelations = new JSONArray();
+        dependencyRelations.forEach(dr-> jsonAPDependencyRelations.add(dr.constructJson()));
+        returnObject.put("dependencyRelations",jsonAPDependencyRelations);
+
+
+        JSONArray jsonSfLfLinks = new JSONArray();
+        SfLfLink.forEach((key,value) -> {
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put(key.getId(), tokenIDArrayFromTokenArray(value));
+            jsonSfLfLinks.add(jsonObject);
+        });
+        returnObject.put("SfLfLink",jsonSfLfLinks);
+        return returnObject;
+    }
+
+
+
+    private JSONArray tokenIDArrayFromTokenArray(APToken[] tokens){
+        JSONArray jsonArray = new JSONArray();
+        for(int x = 0; x<tokens.length; x++){
+            jsonArray.add(x,tokens[x].getId());
+        }
+        return jsonArray;
+    }
+
 
 
 }

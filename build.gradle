@@ -17,7 +17,9 @@ dependencies {
             'com.squareup.okhttp3:okhttp:3.6.0',
             'edu.stanford.nlp:stanford-corenlp:3.8.0',
             'edu.stanford.nlp:stanford-corenlp:3.8.0:models',
-            'net.iot-solutions.graphdb:jcypher:3.8.0'
+            'net.iot-solutions.graphdb:jcypher:3.8.0',
+            'com.amazonaws:aws-java-sdk:1.11.224'
+
 
 
 

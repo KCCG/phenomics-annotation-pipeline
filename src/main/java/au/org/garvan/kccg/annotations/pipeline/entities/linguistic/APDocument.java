@@ -1,5 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.entities.linguistic;
 
+import au.org.garvan.kccg.annotations.pipeline.entities.database.DynamoDBObject;
+import au.org.garvan.kccg.annotations.pipeline.enums.EntityType;
 import au.org.garvan.kccg.annotations.pipeline.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.preprocessors.LongFormMarker;
 import au.org.garvan.kccg.annotations.pipeline.preprocessors.ShortFormExtractor;
@@ -12,6 +14,8 @@ import edu.stanford.nlp.util.CoreMap;
 import jdk.nashorn.internal.objects.annotations.Property;
 import lombok.Getter;
 import lombok.Setter;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 import java.awt.*;
 
@@ -44,6 +48,16 @@ public class APDocument extends LinguisticEntity {
         super(text);
     }
 
+    public APDocument(DynamoDBObject dbObject){
+        if(dbObject.getEntityType().equals(EntityType.APDocument))
+        {
+
+        }
+        else{
+
+        }
+
+    }
 
     public List<APToken> getTokens() {
         List<APToken> tmpList = this.getSentences().stream().flatMap(y -> y.getTokens().stream()).collect(Collectors.toList());
@@ -80,5 +94,19 @@ public class APDocument extends LinguisticEntity {
             return null;
         }
     }
+
+
+    @Override
+    public JSONObject constructJson(){
+        JSONObject returnObject = super.constructJson();
+
+        JSONArray jsonSentences = new JSONArray();
+        sentences.forEach(s-> jsonSentences.add(s.constructJson()));
+        returnObject.put("sentences",jsonSentences);
+        returnObject.put("cleanedText",cleanedText);
+        return returnObject;
+    }
+
+
 }
 

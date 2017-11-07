@@ -1,6 +1,8 @@
 package au.org.garvan.kccg.annotations.pipeline.entities.publicational;
 
+import au.org.garvan.kccg.annotations.pipeline.entities.database.DynamoDBObject;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APDocument;
+import au.org.garvan.kccg.annotations.pipeline.enums.EntityType;
 import lombok.Getter;
 import lombok.Setter;
 import org.json.simple.JSONArray;
@@ -49,10 +51,6 @@ public class Article {
 
     @Getter
     @Setter
-    private String publicationType;
-
-    @Getter
-    @Setter
     private List<Author> authors;
 
     @Getter
@@ -83,21 +81,42 @@ public class Article {
 
     }
 
+    public Article(DynamoDBObject dbObject){
+        if(dbObject.getEntityType().equals(EntityType.Article))
+        {
 
-    public Article(int PMID, LocalDate articleDate, String articleTitle, String articleAbstract, String language, List<Author> authors) {
-        this.pubMedID = PMID;
-        this.datePublished = articleDate;
-        this.articleTitle = articleTitle;
-        this.articleAbstract = new APDocument(articleAbstract);
-        this.language = language;
-        this.authors = authors;
+        }
+        else{
+
+        }
 
     }
+
 
     private LocalDate constructDate(JSONObject jsonDate) {
         String strDate = String.format("%s-%s-%s", jsonDate.get("Day"), jsonDate.get("Month"), jsonDate.get("Year"));
         LocalDate containerDate = LocalDate.parse(strDate, formatter);
         return containerDate;
+
+    }
+
+    public JSONObject constructJson(){
+        JSONObject returnObject = new JSONObject();
+        returnObject.put("pubMedID", pubMedID);
+        returnObject.put("datePublished", datePublished);
+        returnObject.put("dateCreated", dateCreated);
+        returnObject.put("dateRevised", dateRevised);
+        returnObject.put("articleTitle", articleTitle);
+        returnObject.put("articleAbstract", articleAbstract.constructJson());
+        returnObject.put("language", language);
+        returnObject.put("publication", publication.constructJson());
+        JSONArray jsonAuthors = new JSONArray();
+        authors.forEach(a-> jsonAuthors.add(a.constructJson()));
+        returnObject.put("authors",jsonAuthors);
+
+
+        return returnObject;
+
 
     }
 

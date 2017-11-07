@@ -97,6 +97,8 @@ public class DocumentPreprocessor {
             }
             ShortFormExtractor.markShortForms(sent.getTokens());
             LongFormMarker.markLongForms(sent);
+            sent.generateDependencies();
+            sent.generateParseTree();
 
         }
 

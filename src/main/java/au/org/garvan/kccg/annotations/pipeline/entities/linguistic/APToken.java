@@ -1,9 +1,14 @@
 package au.org.garvan.kccg.annotations.pipeline.entities.linguistic;
 
+import au.org.garvan.kccg.annotations.pipeline.entities.database.DynamoDBObject;
+import au.org.garvan.kccg.annotations.pipeline.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.entities.lexical.LexicalEntity;
+import au.org.garvan.kccg.annotations.pipeline.enums.EntityType;
 import jdk.nashorn.internal.objects.annotations.Property;
 import lombok.Getter;
 import lombok.Setter;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 import java.awt.Point;
 import java.util.ArrayList;
@@ -71,10 +76,47 @@ public class APToken extends LinguisticEntity {
     public APToken() {
 
     }
+    public APToken(DynamoDBObject dbObject){
+        if(dbObject.getEntityType().equals(EntityType.APToken))
+        {
+
+        }
+        else{
+
+        }
+
+    }
 
 
     public int beginPosition() {
         return sentOffset.x;
+    }
+
+
+    @Override
+    public JSONObject constructJson(){
+        JSONObject returnObject = super.constructJson();
+        returnObject.put("partOfSpeech", partOfSpeech);
+        returnObject.put("lemma", lemma);
+        returnObject.put("partOfSpeech", partOfSpeech);
+
+        JSONObject jsonPoint = new JSONObject();
+        jsonPoint.put("x",sentOffset.getX());
+        jsonPoint.put("y",sentOffset.getY());
+        returnObject.put("sentOffset",jsonPoint);
+        returnObject.put("shortForm", shortForm);
+        returnObject.put("punctuation", punctuation);
+        returnObject.put("normalizedText", normalizedText);
+
+        if(lexicalEntityList.size()>0)
+        {
+            JSONArray jsonLexicalEntityList = new JSONArray();
+            lexicalEntityList.forEach(le-> jsonLexicalEntityList.add(le.constructJson()));
+            returnObject.put("lexicalEntityList",jsonLexicalEntityList);
+
+        }
+
+        return returnObject;
     }
 
 }

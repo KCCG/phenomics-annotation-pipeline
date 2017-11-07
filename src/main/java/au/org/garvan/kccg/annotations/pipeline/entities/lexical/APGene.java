@@ -1,9 +1,13 @@
 package au.org.garvan.kccg.annotations.pipeline.entities.lexical;
 
+import au.org.garvan.kccg.annotations.pipeline.entities.database.DynamoDBObject;
+import au.org.garvan.kccg.annotations.pipeline.enums.EntityType;
 import jdk.nashorn.internal.objects.annotations.Property;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,6 +82,18 @@ public class APGene extends LexicalEntity {
     private List<Integer> geneFamilyID;
 
 
+
+    public APGene(DynamoDBObject dbObject){
+        if(dbObject.getEntityType().equals(EntityType.APGene))
+        {
+
+        }
+        else{
+
+        }
+
+    }
+
     public List<String> stringList() {
         List<String> lstData = new ArrayList<>();
         lstData.add(String.format("%s: %d", "HGNCID", HGNCID));
@@ -94,6 +110,30 @@ public class APGene extends LexicalEntity {
         lstData.add(String.format("%s: %s", "Gene Family Id(s)", String.join(",", geneFamilyID.stream().map(e -> e.toString()).collect(Collectors.toList()))));
         return lstData;
     }
+
+
+    @Override
+    public JSONObject constructJson(){
+        JSONObject returnObject = super.constructJson();
+        returnObject.put("HGNCID",HGNCID);
+        returnObject.put("approvedSymbol",approvedSymbol);
+        returnObject.put("approvedName",approvedName);
+        returnObject.put("status",status);
+        returnObject.put("previousSymbols", new JSONArray().addAll(previousSymbols));
+        returnObject.put("synonyms", new JSONArray().addAll(synonyms));
+        returnObject.put("chromosome",new JSONArray().addAll(chromosome));
+        returnObject.put("accessionNumbers",new JSONArray().addAll(accessionNumbers));
+        returnObject.put("refSeqIds",new JSONArray().addAll(refSeqIds));
+        returnObject.put("geneFamilyTag",new JSONArray().addAll(geneFamilyTag));
+        returnObject.put("geneFamilyDescription",new JSONArray().addAll(geneFamilyDescription));
+        returnObject.put("geneFamilyID",new JSONArray().addAll(geneFamilyID));
+
+        return returnObject;
+    }
+
+
+
+
 
 
 }

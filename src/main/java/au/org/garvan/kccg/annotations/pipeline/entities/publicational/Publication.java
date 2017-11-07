@@ -1,5 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.entities.publicational;
 
+import au.org.garvan.kccg.annotations.pipeline.entities.database.DynamoDBObject;
+import au.org.garvan.kccg.annotations.pipeline.enums.EntityType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,5 +36,26 @@ public class Publication {
 
     }
 
+
+    public Publication(DynamoDBObject dbObject){
+        if(dbObject.getEntityType().equals(EntityType.Publication))
+        {
+
+        }
+        else{
+
+        }
+
+
+    }
+
+    public JSONObject constructJson(){
+        JSONObject returnObject = new JSONObject();
+        returnObject.put("title", title);
+        returnObject.put("isoAbbreviation", ISOAbbreviation);
+        returnObject.put("issnType", ISSNType);
+        returnObject.put("issnNumber", ISSNNumber);
+        return returnObject;
+    }
 
 }
