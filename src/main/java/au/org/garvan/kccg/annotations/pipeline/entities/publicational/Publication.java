@@ -2,6 +2,7 @@ package au.org.garvan.kccg.annotations.pipeline.entities.publicational;
 
 import au.org.garvan.kccg.annotations.pipeline.entities.database.DynamoDBObject;
 import au.org.garvan.kccg.annotations.pipeline.enums.EntityType;
+import au.org.garvan.kccg.annotations.pipeline.utilities.Common;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -40,6 +41,10 @@ public class Publication {
     public Publication(DynamoDBObject dbObject){
         if(dbObject.getEntityType().equals(EntityType.Publication))
         {
+            title = dbObject.getJsonObject() .get("title").toString();
+            ISOAbbreviation = dbObject.getJsonObject().get("isoAbbreviation").toString();
+            ISSNType = Common.emptyStringToNA(dbObject.getJsonObject().get("issnType").toString());
+            ISSNNumber = Common.emptyStringToNA(dbObject.getJsonObject().get("issnNumber").toString());
 
         }
         else{

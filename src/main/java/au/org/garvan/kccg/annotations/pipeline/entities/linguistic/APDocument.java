@@ -49,9 +49,14 @@ public class APDocument extends LinguisticEntity {
     }
 
     public APDocument(DynamoDBObject dbObject){
+        super(Integer.parseInt(dbObject.getJsonObject().get("id").toString()), dbObject.getJsonObject().get("originalText").toString());
         if(dbObject.getEntityType().equals(EntityType.APDocument))
         {
-
+            cleanedText = dbObject.getJsonObject().get("cleanedText").toString();
+            JSONArray jsonSentences =  (JSONArray) dbObject.getJsonObject().get("sentences");
+            for (Object jsonSentence : jsonSentences) {
+                sentences.add(new APSentence(new DynamoDBObject((JSONObject)jsonSentence,EntityType.APSentence)));
+            }
         }
         else{
 
@@ -68,13 +73,12 @@ public class APDocument extends LinguisticEntity {
     }
 
     //This function is created to help graph db absorb all entities from an APdoc
-    public Map<APSentence, APToken> getTokensWithEntities() {
-        Map<APSentence, APToken> returnData = new HashMap<>();
+    public Map<APSentence, List<APToken>> getTokensWithEntities() {
+        Map<APSentence, List<APToken>> returnData = new HashMap<>();
         for (APSentence sent : this.getSentences()) {
             List<APToken> selectTokens = sent.getTokens().stream().filter(t -> t.getLexicalEntityList().size() > 0).collect(Collectors.toList());
-            if (selectTokens.size() > 0) {
-                selectTokens.stream().forEach(t -> returnData.put(sent, t));
-            }
+            if(selectTokens.size()>0)
+                returnData.put(sent,selectTokens);
 
         }
         return returnData;

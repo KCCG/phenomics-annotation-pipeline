@@ -1,8 +1,17 @@
 package au.org.garvan.kccg.annotations.pipeline.entities.publicational;
 
 import au.org.garvan.kccg.annotations.pipeline.entities.database.DynamoDBObject;
+import au.org.garvan.kccg.annotations.pipeline.entities.lexical.APGene;
+import au.org.garvan.kccg.annotations.pipeline.entities.lexical.LexicalEntity;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APDocument;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APSentence;
+import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APToken;
 import au.org.garvan.kccg.annotations.pipeline.enums.EntityType;
+import au.org.garvan.kccg.annotations.pipeline.enums.AnnotationType;
+
+import au.org.garvan.kccg.annotations.pipeline.lexicons.GenesHandler;
+import au.org.garvan.kccg.annotations.pipeline.preprocessors.DocumentPreprocessor;
+import com.fasterxml.jackson.databind.jsonschema.JsonSchema;
 import lombok.Getter;
 import lombok.Setter;
 import org.json.simple.JSONArray;
@@ -12,6 +21,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by ahmed on 30/10/17.
@@ -85,40 +96,140 @@ public class Article {
         if(dbObject.getEntityType().equals(EntityType.Article))
         {
 
+            pubMedID = Integer.parseInt(dbObject.getJsonObject().get("pubMedID").toString());
+            datePublished = LocalDate.parse(dbObject.getJsonObject().get("datePublished").toString());
+            dateCreated = LocalDate.parse(dbObject.getJsonObject().get("dateCreated").toString());
+            dateRevised = LocalDate.parse(dbObject.getJsonObject().get("dateRevised").toString());
+            articleTitle = dbObject.getJsonObject().get("articleTitle").toString();
+            language = dbObject.getJsonObject().get("language").toString();
+
+            if(dbObject.getJsonObject().containsKey("authors"))
+            {
+                authors = new ArrayList<>();
+                JSONArray jsonAuthors = (JSONArray) dbObject.getJsonObject().get("authors");
+                jsonAuthors.forEach(a->
+                        {
+                            DynamoDBObject tempObject = new DynamoDBObject((JSONObject)a,EntityType.Author);
+                            Author temp = new Author(tempObject);
+                            authors.add(temp);
+                        }
+                );
+
+            }
+
+            publication = new Publication(new DynamoDBObject((JSONObject) dbObject.getJsonObject().get("publication"), EntityType.Publication));
+
+            if(dbObject.getJsonObject().containsKey("articleAbstract"))
+                articleAbstract = new APDocument(new DynamoDBObject((JSONObject) dbObject.getJsonObject().get("articleAbstract"), EntityType.APDocument));
+            else
+                articleAbstract = new APDocument("");
+
         }
         else{
 
         }
 
+
+
     }
 
 
-    private LocalDate constructDate(JSONObject jsonDate) {
-        String strDate = String.format("%s-%s-%s", jsonDate.get("Day"), jsonDate.get("Month"), jsonDate.get("Year"));
-        LocalDate containerDate = LocalDate.parse(strDate, formatter);
-        return containerDate;
+    public Article(DynamoDBObject dbObject,JSONObject annotations) {
+        this(dbObject);
+        if(annotations.containsKey("pubMedID") && ((annotations.get("pubMedID")).toString().equals(Integer.toString(pubMedID)))){
+            JSONArray lstAnnotations = new JSONArray();
+            AnnotationType annotationType = AnnotationType.valueOf(annotations.get("annotationType").toString());
+            switch (annotationType){
+                case GENE:
+                    for(Object obj: lstAnnotations){
+                        JSONObject annotation = (JSONObject) obj;
+                        int sentId = (int) annotation.get("sentId");
+                        int tokenId = (int) annotation.get("tokenId");
+                        String geneSymbol = annotation.get("annotationId").toString();
+                        APGene gene = DocumentPreprocessor.getHGNCGeneHandler().getGene(geneSymbol);
+                        articleAbstract.getSentences().stream().filter(s->s.getId()==sentId).collect(Collectors.toList()).get(0)
+                                .getTokens().stream().filter(t->t.getId()==tokenId).collect(Collectors.toList()).get(0)
+                                .getLexicalEntityList().add(gene);
+
+                    }
+
+                    break;
+
+            }
+
+
+
+        }
 
     }
+
 
     public JSONObject constructJson(){
         JSONObject returnObject = new JSONObject();
-        returnObject.put("pubMedID", pubMedID);
-        returnObject.put("datePublished", datePublished);
-        returnObject.put("dateCreated", dateCreated);
-        returnObject.put("dateRevised", dateRevised);
+        returnObject.put("pubMedID", Integer.toString(pubMedID));
+        returnObject.put("datePublished", datePublished.toString());
+        returnObject.put("dateCreated", dateCreated.toString());
+        returnObject.put("dateRevised", dateRevised.toString());
         returnObject.put("articleTitle", articleTitle);
-        returnObject.put("articleAbstract", articleAbstract.constructJson());
+        if(!articleAbstract.getOriginalText().isEmpty())
+            returnObject.put("articleAbstract", articleAbstract.constructJson());
         returnObject.put("language", language);
         returnObject.put("publication", publication.constructJson());
+
         JSONArray jsonAuthors = new JSONArray();
-        authors.forEach(a-> jsonAuthors.add(a.constructJson()));
-        returnObject.put("authors",jsonAuthors);
+        for (Author a : authors) {
+            if(a.isValidName())
+                jsonAuthors.add(a.constructJson());
+        }
+        if(jsonAuthors.size()>0)
+            returnObject.put("authors",jsonAuthors);
 
 
         return returnObject;
 
+    }
+
+    public JSONObject getAbstractEntities(){
+        JSONObject returnObject = new JSONObject();
+        Map<APSentence, List<APToken>> annotations = articleAbstract.getTokensWithEntities();
+        if (annotations.size()>0)
+        {
+            returnObject.put("pubMedID", Integer.toString(pubMedID));
+            returnObject.put("annotationType", AnnotationType.GENE.toString());
+            JSONArray genes = new JSONArray();
+
+            for (Map.Entry<APSentence,  List<APToken>> entry : annotations.entrySet()) {
+                int sentId = entry.getKey().getId();
+                for (APToken token : entry.getValue()){
+                    int tokenId = token.getId();
+                    for (LexicalEntity lex : token.getLexicalEntityList()) {
+
+                        if (lex instanceof APGene) {
+                            JSONObject jsonObject = new JSONObject();
+                            jsonObject.put("field","articleAbstract");
+                            jsonObject.put("standard","HGNC");
+                            jsonObject.put("sentId",sentId);
+                            jsonObject.put("tokenId",tokenId);
+                            jsonObject.put("annotationId",((APGene) lex).getApprovedSymbol());
+                            genes.add(jsonObject);
+                        } else {
+
+                        }
+                    }
+
+                }
+            }
+            returnObject.put("annotations",genes);
+        }
+
+        return returnObject;
 
     }
+
+
+
+
+
 
 
 

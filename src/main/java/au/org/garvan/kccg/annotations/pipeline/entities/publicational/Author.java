@@ -34,6 +34,9 @@ public class Author {
     public Author(DynamoDBObject dbObject){
         if(dbObject.getEntityType().equals(EntityType.Author))
         {
+            initials = dbObject.getJsonObject().get("initials").toString();
+            foreName = dbObject.getJsonObject().get("foreName").toString();
+            lastName = dbObject.getJsonObject().get("lastName").toString();
 
         }
         else{
@@ -48,6 +51,10 @@ public class Author {
         returnObject.put("lastName", lastName);
         returnObject.put("initials", initials);
         return returnObject;
+    }
+
+    public boolean isValidName(){
+        return !(initials.isEmpty() || foreName.isEmpty() || lastName.isEmpty());
     }
 
 

@@ -82,18 +82,6 @@ public class APGene extends LexicalEntity {
     private List<Integer> geneFamilyID;
 
 
-
-    public APGene(DynamoDBObject dbObject){
-        if(dbObject.getEntityType().equals(EntityType.APGene))
-        {
-
-        }
-        else{
-
-        }
-
-    }
-
     public List<String> stringList() {
         List<String> lstData = new ArrayList<>();
         lstData.add(String.format("%s: %d", "HGNCID", HGNCID));
@@ -119,14 +107,16 @@ public class APGene extends LexicalEntity {
         returnObject.put("approvedSymbol",approvedSymbol);
         returnObject.put("approvedName",approvedName);
         returnObject.put("status",status);
-        returnObject.put("previousSymbols", new JSONArray().addAll(previousSymbols));
-        returnObject.put("synonyms", new JSONArray().addAll(synonyms));
-        returnObject.put("chromosome",new JSONArray().addAll(chromosome));
-        returnObject.put("accessionNumbers",new JSONArray().addAll(accessionNumbers));
-        returnObject.put("refSeqIds",new JSONArray().addAll(refSeqIds));
-        returnObject.put("geneFamilyTag",new JSONArray().addAll(geneFamilyTag));
-        returnObject.put("geneFamilyDescription",new JSONArray().addAll(geneFamilyDescription));
-        returnObject.put("geneFamilyID",new JSONArray().addAll(geneFamilyID));
+        //TODO: Fix Arrays loading
+
+        returnObject.put("previousSymbols", previousSymbols);
+        returnObject.put("synonyms", synonyms);
+        returnObject.put("chromosome",chromosome);
+        returnObject.put("accessionNumbers",accessionNumbers);
+        returnObject.put("refSeqIds",refSeqIds);
+        returnObject.put("geneFamilyTag",geneFamilyTag);
+        returnObject.put("geneFamilyDescription",geneFamilyDescription);
+        returnObject.put("geneFamilyID",geneFamilyID);
 
         return returnObject;
     }

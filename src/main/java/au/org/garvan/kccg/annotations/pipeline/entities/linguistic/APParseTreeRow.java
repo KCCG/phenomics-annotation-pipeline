@@ -41,8 +41,12 @@ public class APParseTreeRow extends LinguisticEntity {
     }
 
     public APParseTreeRow(DynamoDBObject dbObject){
+        super(Integer.parseInt(dbObject.getJsonObject().get("id").toString()), dbObject.getJsonObject().get("originalText").toString());
         if(dbObject.getEntityType().equals(EntityType.APParseTreeRow))
         {
+            parentID = Integer.parseInt(dbObject.getJsonObject().get("parentID").toString());
+            isLeafNode = Boolean.parseBoolean(dbObject.getJsonObject().get("parentID").toString());
+            offsetBegin = Integer.parseInt(dbObject.getJsonObject().get("offsetBegin").toString());
 
         }
         else{
@@ -53,7 +57,7 @@ public class APParseTreeRow extends LinguisticEntity {
 
     @Override
     public JSONObject constructJson(){
-        JSONObject returnObject = new JSONObject();
+        JSONObject returnObject = super.constructJson();
         returnObject.put("parentID",parentID);
         returnObject.put("isLeafNode", isLeafNode);
         returnObject.put("offsetBegin", offsetBegin);

@@ -42,16 +42,6 @@ public class LinguisticEntity {
         this.originalText = text;
     }
 
-    public LinguisticEntity(DynamoDBObject dbObject){
-        if(dbObject.getEntityType().equals(EntityType.LinguisticEntity))
-        {
-
-        }
-        else{
-
-        }
-
-    }
 
     public JSONObject constructJson(){
         JSONObject returnObject = new JSONObject();

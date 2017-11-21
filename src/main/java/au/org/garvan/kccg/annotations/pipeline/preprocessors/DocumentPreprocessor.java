@@ -14,6 +14,7 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations;
 import edu.stanford.nlp.trees.TreeCoreAnnotations;
 import edu.stanford.nlp.util.CoreMap;
+import lombok.Getter;
 
 import java.awt.*;
 import java.util.Arrays;
@@ -26,6 +27,7 @@ import java.util.regex.Pattern;
  */
 public class DocumentPreprocessor {
 
+    @Getter
     private static  GenesHandler  HGNCGeneHandler;
     private static NormalizationHandler LVGNormalizationHandler;
     static {

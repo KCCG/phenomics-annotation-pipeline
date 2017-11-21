@@ -7,11 +7,14 @@ import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.semgraph.SemanticGraph;
 import edu.stanford.nlp.semgraph.SemanticGraphEdge;
 import edu.stanford.nlp.trees.Tree;
+import edu.stanford.nlp.util.ArrayMap;
 import jdk.nashorn.internal.objects.annotations.Property;
 import lombok.Getter;
 import lombok.Setter;
+import netscape.javascript.JSObject;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.omg.CORBA.OBJ_ADAPTER;
 
 import java.awt.*;
 import java.util.*;
@@ -144,8 +147,41 @@ public class APSentence extends LinguisticEntity {
     }
 
     public APSentence(DynamoDBObject dbObject){
+        super(Integer.parseInt(dbObject.getJsonObject().get("id").toString()), dbObject.getJsonObject().get("originalText").toString());
         if(dbObject.getEntityType().equals(EntityType.APSentence))
         {
+            JSONArray jsonTokens = (JSONArray)dbObject.getJsonObject().get("tokens");
+            jsonTokens.forEach(t-> tokens.add(new APToken(new DynamoDBObject((JSONObject) t, EntityType.APToken))));
+            docOffset.setLocation(Integer.parseInt(((JSONObject)dbObject.getJsonObject().get("docOffset")).get("x").toString()),
+                    Integer.parseInt(((JSONObject)dbObject.getJsonObject().get("docOffset")).get("y").toString()));
+
+            JSONArray jsonAPParseTreeRows = (JSONArray)dbObject.getJsonObject().get("parseTree");
+            parseTree = new ArrayList<>();
+            jsonAPParseTreeRows.forEach(p-> parseTree.add(new APParseTreeRow(new DynamoDBObject((JSONObject)p, EntityType.APParseTreeRow))));
+
+
+            JSONArray jsonAPDependencyRelations = (JSONArray)dbObject.getJsonObject().get("dependencyRelations");
+            dependencyRelations = new ArrayList<>();
+            jsonAPDependencyRelations.forEach(d-> dependencyRelations.add(new APDependencyRelation(new DynamoDBObject((JSONObject)d, EntityType.APDependencyRelation), tokens)));
+
+
+            JSONArray jsonSfLfLinks = (JSONArray)dbObject.getJsonObject().get("SfLfLink");
+            if (jsonSfLfLinks.size()>0) {
+                SfLfLink = new HashMap<>();
+                for (Object obj : jsonSfLfLinks) {
+                    ((JSONObject) obj).keySet().forEach(k ->
+                            {
+                                APToken SFToken = tokens.stream().filter(t -> t.getId() == Integer.parseInt(k.toString())).collect(Collectors.toList()).get(0);
+                                APToken[] LFTokens = tokenArrayFromTokenIDArray((JSONArray) ((JSONObject) obj).get(k));
+                                SfLfLink.put(SFToken,LFTokens);
+                            }
+
+                    );
+
+                }
+            }
+
+
 
         }
         else{
@@ -197,6 +233,18 @@ public class APSentence extends LinguisticEntity {
             jsonArray.add(x,tokens[x].getId());
         }
         return jsonArray;
+    }
+
+    private APToken[] tokenArrayFromTokenIDArray(JSONArray jsonArray){
+
+        APToken[] longForm = new APToken[jsonArray.size()];
+        int index = 0;
+        for(Object obj:jsonArray){
+            longForm[index]= tokens.stream().filter(x-> x.getId()==Integer.parseInt (obj.toString())).collect(Collectors.toList()).get(0);
+            index ++;
+        }
+        return longForm;
+
     }
 
 

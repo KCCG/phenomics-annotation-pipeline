@@ -42,7 +42,7 @@ public class GraphDBHandlerTest {
             slf4jLogger.info(String.format("Processing Article index:%d and ID:%d", index, a.getPubMedID()));
             a.getArticleAbstract().hatch();
             JSONObject temp = a.constructJson();
-//            gdb.createArticleQuery(a);
+            gdb.createArticleQuery(a);
             index ++;
         }
 

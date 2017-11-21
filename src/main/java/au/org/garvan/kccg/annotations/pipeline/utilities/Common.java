@@ -30,4 +30,10 @@ public final class Common {
         return jsonArray;
 
     }
+
+    public static String emptyStringToNA(String inputStr)
+    {
+       return  inputStr.isEmpty() ? "N/A" : inputStr;
+
+    }
 }

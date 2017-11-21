@@ -51,13 +51,15 @@ public class GraphDBHandler {
         //Create Article node and creation clause
         JcNode nodeArticle = new JcNode("nodeArticle");
         IClause articleClause = CREATE.node(nodeArticle).label("Article")
-                .property("PMID").value(Integer.toString(article.getPubMedID()));
+                .property("PMID").value(Integer.toString(article.getPubMedID()))
+                .property("Language").value(article.getLanguage());
 
-        //Create Language node and creation clause
-        JcNode nodeLanguage= new JcNode("nodeLanguage");
-        IClause languageClause = MERGE.node(nodeLanguage).label("Language")
-                .property("Name").value(article.getLanguage());
-        IClause languageLinkClause = CREATE.node(nodeArticle).relation().out().type("WRITTEN_IN").node(nodeLanguage);
+
+//        //Create Language node and creation clause
+//        JcNode nodeLanguage= new JcNode("nodeLanguage");
+//        IClause languageClause = MERGE.node(nodeLanguage).label("Language")
+//                .property("Name").value(article.getLanguage());
+//        IClause languageLinkClause = CREATE.node(nodeArticle).relation().out().type("WRITTEN_IN").node(nodeLanguage);
 
 
         //Create authors nodes and their respective clauses (This includes both creation and mapping clauses)
@@ -89,8 +91,8 @@ public class GraphDBHandler {
                 .node(nodePublication);
 
         queryClauses.add(articleClause);
-        queryClauses.add(languageClause);
-        queryClauses.add(languageLinkClause);
+//        queryClauses.add(languageClause);
+//        queryClauses.add(languageLinkClause);
 
         queryClauses.addAll(authorsClauses);
         queryClauses.add(publicationClause);
@@ -118,32 +120,33 @@ public class GraphDBHandler {
 
     private void fillEntitiesGraphData(List<IClause> queryClauses, Article article, JcNode nodeArticle) {
         //TODO: Find entities from Abstract and fill node and relationship
-        Map<APSentence, APToken> entities = article.getArticleAbstract().getTokensWithEntities();
+        Map<APSentence, List<APToken>> entities = article.getArticleAbstract().getTokensWithEntities();
         if(entities.size()>0)
         {
-            for (Map.Entry<APSentence,APToken> entry : entities.entrySet())
+            for (Map.Entry<APSentence, List<APToken>> entry : entities.entrySet())
             {
                 APSentence sent = entry.getKey();
-                APToken token = entry.getValue();
-                for(LexicalEntity lex:token.getLexicalEntityList()){
-                    if(lex instanceof APGene){
-                        APGene gene = (APGene) lex;
-                        JcNode nodeGene = new JcNode( String.format("nodeGene%d_%d",sent.getId(),token.getId()));
-                        IClause geneClause = MERGE.node(nodeGene).label("Gene").label("Entity")
-                                .property("HGNCID").value(gene.getHGNCID())
-                                .property("Symbol").value(gene.getApprovedSymbol());
-                        IClause geneLinkClause =
-                                CREATE.node(nodeArticle).relation().out().type("CONTAINS")
-                                        .property("SentID").value(sent.getId())
-                                        .property("DocOffsetBegin").value(sent.getDocOffset().getX()+token.getSentOffset().getX())
-                                        .property("Field").value("Abstract")
-                                        .node(nodeGene);
-                        queryClauses.add(geneClause);
-                        queryClauses.add(geneLinkClause);
+                List<APToken> tokens = entry.getValue();
+                for (APToken token : tokens) {
+                    for (LexicalEntity lex : token.getLexicalEntityList()) {
+                        if (lex instanceof APGene) {
+                            APGene gene = (APGene) lex;
+                            JcNode nodeGene = new JcNode(String.format("nodeGene%d_%d", sent.getId(), token.getId()));
+                            IClause geneClause = MERGE.node(nodeGene).label("Gene").label("Entity")
+                                    .property("HGNCID").value(gene.getHGNCID())
+                                    .property("Symbol").value(gene.getApprovedSymbol());
+                            IClause geneLinkClause =
+                                    CREATE.node(nodeArticle).relation().out().type("CONTAINS")
+                                            .property("SentID").value(sent.getId())
+                                            .property("DocOffsetBegin").value(sent.getDocOffset().getX() + token.getSentOffset().getX())
+                                            .property("Field").value("Abstract")
+                                            .node(nodeGene);
+                            queryClauses.add(geneClause);
+                            queryClauses.add(geneLinkClause);
 
-                    }
-                    else{
+                        } else {
 
+                        }
                     }
                 }
 
