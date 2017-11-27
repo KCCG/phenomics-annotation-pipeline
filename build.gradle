@@ -1,9 +1,24 @@
 group 'annotation-pipeline'
 version '1.0'
 
-apply plugin: 'java'
 
+
+buildscript {
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.8.RELEASE")
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
 sourceCompatibility = 1.8
+
 
 repositories {
     mavenCentral()
@@ -11,19 +26,21 @@ repositories {
 
 dependencies {
     compile(
-            'org.slf4j:slf4j-log4j12:1.7.25',
             'com.googlecode.json-simple:json-simple:1.1.1',
             'org.projectlombok:lombok:1.16.14',
             'com.squareup.okhttp3:okhttp:3.6.0',
             'edu.stanford.nlp:stanford-corenlp:3.8.0',
             'edu.stanford.nlp:stanford-corenlp:3.8.0:models',
             'net.iot-solutions.graphdb:jcypher:3.8.0',
-            'com.amazonaws:aws-java-sdk:1.11.224'
-
-
-
-
+            'com.amazonaws:aws-java-sdk:1.11.224',
+            "org.springframework.boot:spring-boot-starter-jetty",
+            "org.springframework.boot:spring-boot-starter-web",
+            "org.springframework.boot:spring-boot-starter-actuator",
+            "io.springfox:springfox-swagger2:2.5.0",
+            "io.springfox:springfox-swagger-ui:2.5.0"
     )
+
+
     testCompile 'junit:junit:4.12'
 }
 
@@ -32,5 +49,9 @@ jar {
     manifest {
         attributes 'Main-Class': 'au.org.garvan.kccg.annotations.pipeline.managers.DocumentProcessor'
     }
+}
+
+bootRun {
+    systemProperties System.properties
 }
 
