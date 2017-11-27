@@ -16,7 +16,7 @@ import java.io.ByteArrayInputStream;
 public class S3Handler {
 
     private static String bucketName = "phenomics-article-abstracts";
-    private static String region = "";
+    private static String region = "ap-southeast-2";
     private static AmazonS3 s3client = AmazonS3ClientBuilder.standard().withCredentials(new DefaultAWSCredentialsProviderChain()).withRegion(region).build();
 
     public  void storeAbstract(Article article) {

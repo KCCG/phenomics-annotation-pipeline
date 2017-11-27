@@ -50,7 +50,7 @@ public class GraphDBHandler {
 
         //Create Article node and creation clause
         JcNode nodeArticle = new JcNode("nodeArticle");
-        IClause articleClause = CREATE.node(nodeArticle).label("Article")
+        IClause articleClause = MERGE.node(nodeArticle).label("Article")
                 .property("PMID").value(Integer.toString(article.getPubMedID()))
                 .property("Language").value(article.getLanguage());
 

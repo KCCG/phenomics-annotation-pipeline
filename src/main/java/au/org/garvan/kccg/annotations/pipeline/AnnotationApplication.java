@@ -3,6 +3,7 @@ package au.org.garvan.kccg.annotations.pipeline;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.annotation.EnableAsync;
 import springfox.documentation.builders.ApiInfoBuilder;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.service.ApiInfo;
@@ -18,6 +19,7 @@ import static springfox.documentation.builders.PathSelectors.regex;
  */
 @SpringBootApplication
 @EnableSwagger2
+@EnableAsync
 public class AnnotationApplication {
 
 

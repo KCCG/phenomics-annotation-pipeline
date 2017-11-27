@@ -10,6 +10,7 @@ import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -46,12 +47,20 @@ public class RawArticle {
     private final String language;
 
 
-    @JsonProperty(required = true)
+    @JsonProperty(required = false)
     private List<Author> authors;
 
     @JsonProperty(required = true)
     private Publication publication;
 
 
+
+    public List<Author> getAuthors(){
+        if(this.authors ==null)
+            return new ArrayList<>();
+        else
+            return authors;
+
+    }
 
 }

@@ -7,6 +7,7 @@ import org.apache.tomcat.jni.Local;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -22,33 +23,60 @@ public class ArticleManager {
     DatabaseManager dbManager;
 
     public void init(){
-         dbManager = new DatabaseManager();
+
+        slf4jLogger.info(String.format("Initializing Article Manager"));
+
+        dbManager = new DatabaseManager();
     }
 
+
+    @Async
     public void processArticles(List<RawArticle> articleList)
     {
         for (RawArticle input: articleList){
 
             Article article = constructArticle(input);
             try {
-
-
                 if (!isDuplicate(article)) {
                     article.getArticleAbstract().hatch();
-                    dbManager.persistArticle(article);
-
                 } else {
                     //TODO: Log and exit
                 }
+
+                slf4jLogger.info(String.format("Article processed successfully, ID: %d", article.getPubMedID()));
+
             }
             catch (Exception e){
                 slf4jLogger.error(String.format("Error in processing article with ID: %d", article.getPubMedID()));
+            }
+            try {
+                dbManager.persistArticle(article);
+                slf4jLogger.info(String.format("Article persisted successfully, ID: %d", article.getPubMedID()));
+
+            }
+            catch (Exception e){
+                slf4jLogger.error(String.format("Error in persisting article with ID: %d", article.getPubMedID()));
 
             }
 
 
+        }//Article Loop
+
+
+    }
+
+    @Async
+    public void sampleAsyncMethod() {
+        long time = System.currentTimeMillis();
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            // We've been interrupted
+            System.out.println(String.format("Task interrupted after %d milliseconds", System.currentTimeMillis() - time));
+            return;
         }
 
+        System.out.println(String.format("Task completed after %d milliseconds", System.currentTimeMillis() - time));
     }
 
 

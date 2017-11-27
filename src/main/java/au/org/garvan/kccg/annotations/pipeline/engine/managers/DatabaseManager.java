@@ -28,10 +28,18 @@ public class DatabaseManager {
     public boolean persistArticle(Article article){
 
         try{
+            slf4jLogger.info(String.format("Persistence initialized. Article ID: %d", article.getPubMedID()));
 
-            dynamoDBHandler.insertItem(article.getArticleAbstract().constructJson(), article.getAbstractEntities());
+            dynamoDBHandler.insertItem(article.constructJson(), article.getAbstractEntities());
+            slf4jLogger.info(String.format("Persistence locked - Dynomodb. Article ID: %d", article.getPubMedID()));
+
             s3Handler.storeAbstract(article);
+            slf4jLogger.info(String.format("Persistence locked - S3. Article ID: %d", article.getPubMedID()));
+
             graphDBHandler.createArticleQuery(article);
+            slf4jLogger.info(String.format("Persistence locked - GraphDB. Article ID: %d", article.getPubMedID()));
+
+            slf4jLogger.info(String.format("Persistence finalized. Article ID: %d", article.getPubMedID()));
 
             return true;
         }

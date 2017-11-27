@@ -23,6 +23,7 @@ public class ApplicationInitializer {
         log.info("Initializing Article Manager Engine");
 
         try {
+            articleManager.init();
             log.info("Initialized Engine successfully");
 
         } catch(RuntimeException ex) {
