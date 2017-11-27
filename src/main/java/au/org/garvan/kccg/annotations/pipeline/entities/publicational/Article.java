@@ -172,7 +172,7 @@ public class Article {
         returnObject.put("dateRevised", dateRevised.toString());
         returnObject.put("articleTitle", articleTitle);
         if(!articleAbstract.getOriginalText().isEmpty())
-            returnObject.put("articleAbstract", articleAbstract.constructJson());
+            returnObject.put("articleAbstract", articleAbstract.getCleanedText());
         returnObject.put("language", language);
         returnObject.put("publication", publication.constructJson());
 

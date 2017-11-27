@@ -3,21 +3,10 @@ package au.org.garvan.kccg.annotations.pipeline.entities.linguistic;
 import au.org.garvan.kccg.annotations.pipeline.entities.database.DynamoDBObject;
 import au.org.garvan.kccg.annotations.pipeline.enums.EntityType;
 import au.org.garvan.kccg.annotations.pipeline.preprocessors.DocumentPreprocessor;
-import au.org.garvan.kccg.annotations.pipeline.preprocessors.LongFormMarker;
-import au.org.garvan.kccg.annotations.pipeline.preprocessors.ShortFormExtractor;
-import au.org.garvan.kccg.annotations.pipeline.processors.CoreNLPHanlder;
-import edu.stanford.nlp.ling.*;
-import edu.stanford.nlp.pipeline.Annotation;
-import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations;
-import edu.stanford.nlp.trees.TreeCoreAnnotations;
-import edu.stanford.nlp.util.CoreMap;
-import jdk.nashorn.internal.objects.annotations.Property;
 import lombok.Getter;
 import lombok.Setter;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-
-import java.awt.*;
 
 import java.util.*;
 import java.util.List;

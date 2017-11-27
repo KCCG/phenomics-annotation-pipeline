@@ -7,7 +7,7 @@ import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APSentence;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APToken;
 import au.org.garvan.kccg.annotations.pipeline.lexicons.GenesHandler;
 import au.org.garvan.kccg.annotations.pipeline.lexicons.NormalizationHandler;
-import au.org.garvan.kccg.annotations.pipeline.processors.CoreNLPHanlder;
+import au.org.garvan.kccg.annotations.pipeline.managers.CoreNLPManager;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
@@ -39,8 +39,8 @@ public class DocumentPreprocessor {
         LVGNormalizationHandler.loadLVGNormalizedList();
 
 
-        if(!CoreNLPHanlder.isInitialized())
-            CoreNLPHanlder.init();
+        if(!CoreNLPManager.isInitialized())
+            CoreNLPManager.init();
 
     }
 
@@ -52,7 +52,7 @@ public class DocumentPreprocessor {
         doc.setCleanedText(addSpaceAfterFullStop(doc.getOriginalText()));
 
         //Using cleaned text after prepossessing is done
-        Annotation docAnnotation = CoreNLPHanlder.annotateDocText(doc.getCleanedText());
+        Annotation docAnnotation = CoreNLPManager.annotateDocText(doc.getCleanedText());
 
         List<CoreMap> sentencesMap = docAnnotation.get(CoreAnnotations.SentencesAnnotation.class);
 
@@ -69,7 +69,7 @@ public class DocumentPreprocessor {
         for (APSentence sent : doc.getSentences())
         {
             List<Character> punctuations = Arrays.asList(',','.',':',';','\'');
-            Annotation sentAnnotation = CoreNLPHanlder.annotateSentText(sent.getOriginalText());
+            Annotation sentAnnotation = CoreNLPManager.annotateSentText(sent.getOriginalText());
             List<CoreMap> localSentenceMap = sentAnnotation.get(CoreAnnotations.SentencesAnnotation.class);
 
             if (localSentenceMap.size()>1)

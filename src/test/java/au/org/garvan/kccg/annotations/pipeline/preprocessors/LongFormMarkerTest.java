@@ -2,7 +2,7 @@ package au.org.garvan.kccg.annotations.pipeline.preprocessors;
 
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APDocument;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APSentence;
-import au.org.garvan.kccg.annotations.pipeline.processors.CoreNLPHanlder;
+import au.org.garvan.kccg.annotations.pipeline.managers.CoreNLPManager;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,7 +18,7 @@ public class LongFormMarkerTest {
 
     @Before
     public void setUp() throws Exception {
-        CoreNLPHanlder.init();
+        CoreNLPManager.init();
 
     }
 

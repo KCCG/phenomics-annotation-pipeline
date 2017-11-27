@@ -4,11 +4,12 @@ package au.org.garvan.kccg.annotations.pipeline.userinterfaces;
  * Created by ahmed on 26/7/17.
  */
 
+import au.org.garvan.kccg.annotations.pipeline.connectors.SolrConnector;
 import au.org.garvan.kccg.annotations.pipeline.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APDocument;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APSentence;
 import au.org.garvan.kccg.annotations.pipeline.entities.linguistic.APToken;
-import au.org.garvan.kccg.annotations.pipeline.processors.DocumentProcessor;
+import au.org.garvan.kccg.annotations.pipeline.enums.CommonParams;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -49,6 +50,8 @@ public class BaseUI extends Application {
     public static void main(String[] args) {
         launch(args);
     }
+    private static SolrConnector instSolrConnector = new SolrConnector();
+
 
     @Override
     public void start(Stage primaryStage) {
@@ -183,7 +186,8 @@ public class BaseUI extends Application {
         String strDate = ((TextField) root.lookup("#txtDate")).getText();
 
         LocalDate localDate = LocalDate.parse(strDate, formatter);
-        allDocs = DocumentProcessor.processDocuments(localDate);
+//        allDocs = DocumentProcessor.processDocuments(localDate);
+        allDocs = instSolrConnector.getDocuments(localDate);
         allDocs.sort(Comparator.comparing(APDocument::getId));
         currentDocIndex = 0;
         totalDocs = allDocs.size();
@@ -199,9 +203,11 @@ public class BaseUI extends Application {
 
         try {
             Integer PMID = Integer.parseInt(strSearch);
-            allDocs.add(DocumentProcessor.processDocument(strSearch));
+            allDocs.add(instSolrConnector.getDocument(strSearch));
+//            allDocs.add(DocumentProcessor.processDocument(strSearch));
         } catch (NumberFormatException e) {
-            allDocs = DocumentProcessor.processDocuments(strSearch);
+            allDocs = instSolrConnector.getDocuments(strSearch, CommonParams.QUERY);
+//            allDocs = DocumentProcessor.processDocuments(strSearch);
         }
 
         currentDocIndex = 0;
@@ -249,7 +255,9 @@ public class BaseUI extends Application {
     private void fillCurrentDocument() throws IOException {
 
         String PMID = ((TextField) root.lookup("#txtDate")).getText();
-        currentDoc = DocumentProcessor.processDocument(PMID);
+//        currentDoc = DocumentProcessor.processDocument(PMID);
+        currentDoc = instSolrConnector.getDocument(PMID);
+
 
     }
 

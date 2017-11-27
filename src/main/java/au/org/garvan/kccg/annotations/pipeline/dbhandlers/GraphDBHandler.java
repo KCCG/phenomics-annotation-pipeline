@@ -55,12 +55,6 @@ public class GraphDBHandler {
                 .property("Language").value(article.getLanguage());
 
 
-//        //Create Language node and creation clause
-//        JcNode nodeLanguage= new JcNode("nodeLanguage");
-//        IClause languageClause = MERGE.node(nodeLanguage).label("Language")
-//                .property("Name").value(article.getLanguage());
-//        IClause languageLinkClause = CREATE.node(nodeArticle).relation().out().type("WRITTEN_IN").node(nodeLanguage);
-
 
         //Create authors nodes and their respective clauses (This includes both creation and mapping clauses)
         List<JcNode> nodeListAuthors = new ArrayList<>();
@@ -91,8 +85,6 @@ public class GraphDBHandler {
                 .node(nodePublication);
 
         queryClauses.add(articleClause);
-//        queryClauses.add(languageClause);
-//        queryClauses.add(languageLinkClause);
 
         queryClauses.addAll(authorsClauses);
         queryClauses.add(publicationClause);

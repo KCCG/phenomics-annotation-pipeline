@@ -30,6 +30,7 @@ dependencies {
 
 jar {
     manifest {
-        attributes 'Main-Class': 'au.org.garvan.kccg.annotations.pipeline.processors.DocumentProcessor'
+        attributes 'Main-Class': 'au.org.garvan.kccg.annotations.pipeline.managers.DocumentProcessor'
     }
 }
+

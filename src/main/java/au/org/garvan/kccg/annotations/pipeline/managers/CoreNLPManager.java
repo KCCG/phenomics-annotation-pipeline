@@ -1,4 +1,4 @@
-package au.org.garvan.kccg.annotations.pipeline.processors;
+package au.org.garvan.kccg.annotations.pipeline.managers;
 
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
@@ -11,7 +11,7 @@ import java.util.Properties;
 /**
  * Created by ahmed on 12/7/17.
  */
-public final class CoreNLPHanlder {
+public final class CoreNLPManager {
 
     private static StanfordCoreNLP documentPipeline;
     private static StanfordCoreNLP sentencePipeline;
@@ -22,7 +22,7 @@ public final class CoreNLPHanlder {
     private static boolean isInitialized = false;
 
 
-    private CoreNLPHanlder(){}
+    private CoreNLPManager(){}
 
 
     public static void init()
