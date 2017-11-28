@@ -4,8 +4,12 @@ import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.DynamoDBHandler
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.GraphDBHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.S3Handler;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
+import au.org.garvan.kccg.annotations.pipeline.model.SearchQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 /**
  * Created by ahmed on 22/11/17.
@@ -49,6 +53,16 @@ public class DatabaseManager {
         }
 
     }
+
+    public void searchArticles(Map<SearchQueryParams, Object> params){
+
+        graphDBHandler.fetchArticles(params);
+
+
+    }
+
+
+
 
     public DatabaseManager(){
         init();

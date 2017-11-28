@@ -1,10 +1,13 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.GraphDBSearchObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.LexicalEntity;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APSentence;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
+import com.sun.org.apache.bcel.internal.generic.RET;
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
@@ -12,9 +15,15 @@ import iot.jcypher.database.IDBAccess;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
-import iot.jcypher.query.factories.clause.CREATE;
-import iot.jcypher.query.factories.clause.MERGE;
+import iot.jcypher.query.factories.clause.*;
 import iot.jcypher.query.values.JcNode;
+import iot.jcypher.query.values.JcNumber;
+import iot.jcypher.query.values.JcRelation;
+import iot.jcypher.query.values.JcString;
+import iot.jcypher.query.writer.Format;
+import iot.jcypher.util.Util;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +45,7 @@ public class GraphDBHandler {
 
     public GraphDBHandler(){
 
-        props.setProperty(DBProperties.SERVER_ROOT_URI, "bolt://localhost:7687");
+        props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 
                 remote = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
 
@@ -160,6 +169,141 @@ public class GraphDBHandler {
         return arr;
     }
 
+    public List<GraphDBSearchObject> fetchArticles(Map<SearchQueryParams,Object> params)
+    {
+        List<GraphDBSearchObject> returnList = new ArrayList<>();
+        List<IClause> queryClauses = new ArrayList<>();
+        List<String> shortListedArtciles = new ArrayList<>();
+
+        for (SearchQueryParams searchType: params.keySet())
+        {
+            switch (searchType){
+                case GENES:
+                    List<String> genes = (List<String>) params.get(searchType);
+                    JcNode article = new JcNode("a");
+
+                    switch (genes.size()){
+                        case 1:
+                            JcNode gene1 = new JcNode("g1");
+                            JcRelation c = new JcRelation("C");
+                            JcString PMID = new JcString("PMID");
+                            JcString docOffsetBegin = new JcString("docOffsetBegin");
+                            queryClauses.add(MATCH.node(article).label("Article")
+                                            .relation(c).out().type("CONTAINS")
+                                            .node(gene1).label("Gene"));
+                            queryClauses.add(WHERE.valueOf(gene1.property("Symbol")).EQUALS(genes.get(0)));
+                            queryClauses.add(RETURN.value(article.property("PMID")).AS(PMID));
+                            queryClauses.add(RETURN.value(c.property("DocOffsetBegin")).AS(docOffsetBegin));
+                            break;
+                        case 2:
+
+                            JcNode gene21 = new JcNode("g1");
+                            JcNode gene22 = new JcNode("g2");
+                            JcRelation c21 = new JcRelation("C1");
+                            JcRelation c22 = new JcRelation("C2");
+                            JcString PMID2 = new JcString("PMID");
+                            JcString docOffsetBegin21 = new JcString("docOffsetBegin1");
+                            JcString docOffsetBegin22 = new JcString("docOffsetBegin2");
+
+                            queryClauses.add(MATCH.node(article).label("Article"));
+                            queryClauses.add(MATCH.node(article)
+                                    .relation(c21).out().type("CONTAINS")
+                                    .node(gene21).label("Gene"));
+                            queryClauses.add(MATCH.node(article)
+                                    .relation(c21).out().type("CONTAINS")
+                                    .node(gene22).label("Gene"));
+
+                            queryClauses.add(WHERE.valueOf(gene21.property("Symbol")).EQUALS(genes.get(0))
+                            .AND().valueOf(gene22.property("Symbol")).EQUALS(genes.get(1)));
+                            queryClauses.add(RETURN.value(article.property("PMID")).AS(PMID2));
+                            queryClauses.add(RETURN.value(c21.property("DocOffsetBegin")).AS(docOffsetBegin21));
+                            queryClauses.add(RETURN.value(c22.property("DocOffsetBegin")).AS(docOffsetBegin22));
+
+
+                            break;
+                        case 3:
+                            JcNode gene31 = new JcNode("g1");
+                            JcNode gene32 = new JcNode("g2");
+                            JcNode gene33 = new JcNode("g3");
+                            JcRelation c31 = new JcRelation("C1");
+                            JcRelation c32 = new JcRelation("C2");
+                            JcRelation c33 = new JcRelation("C3");
+                            JcString PMID3 = new JcString("PMID");
+                            JcString docOffsetBegin31 = new JcString("docOffsetBegin1");
+                            JcString docOffsetBegin32 = new JcString("docOffsetBegin2");
+                            JcString docOffsetBegin33 = new JcString("docOffsetBegin3");
+
+                            queryClauses.add(MATCH.node(article).label("Article"));
+                            queryClauses.add(MATCH.node(article)
+                                    .relation(c31).out().type("CONTAINS")
+                                    .node(gene31).label("Gene"));
+                            queryClauses.add(MATCH.node(article)
+                                    .relation(c32).out().type("CONTAINS")
+                                    .node(gene32).label("Gene"));
+                            queryClauses.add(MATCH.node(article)
+                                    .relation(c33).out().type("CONTAINS")
+                                    .node(gene33).label("Gene"));
+
+                            queryClauses.add(WHERE.valueOf(gene31.property("Symbol")).EQUALS(genes.get(0))
+                                    .AND().valueOf(gene32.property("Symbol")).EQUALS(genes.get(1))
+                                    .AND().valueOf(gene33.property("Symbol")).EQUALS(genes.get(2)));
+                            queryClauses.add(RETURN.value(article.property("PMID")).AS(PMID3));
+                            queryClauses.add(RETURN.value(c31.property("DocOffsetBegin")).AS(docOffsetBegin31));
+                            queryClauses.add(RETURN.value(c32.property("DocOffsetBegin")).AS(docOffsetBegin32));
+                            queryClauses.add(RETURN.value(c33.property("DocOffsetBegin")).AS(docOffsetBegin33));
+
+                            break;
+                    }
+
+
+
+
+
+            }
+
+        }
+
+
+
+        JcQuery query = new JcQuery();
+        query.setClauses(getClausesArray(queryClauses));
+
+        print(query,"Search", Format.PRETTY_3);
+        JcQueryResult result = remote.execute(query);
+        print(result, "Result");
+        return returnList;
+
+
+    }
+
+
+
+    /**
+     * map to CYPHER statements and map to JSON, print the mapping results to System.out
+     * @param query
+     * @param title
+     * @param format
+     */
+    private static void print(JcQuery query, String title, Format format) {
+        System.out.println("QUERY: " + title + " --------------------");
+        // map to Cypher
+        String cypher = iot.jcypher.util.Util.toCypher(query, format);
+        System.out.println("CYPHER --------------------");
+        System.out.println(cypher);
+
+        // map to JSON
+        String json = iot.jcypher.util.Util.toJSON(query, format);
+        System.out.println("");
+        System.out.println("JSON   --------------------");
+        System.out.println(json);
+
+        System.out.println("");
+    }
+    private static void print(JcQueryResult queryResult, String title) {
+        System.out.println("RESULT OF QUERY: " + title + " --------------------");
+        String resultString = Util.writePretty(queryResult.getJsonResult());
+        System.out.println(resultString);
+    }
 
 
 

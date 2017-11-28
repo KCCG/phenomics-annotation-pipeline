@@ -46,7 +46,8 @@ public class AnnotationApplication {
     private ApiInfo apiInfo() {
         return new ApiInfoBuilder()
                 .title("Phenomics Annotation Pipeline")
-                .description("Service to process articles linguistically.")
+                .description("This service is part of concept mining framework. Annotation controller is for internal document processing. Query controller can be use to search the database.")
+                .version("Beta 1.0")
                 .build();
     }
 
