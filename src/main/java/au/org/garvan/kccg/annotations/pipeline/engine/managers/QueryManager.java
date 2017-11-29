@@ -32,8 +32,8 @@ public class QueryManager {
             params.put(SearchQueryParams.AUTHOR, query.getAuthor());
         if (query.getGenes()!=null)
             params.put(SearchQueryParams.GENES, query.getGenes());
-        if (query.getDateRange()!=null)
-            params.put(SearchQueryParams.DATERANGE, query.getDateRange());
+//        if (query.getDateRange()!=null)
+//            params.put(SearchQueryParams.DATERANGE, query.getDateRange());
          if (query.getPublication()!=null)
             params.put(SearchQueryParams.PUBLICATION, query.getPublication());
 

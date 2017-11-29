@@ -22,10 +22,8 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SearchQuery {
 
-
     @JsonProperty
-    @ApiModelProperty(notes = "Gene list to search the articles; if more than one than it will be handles as AND condition")
-
+    @ApiModelProperty(notes = "Gene list to search the articles(1-3 Allowed so far); if more than one than it will be handles as AND condition")
     List<String> genes;
 
     @JsonProperty
@@ -34,14 +32,15 @@ public class SearchQuery {
     @JsonProperty
     Publication publication;
 
-    @JsonProperty
-    DateRange dateRange;
+//    @JsonProperty
+//    DateRange dateRange;
+//
+//    public class DateRange{
+//        @JsonProperty
+//        String startDate;
+//        @JsonProperty
+//        String endDate;
+//
+//    }
 
-    public class DateRange{
-        @JsonProperty
-        String startDate;
-        @JsonProperty
-        String endDate;
-
-    }
 }
