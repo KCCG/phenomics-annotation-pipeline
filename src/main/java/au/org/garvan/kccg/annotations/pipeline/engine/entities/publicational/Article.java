@@ -16,6 +16,7 @@ import lombok.Setter;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
+import java.awt.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -92,7 +93,7 @@ public class Article {
 
     }
 
-    public Article(DynamoDBObject dbObject){
+    public Article(DynamoDBObject dbObject, boolean loadLinguisticStructure){
         if(dbObject.getEntityType().equals(EntityType.Article))
         {
 
@@ -120,7 +121,17 @@ public class Article {
             publication = new Publication(new DynamoDBObject((JSONObject) dbObject.getJsonObject().get("publication"), EntityType.Publication));
 
             if(dbObject.getJsonObject().containsKey("articleAbstract"))
-                articleAbstract = new APDocument(new DynamoDBObject((JSONObject) dbObject.getJsonObject().get("articleAbstract"), EntityType.APDocument));
+
+            {
+                if (loadLinguisticStructure) {
+
+                    articleAbstract = new APDocument(new DynamoDBObject((JSONObject) dbObject.getJsonObject().get("articleAbstract"), EntityType.APDocument));
+                }
+                else
+                {
+                    articleAbstract = new APDocument(dbObject.getJsonObject().get("articleAbstract").toString());
+                }
+            }
             else
                 articleAbstract = new APDocument("");
 
@@ -134,8 +145,8 @@ public class Article {
     }
 
 
-    public Article(DynamoDBObject dbObject,JSONObject annotations) {
-        this(dbObject);
+    public Article(DynamoDBObject dbObject, JSONObject annotations , boolean loadLinguisticStructure) {
+        this(dbObject, loadLinguisticStructure);
         if(annotations.containsKey("pubMedID") && ((annotations.get("pubMedID")).toString().equals(Integer.toString(pubMedID)))){
             JSONArray lstAnnotations = new JSONArray();
             AnnotationType annotationType = AnnotationType.valueOf(annotations.get("annotationType").toString());
@@ -200,6 +211,7 @@ public class Article {
 
             for (Map.Entry<APSentence,  List<APToken>> entry : annotations.entrySet()) {
                 int sentId = entry.getKey().getId();
+                Point sentDocOffset= entry.getKey().getDocOffset();
                 for (APToken token : entry.getValue()){
                     int tokenId = token.getId();
                     for (LexicalEntity lex : token.getLexicalEntityList()) {
@@ -211,6 +223,7 @@ public class Article {
                             jsonObject.put("sentId",sentId);
                             jsonObject.put("tokenId",tokenId);
                             jsonObject.put("annotationId",((APGene) lex).getApprovedSymbol());
+                            jsonObject.put("globalOffset", constructGlobalOffset(sentDocOffset,token.getSentOffset()));
                             genes.add(jsonObject);
                         } else {
 
@@ -225,6 +238,12 @@ public class Article {
         return returnObject;
 
     }
+
+    private String constructGlobalOffset(Point sentOffset, Point tokenOffset){
+        return String.format("%d:%d", sentOffset.x +tokenOffset.x, sentOffset.x + tokenOffset.y);
+    }
+
+
 
 
 

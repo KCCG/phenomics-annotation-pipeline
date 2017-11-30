@@ -3,13 +3,18 @@ package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.DynamoDBHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.GraphDBHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.S3Handler;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.EntityType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
 import au.org.garvan.kccg.annotations.pipeline.model.SearchQuery;
+import au.org.garvan.kccg.annotations.pipeline.model.SearchResult;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by ahmed on 22/11/17.
@@ -54,11 +59,25 @@ public class DatabaseManager {
 
     }
 
-    public void searchArticles(Map<SearchQueryParams, Object> params){
+    public Map<Article, JSONObject> searchArticles(Map<SearchQueryParams, Object> params){
 
-        graphDBHandler.fetchArticles(params);
+        Map<Article, JSONObject> searchedArticles = new HashMap<>();
+        Set<String> articleIDs =  graphDBHandler.fetchArticles(params);
 
+        for (String id: articleIDs)
+        {
+            JSONObject jsonAnnotations = null;
+            Article article;
+            JSONObject jsonArticle =  dynamoDBHandler.getArticle(Integer.parseInt(id));
+            article = new Article(new DynamoDBObject(jsonArticle, EntityType.Article), false);
+            if(params.containsKey(SearchQueryParams.GENES)) {
+                jsonAnnotations = dynamoDBHandler.getAnnotations(Integer.parseInt(id), AnnotationType.GENE);
+            }
+            searchedArticles.put(article,jsonAnnotations);
 
+        }
+
+        return  searchedArticles;
     }
 
 

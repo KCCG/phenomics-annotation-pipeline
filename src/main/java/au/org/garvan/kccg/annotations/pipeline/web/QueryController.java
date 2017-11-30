@@ -4,6 +4,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.managers.ArticleManager;
 import au.org.garvan.kccg.annotations.pipeline.engine.managers.QueryManager;
 import au.org.garvan.kccg.annotations.pipeline.model.RawArticle;
 import au.org.garvan.kccg.annotations.pipeline.model.SearchQuery;
+import au.org.garvan.kccg.annotations.pipeline.model.SearchResult;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -30,15 +31,14 @@ public class QueryController {
     @ApiOperation(value = "searchArticles", nickname = "searchArticles" , notes = "All attributes are optional; when more than one is provided, then search result will satisfy all conditions (Operation AND)")
     @RequestMapping(value = "/query", method = RequestMethod.POST, produces = "application/json")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Success", response = boolean.class, responseContainer = "list"),
+            @ApiResponse(code = 200, message = "Success", response = SearchResult.class , responseContainer = "list"),
             @ApiResponse(code = 401, message = "Unauthorized"),
             @ApiResponse(code = 403, message = "Forbidden"),
             @ApiResponse(code = 404, message = "Not Found"),
             @ApiResponse(code = 500, message = "Failure")})
 
-    public boolean searchArticles(@ApiParam("query") @RequestBody SearchQuery query) {
-        engine.processQuery(query);
-        return true;
+    public List<SearchResult> searchArticles(@ApiParam("query") @RequestBody SearchQuery query) {
+        return engine.processQuery(query);
     }
 
 }

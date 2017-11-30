@@ -49,15 +49,11 @@ public class ArticleManager {
             catch (Exception e){
                 slf4jLogger.error(String.format("Error in processing article with ID: %d", article.getPubMedID()));
             }
-            try {
-                dbManager.persistArticle(article);
-                slf4jLogger.info(String.format("Article persisted successfully, ID: %d", article.getPubMedID()));
 
-            }
-            catch (Exception e){
-                slf4jLogger.error(String.format("Error in persisting article with ID: %d", article.getPubMedID()));
 
-            }
+            dbManager.persistArticle(article);
+
+
 
 
         }//Article Loop
