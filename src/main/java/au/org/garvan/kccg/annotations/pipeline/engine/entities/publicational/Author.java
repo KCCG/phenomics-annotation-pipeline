@@ -23,9 +23,6 @@ public class Author {
     @Property
     private String initials;
 
-    public Author(){}
-
-
     public Author(JSONObject jsonAuthor) {
 
 
@@ -56,7 +53,7 @@ public class Author {
         return returnObject;
     }
 
-    public boolean isValidName(){
+    public boolean checkValidName(){
         return !(initials.isEmpty() || foreName.isEmpty() || lastName.isEmpty());
     }
 

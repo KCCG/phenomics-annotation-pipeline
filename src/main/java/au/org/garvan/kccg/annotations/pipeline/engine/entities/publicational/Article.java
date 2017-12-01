@@ -189,7 +189,7 @@ public class Article {
 
         JSONArray jsonAuthors = new JSONArray();
         for (Author a : authors) {
-            if(a.isValidName())
+            if(a.checkValidName())
                 jsonAuthors.add(a.constructJson());
         }
         if(jsonAuthors.size()>0)

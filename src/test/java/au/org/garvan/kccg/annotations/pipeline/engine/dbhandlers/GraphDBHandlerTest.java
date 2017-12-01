@@ -14,6 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 
@@ -24,6 +25,7 @@ public class GraphDBHandlerTest {
 
 
     private final Logger slf4jLogger = LoggerFactory.getLogger(GraphDBHandlerTest.class);
+    @Autowired
     private GraphDBHandler gdb;
     private BaseConnector testConnector;
     private List<Article> articles;
@@ -31,7 +33,6 @@ public class GraphDBHandlerTest {
     @Before
     public void init() {
 
-        gdb = new GraphDBHandler();
         testConnector = new JsonConnector();
         articles =  testConnector.getArticles("test1000.json", CommonParams.FILENAME);
 

@@ -6,31 +6,34 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.*;
 
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Created by ahmed on 28/11/17.
  */
 @Data
-@AllArgsConstructor(access = AccessLevel.PUBLIC)
+//@AllArgsConstructor(access = AccessLevel.PUBLIC)
 @ApiModel(description = "All attributes are optional; when more than one is provided, then search result will satisfy all conditions (Operation AND)")
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SearchQuery {
 
+
+    @ApiModelProperty(hidden = true)
+    private String queryId = UUID.randomUUID().toString();
+
     @JsonProperty
     @ApiModelProperty(notes = "Gene list to search the articles(1-3 Allowed so far); if more than one than it will be handles as AND condition")
-    List<String> genes;
+    private List<String> genes;
 
     @JsonProperty
-    Author author;
+    private Author author;
 
     @JsonProperty
-    Publication publication;
+    private Publication publication;
 
 //    @JsonProperty
 //    DateRange dateRange;
@@ -42,5 +45,6 @@ public class SearchQuery {
 //        String endDate;
 //
 //    }
+
 
 }

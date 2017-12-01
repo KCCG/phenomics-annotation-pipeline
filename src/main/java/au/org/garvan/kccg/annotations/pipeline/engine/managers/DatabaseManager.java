@@ -13,26 +13,31 @@ import au.org.garvan.kccg.annotations.pipeline.model.SearchResult;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by ahmed on 22/11/17.
  */
+
+@Component
 public class DatabaseManager {
+
     private final Logger slf4jLogger = LoggerFactory.getLogger(DatabaseManager.class);
 
+    @Autowired
     private DynamoDBHandler dynamoDBHandler;
+
+    @Autowired
     private GraphDBHandler graphDBHandler;
+
+    @Autowired
     private S3Handler s3Handler;
 
-    public void init(){
-
-        dynamoDBHandler = new DynamoDBHandler();
-        graphDBHandler = new GraphDBHandler();
-        s3Handler = new S3Handler();
-
-    }
 
     public boolean persistArticle(Article article){
 
@@ -68,24 +73,24 @@ public class DatabaseManager {
         {
             JSONObject jsonAnnotations = null;
             Article article;
-            JSONObject jsonArticle =  dynamoDBHandler.getArticle(Integer.parseInt(id));
-            article = new Article(new DynamoDBObject(jsonArticle, EntityType.Article), false);
-            if(params.containsKey(SearchQueryParams.GENES)) {
+            JSONObject jsonArticle =  fetchArticle(id);
+            if(!jsonArticle.isEmpty())
+            {
+                article = new Article(new DynamoDBObject(jsonArticle, EntityType.Article), false);
                 jsonAnnotations = dynamoDBHandler.getAnnotations(Integer.parseInt(id), AnnotationType.GENE);
+                searchedArticles.put(article,jsonAnnotations);
+
             }
-            searchedArticles.put(article,jsonAnnotations);
 
         }
 
         return  searchedArticles;
     }
 
-
-
-
-    public DatabaseManager(){
-        init();
+    public JSONObject fetchArticle(String id){
+        return dynamoDBHandler.getArticle(Integer.parseInt(id));
     }
+
 
 
 

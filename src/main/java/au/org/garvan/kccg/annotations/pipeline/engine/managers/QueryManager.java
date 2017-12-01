@@ -9,6 +9,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -22,16 +23,20 @@ import java.util.Map;
 @Service
 public class QueryManager {
     private final Logger slf4jLogger = LoggerFactory.getLogger(QueryManager.class);
+
+    @Autowired
     DatabaseManager dbManager;
 
     public void init(){
 
-        slf4jLogger.info(String.format("Initializing Query Manager"));
-        dbManager = new DatabaseManager();
+        slf4jLogger.info(String.format("Query Manager init() called."));
+//        dbManager = new DatabaseManager();
     }
 
 
     public List<SearchResult> processQuery(SearchQuery query){
+        slf4jLogger.info(String.format("Processing search query with id: %s",query.getQueryId()));
+
         List<SearchResult> results = new ArrayList<>();
         Map<SearchQueryParams, Object> params = new HashMap<>();
         if (query.getAuthor()!=null)
@@ -53,7 +58,9 @@ public class QueryManager {
 
          }
 
-          return results;
+        slf4jLogger.info(String.format("Finished processing search query with id: %s. Final result count:%d",query.getQueryId(),results.size()));
+
+        return results;
 
     }
 
@@ -68,7 +75,7 @@ public class QueryManager {
         searchResult.setLanguage(article.getLanguage());
         searchResult.setAuthors(article.getAuthors());
 
-        if(annotations != null)
+        if(!annotations.isEmpty())
         {
 
             if(annotations.containsKey("annotations")) {
@@ -76,6 +83,9 @@ public class QueryManager {
                 searchResult.fillGenes(genes);
 
             }
+
+        }
+        else{
 
         }
 

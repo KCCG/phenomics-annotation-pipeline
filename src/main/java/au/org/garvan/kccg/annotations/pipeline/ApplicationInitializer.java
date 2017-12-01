@@ -25,7 +25,7 @@ public class ApplicationInitializer {
 
     @EventListener({ContextRefreshedEvent.class})
     public void init() {
-        log.info("Initializing Article Manager Engine");
+        log.info("Initializing Application");
 
         try {
             articleManager.init();
