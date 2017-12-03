@@ -18,21 +18,21 @@ public class DynamoDBHandlerTest {
 
     private final Logger slf4jLogger = LoggerFactory.getLogger(DynamoDBHandlerTest.class);
 
-
-    DynamoDBHandler dbHanlde = new DynamoDBHandler();
-    private BaseConnector testConnector;
-    private List<Article> articles;
-
-
-    JSONObject jsonObject = new JSONObject();
-    @Before
-    public void setUp() throws Exception {
-        jsonObject.put("PMID","123");
-        testConnector = new JsonConnector();
-        articles =  testConnector.getArticles("test1000.json", CommonParams.FILENAME);
-
-
-    }
+//
+//    DynamoDBHandler dbHanlde = new DynamoDBHandler();
+//    private BaseConnector testConnector;
+//    private List<Article> articles;
+//
+//
+//    JSONObject jsonObject = new JSONObject();
+//    @Before
+//    public void setUp() throws Exception {
+//        jsonObject.put("PMID","123");
+//        testConnector = new JsonConnector();
+//        articles =  testConnector.getArticles("test1000.json", CommonParams.FILENAME);
+//
+//
+//    }
 
 //    @Test
 //    public void insertItems() throws Exception {

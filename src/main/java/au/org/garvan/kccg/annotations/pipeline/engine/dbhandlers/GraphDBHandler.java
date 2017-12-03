@@ -26,24 +26,38 @@ import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
+import javax.xml.bind.attachment.AttachmentUnmarshaller;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by ahmed on 30/10/17.
  */
+
+@Component
 public class GraphDBHandler {
 
-    private static final boolean ENABLE_PRINTING = true;
+
+    @Value("${enable_graph_db_printing}")
+    private boolean ENABLE_PRINTING;
+
     private final Logger slf4jLogger = LoggerFactory.getLogger(GraphDBHandler.class);
     Properties props = new Properties();
     IDBAccess remote;
 
-    public GraphDBHandler() {
 
-        props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
+    @Autowired
+    public GraphDBHandler(@Value("${neo4j_db_endpoint}") String neo4jDbEndpoint) {
 
+        props.setProperty(DBProperties.SERVER_ROOT_URI, neo4jDbEndpoint);
         remote = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+        slf4jLogger.info(String.format("GraphDBHandler wired with endpoint:%s", neo4jDbEndpoint));
+
 
     }
 
@@ -92,15 +106,22 @@ public class GraphDBHandler {
         List<IClause> authorsClauses = new ArrayList<>();
 
         for (int x = 0; x < article.getAuthors().size(); x++) {
-            JcNode tempAuthor = new JcNode("nodeAuthor" + Integer.toString(x));
-            nodeListAuthors.add(tempAuthor);
-            authorsClauses.add(MERGE.node(tempAuthor).label("Author")
-                    .property("Initials").value(article.getAuthors().get(x).getInitials())
-                    .property("ForeName").value(article.getAuthors().get(x).getForeName())
-                    .property("LastName").value(article.getAuthors().get(x).getLastName()));
-            authorsClauses.add(CREATE.node(tempAuthor).relation().out()
-                    .type("WROTE").property("Order").value(x + 1)
-                    .node(nodeArticle));
+            Author currentAuthor = article.getAuthors().get(x);
+            if(currentAuthor.checkValidName())
+            {
+                JcNode tempAuthor = new JcNode("nodeAuthor" + Integer.toString(x));
+                nodeListAuthors.add(tempAuthor);
+                authorsClauses.add(MERGE.node(tempAuthor).label("Author")
+                        .property("Initials").value(currentAuthor.getInitials())
+                        .property("ForeName").value(currentAuthor.getForeName())
+                        .property("LastName").value(currentAuthor.getLastName()));
+                authorsClauses.add(CREATE.node(tempAuthor).relation().out()
+                        .type("WROTE").property("Order").value(x + 1)
+                        .node(nodeArticle));
+
+            }
+
+
         }
 
         //Create publicational node and creation clause
@@ -123,18 +144,12 @@ public class GraphDBHandler {
 
         fillEntitiesGraphData(queryClauses, article, nodeArticle);
 
+        JcQueryResult result = executeQueryClauses(queryClauses);
 
-        JcQuery query = new JcQuery();
-        query.setClauses(getClausesArray(queryClauses));
-
-
-        JcQueryResult result = remote.execute(query);
-
-
-        if (result.getDBErrors().size() > 0)
-            slf4jLogger.info(String.format("Graph DB Insertion Done. DB Error:%s ", result.getDBErrors().toString()));
+        if (result==null)
+            slf4jLogger.info(String.format("Graph DB Insertion Failed"));
         else
-            slf4jLogger.info(String.format("Graph DB Insertion done without errors."));
+            slf4jLogger.info(String.format("Graph DB Insertion done without errors for Article ID: %d", article.getPubMedID()));
 
 
     }
@@ -171,7 +186,6 @@ public class GraphDBHandler {
 
             }
 
-
         }
 
         //TODO: Find entities from Title if required
@@ -186,11 +200,12 @@ public class GraphDBHandler {
         return arr;
     }
     /*
-
+    ***********************************************
     The following section is for search operations.
-
-
+    ***********************************************
      */
+
+
 
     public Set<String> fetchArticles(Map<SearchQueryParams, Object> params) {
         Set<String> shortListedArticles = new HashSet<>();
@@ -219,17 +234,15 @@ public class GraphDBHandler {
             if (shortListedArticles.size() == 0)
                 return shortListedArticles;
         }
-
         return shortListedArticles;
-
 
     }
 
 
     private Set<String> processQueryResult(JcQueryResult result, SearchQueryParams qType) {
         Set<String> idList = new HashSet<>();
-        if (result.getDBErrors().size() > 0) {
-            slf4jLogger.info(String.format("Issue in running DB Query for %s. Errors: %s", qType.toString(), result.getDBErrors().toString()));
+        if (result==null) {
+            slf4jLogger.info(String.format("Nothing to process as result is null. "));
         } else {
 
             JcString PMID = new JcString("PMID");
@@ -242,15 +255,43 @@ public class GraphDBHandler {
     }
 
 
-    private JcQueryResult executeQueryClause(List<IClause> lstQueryClauses) {
+    private JcQueryResult executeQueryClauses(List<IClause> lstQueryClauses) {
         JcQuery query = new JcQuery();
         query.setClauses(getClausesArray(lstQueryClauses));
+
         if (ENABLE_PRINTING)
             print(query, "Search", Format.PRETTY_3);
+
         JcQueryResult result = remote.execute(query);
-        if (ENABLE_PRINTING)
-            print(result, "Result");
-        return result;
+
+        if(result.getGeneralErrors().size()>0)
+        {
+            List<String> messages =  result.getGeneralErrors().stream().filter(x->x.getMessage().contains("(Connection refused)")).map(t->t.getMessage()).collect(Collectors.toList());
+            if(messages.size()>0) {
+                slf4jLogger.info(String.format("General errors while executing NEO4J query. Message: %s and Exception", messages.get(0), result.getGeneralErrors().toString()));
+                reconnectDb();
+            }
+        }
+        else if (result.getDBErrors().size()>0){
+            slf4jLogger.info(String.format("Database errors while executing NEO4J query. Errors:%s", result.getGeneralErrors().toString()));
+
+        }
+        else{
+            if (ENABLE_PRINTING)
+                print(result, "Result");
+             return result;
+        }
+
+        return null;
+
+
+    }
+
+    private void reconnectDb()
+    {
+        slf4jLogger.info(String.format("Reconnecting Graph Database"));
+        this.remote = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+
 
     }
 
@@ -274,6 +315,8 @@ public class GraphDBHandler {
     private Set<String> runAuthorQuery(LinkedHashMap<SearchQueryParams, JcQueryResult> collectedResults, Author author, Set<String> shortListedArticles) {
         JcNode article = new JcNode("a");
         List<IClause> queryClauses = new ArrayList<>();
+        List<Pair<String,String>> lstParams = checkAuthorNameAndGetCaseNumber(author);
+
 
         JcNode auth = new JcNode("auth");
         JcRelation c = new JcRelation("c");
@@ -281,16 +324,44 @@ public class GraphDBHandler {
         queryClauses.add(MATCH.node(article).label("Article")
                 .relation(c).in().type("WROTE")
                 .node(auth).label("Author"));
-        queryClauses.add(WHERE.valueOf(auth.property("ForeName")).EQUALS(author.getForeName())
-                .AND().valueOf(auth.property("LastName")).EQUALS(author.getLastName())
-                .AND().valueOf(auth.property("Initials")).EQUALS(author.getInitials()));
+
+        if(lstParams.size()==1)
+        {
+            queryClauses.add(WHERE.valueOf(auth.property(lstParams.get(0).getFirst())).EQUALS(lstParams.get(0).getSecond()));
+        }
+        else  if(lstParams.size()==2)
+        {
+            queryClauses.add(WHERE.valueOf(auth.property(lstParams.get(0).getFirst())).EQUALS(lstParams.get(0).getSecond())
+                    .AND().valueOf(auth.property(lstParams.get(1).getFirst())).EQUALS(lstParams.get(1).getSecond()));
+        }
+        else  if(lstParams.size()==3)
+        {
+            queryClauses.add(WHERE.valueOf(auth.property(lstParams.get(0).getFirst())).EQUALS(lstParams.get(0).getSecond())
+                    .AND().valueOf(auth.property(lstParams.get(1).getFirst())).EQUALS(lstParams.get(1).getSecond())
+                    .AND().valueOf(auth.property(lstParams.get(2).getFirst())).EQUALS(lstParams.get(2).getSecond()));
+        }
+
         queryClauses.add(RETURN.value(article.property("PMID")).AS(PMID));
-        JcQueryResult result = executeQueryClause(queryClauses);
+
+
+        JcQueryResult result = executeQueryClauses(queryClauses);
         collectedResults.put(SearchQueryParams.AUTHOR, result);
 
         return processQueryResult(result, SearchQueryParams.AUTHOR);
 
 
+    }
+
+    private List<Pair<String,String>> checkAuthorNameAndGetCaseNumber(Author author) {
+        List<Pair<String,String>> lstParams = new ArrayList<>();
+        if(!Strings.isNullOrEmpty(author.getForeName()))
+            lstParams.add(Pair.of("ForeName", author.getForeName() ));
+        if(!Strings.isNullOrEmpty(author.getLastName()))
+            lstParams.add(Pair.of("LastName", author.getLastName() ));
+        if(!Strings.isNullOrEmpty(author.getInitials()))
+            lstParams.add(Pair.of("Initials", author.getInitials() ));
+
+        return lstParams;
     }
 
     private Set<String> runPublicationQuery(LinkedHashMap<SearchQueryParams, JcQueryResult> collectedResults, Publication publication, Set<String> shortListedArticles) {
@@ -316,13 +387,14 @@ public class GraphDBHandler {
 
             }
             queryClauses.add(RETURN.value(article.property("PMID")).AS(PMID));
-            JcQueryResult result = executeQueryClause(queryClauses);
+            JcQueryResult result = executeQueryClauses(queryClauses);
             collectedResults.put(SearchQueryParams.PUBLICATION, result);
 
 
             return processQueryResult(result, SearchQueryParams.PUBLICATION);
 
         } else {
+            slf4jLogger.info(String.format("Incorrect publication parameters provided. Will result in zero result."));
             return new HashSet<>();
         }
     }
@@ -334,6 +406,11 @@ public class GraphDBHandler {
         List<IClause> queryClauses = new ArrayList<>();
 
         switch (genes.size()) {
+
+            case 0:
+                collectedResults.put(SearchQueryParams.GENES, null);
+                return processQueryResult(null, SearchQueryParams.GENES);
+
             case 1:
                 JcNode gene1 = new JcNode("g1");
                 JcString PMID = new JcString("PMID");
@@ -411,7 +488,7 @@ public class GraphDBHandler {
         }//Size
 
 
-        JcQueryResult result = executeQueryClause(queryClauses);
+        JcQueryResult result = executeQueryClauses(queryClauses);
         collectedResults.put(SearchQueryParams.GENES, result);
         return processQueryResult(result, SearchQueryParams.GENES);
 

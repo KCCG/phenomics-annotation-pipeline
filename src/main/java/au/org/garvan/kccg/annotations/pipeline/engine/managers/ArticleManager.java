@@ -7,6 +7,7 @@ import org.apache.tomcat.jni.Local;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -20,15 +21,14 @@ import java.util.List;
 @Service
 public class ArticleManager {
     private final Logger slf4jLogger = LoggerFactory.getLogger(ArticleManager.class);
+
+    @Autowired
     DatabaseManager dbManager;
 
     public void init(){
 
-        slf4jLogger.info(String.format("Initializing Article Manager"));
-
-        dbManager = new DatabaseManager();
+        slf4jLogger.info(String.format("Article Manager init() called."));
     }
-
 
     @Async
     public void processArticles(List<RawArticle> articleList)
@@ -39,11 +39,14 @@ public class ArticleManager {
             try {
                 if (!isDuplicate(article)) {
                     article.getArticleAbstract().hatch();
-                } else {
-                    //TODO: Log and exit
-                }
+                    slf4jLogger.info(String.format("Article processed successfully, ID: %d", article.getPubMedID()));
 
-                slf4jLogger.info(String.format("Article processed successfully, ID: %d", article.getPubMedID()));
+                    dbManager.persistArticle(article);
+
+                } else {
+                    slf4jLogger.info(String.format("Article is identified as duplicate. Processing is aborted. ID: %d", article.getPubMedID()));
+
+                }
 
             }
             catch (Exception e){
@@ -51,35 +54,19 @@ public class ArticleManager {
             }
 
 
-            dbManager.persistArticle(article);
-
-
-
-
         }//Article Loop
 
 
     }
 
-    @Async
-    public void sampleAsyncMethod() {
-        long time = System.currentTimeMillis();
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
-            // We've been interrupted
-            System.out.println(String.format("Task interrupted after %d milliseconds", System.currentTimeMillis() - time));
-            return;
-        }
-
-        System.out.println(String.format("Task completed after %d milliseconds", System.currentTimeMillis() - time));
-    }
-
-
     private boolean isDuplicate(Article article){
-        return false;
-    }
+       JSONObject jsonArticle =  dbManager.fetchArticle(Integer.toString(article.getPubMedID()));
+       if (jsonArticle.isEmpty())
+           return false;
+       else
+           return true;
 
+    }
 
     private Article constructArticle(RawArticle rawArticle){
         Article article = new Article(rawArticle.getPubMedID(),
@@ -95,7 +82,4 @@ public class ArticleManager {
 
         return article;
     }
-
-
-
 }

@@ -7,15 +7,23 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
 
 /**
  * Created by ahmed on 22/11/17.
  */
+@Component
 public class S3Handler {
+    private final Logger slf4jLogger = LoggerFactory.getLogger(S3Handler.class);
 
-    private static String bucketName = "phenomics-article-abstracts";
+
+    private static String bucketName;
     private static String region = "ap-southeast-2";
     private static AmazonS3 s3client = AmazonS3ClientBuilder.standard().withCredentials(new DefaultAWSCredentialsProviderChain()).withRegion(region).build();
 
@@ -27,6 +35,12 @@ public class S3Handler {
             PutObjectResult result =  s3client.putObject(new PutObjectRequest(bucketName, keyName, new ByteArrayInputStream(bytesToWrite), omd));
 
     }
-    public S3Handler(){}
+
+    @Autowired
+    public S3Handler(@Value("${s3_abstracts_bucket}") String s3AbstractsBucket){
+
+        bucketName = s3AbstractsBucket;
+        slf4jLogger.info(String.format("GraphDBHandler wired with bucket name:%s", s3AbstractsBucket));
+    }
 
 }
