@@ -4,7 +4,6 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Art
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
 import au.org.garvan.kccg.annotations.pipeline.model.SearchQuery;
 import au.org.garvan.kccg.annotations.pipeline.model.SearchResult;
-import netscape.javascript.JSObject;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;

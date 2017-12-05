@@ -405,6 +405,10 @@ public class GraphDBHandler {
         JcNode article = new JcNode("a");
         List<IClause> queryClauses = new ArrayList<>();
 
+
+        if(genes.size()>3)
+            genes = genes.subList(0,3);
+
         switch (genes.size()) {
 
             case 0:

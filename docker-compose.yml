@@ -1,0 +1,17 @@
+---
+version: '2'
+services:
+  annotation-pipeline:
+    build:
+      context: .
+    working_dir: /usr/src/app
+    environment:
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_DEFAULT_REGION
+    ports:
+      - "9080:9080"
+    volumes:
+      - .gradle:/root/.gradle
+      - .:/usr/src/app
+
