@@ -32,7 +32,7 @@ public class DynamoDBHandler {
     String annotationTableName;
 
     @Autowired
-    public DynamoDBHandler(@Value("${dynamodb_article_table_name}") String configArticleTableName, @Value("${dynamodb_annotation_table_name}") String configAnnotationTableName){
+    public DynamoDBHandler(@Value("${spring.dbhandlers.dynamodb.articletablename}") String configArticleTableName, @Value("${spring.dbhandlers.dynamodb.annotationtablename}") String configAnnotationTableName){
         articleTableName = configArticleTableName;
         annotationTableName = configAnnotationTableName;
         slf4jLogger.info(String.format("DynamoDBHandler wired with Articles Table: %s and Annotations Table:%s.", articleTableName, annotationTableName));
