@@ -2,18 +2,20 @@ package au.org.garvan.kccg.annotations.pipeline.engine.lexicons;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Scanner;
 
 /**
  * Created by ahmed on 29/9/17.
  */
 public class BaseLexiconHandler {
+    private final Logger slf4jLogger = LoggerFactory.getLogger(BaseLexiconHandler.class);
+
 
     protected String fileName;
     
@@ -31,18 +33,49 @@ public class BaseLexiconHandler {
         fileName = "";
     }
 
+//
+//    protected void readFile(String delim) throws FileNotFoundException {
+//
+//
+//        File file = new File(getClass().getClassLoader().getResource("lexicons/" + fileName).getFile());
+//
+//        Scanner scan = new Scanner(file);
+//        String headerLine = scan.nextLine();
+//        fileHeader = Arrays.asList(headerLine.split(delim));
+//        while(scan.hasNext()){
+//            String curLine = scan.nextLine();
+//            data.add(Arrays.asList(curLine.split(delim)));
+//            }
+//        scan.close();
+//    }
 
-    protected void readFile(String delim) throws FileNotFoundException {
-        File file = new File(getClass().getClassLoader().getResource("lexicons/" + fileName).getFile());
-        Scanner scan = new Scanner(file);
-        String headerLine = scan.nextLine();
+
+
+    protected void readFile(String delim) throws IOException {
+
+        slf4jLogger.info(String.format("Reading lexicon. Filename:%s", fileName));
+        String path = "lexicons/" + fileName;
+        InputStream input = getClass().getResourceAsStream("resources/" + path);
+        if (input == null) {
+            // this is how we load file within editor (eg eclipse)
+            input = BaseLexiconHandler.class.getClassLoader().getResourceAsStream(path);
+        }
+        BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+
+        String headerLine = reader.readLine();
         fileHeader = Arrays.asList(headerLine.split(delim));
-        while(scan.hasNext()){
-            String curLine = scan.nextLine();
-            data.add(Arrays.asList(curLine.split(delim)));
-            }
-        scan.close();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            data.add(Arrays.asList(line.split(delim)));
+        }
+
+        reader.close();
+
     }
+
+
+
+
 
 
      protected boolean verifyHeader(List<String> customeHeader) {

@@ -1,6 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.lexicons;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -24,6 +25,8 @@ public class NormalizationHandler extends BaseLexiconHandler {
         try {
             readFile(":");
         } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
 

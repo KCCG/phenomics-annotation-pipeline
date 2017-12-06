@@ -29,14 +29,14 @@ public class DocumentPreprocessor {
 
     @Getter
     private static  GenesHandler  HGNCGeneHandler;
-    private static NormalizationHandler LVGNormalizationHandler;
+//    private static NormalizationHandler LVGNormalizationHandler;
     static {
 
         HGNCGeneHandler = new GenesHandler("genes.txt");
         HGNCGeneHandler.loadGenes();
 
-        LVGNormalizationHandler = new NormalizationHandler("lvg_normalizations.txt");
-        LVGNormalizationHandler.loadLVGNormalizedList();
+//        LVGNormalizationHandler = new NormalizationHandler("lvg_normalizations.txt");
+//        LVGNormalizationHandler.loadLVGNormalizedList();
 
 
         if(!CoreNLPManager.isInitialized())
@@ -89,9 +89,9 @@ public class DocumentPreprocessor {
                 if(geneCheck!=null)
                     tok.getLexicalEntityList().add(geneCheck);
 
-                String normalizedText = LVGNormalizationHandler.getNormalizedText(Common.getTrimmedText(tok));
-                if (normalizedText!=null)
-                    tok.setNormalizedText(normalizedText);
+//                String normalizedText = LVGNormalizationHandler.getNormalizedText(Common.getTrimmedText(tok));
+//                if (normalizedText!=null)
+//                    tok.setNormalizedText(normalizedText);
 
                 sent.getTokens().add(tok);
                 id++;
