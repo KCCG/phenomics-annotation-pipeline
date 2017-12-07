@@ -1,0 +1,207 @@
+
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Neo4J Template",
+  "Resources": {
+    "neo4jSecurityGroup": {
+      "Properties": {
+        "VpcId": "vpc-1a2c177f",
+        "GroupDescription": "EC2 neo4j SSH access",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 22,
+            "ToPort": 22,
+            "CidrIp": "149.0.0.0/8"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 80,
+            "ToPort": 80,
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 7474,
+            "ToPort": 7474,
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 7473,
+            "ToPort": 7473,
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 7687,
+            "ToPort": 7687,
+            "CidrIp": "0.0.0.0/0"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Phenomics-Neo4J"
+          },
+          {
+            "Key": "Project",
+            "Value": "PhenomicsResearch"
+          },
+          {
+            "Key": "App",
+            "Value": "Neo4j-Graph-db"
+          },
+          {
+            "Key": "Contact",
+            "Value": "Ahmed"
+          }
+        ]
+      },
+      "Type": "AWS::EC2::SecurityGroup"
+    },
+    "neo4jRole": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "ec2.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path": "/",
+        "Policies": [
+          {
+            "PolicyName": "ne04jPolicy",
+            "PolicyDocument": {
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:*"
+                  ],
+                  "Resource": [
+                    "arn:aws:logs:*:*:*"
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:GetBatchItem",
+                    "dynamodb:PutItem",
+                    "dynamodb:UpddateItem",
+                    "dynamodb:BatchWriteItem",
+                    "dynamodb:Query"
+                  ],
+                  "Resource": [
+                    "*"
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:*"
+                  ],
+                  "Resource": [
+                    "*"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "Type": "AWS::IAM::Role"
+    },
+    "neo4jInstanceProfile": {
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {
+            "Ref": "neo4jRole"
+          }
+        ]
+      },
+      "Type": "AWS::IAM::InstanceProfile"
+    },
+    "neo4jInstance": {
+      "Properties": {
+        "KeyName": "phenomics-research",
+        "ImageId": "ami-6de4ee0e",
+        "InstanceType": "m4.large",
+        "IamInstanceProfile": {
+          "Ref": "neo4jInstanceProfile"
+        },
+        "SecurityGroupIds": [
+          {
+            "Ref": "neo4jSecurityGroup"
+          }
+        ],
+        "SubnetId": "subnet-70e62314",
+        "BlockDeviceMappings": [
+          {
+            "DeviceName": "/dev/xvda",
+            "Ebs": {
+              "VolumeSize": 30
+            }
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Phenomics-Neo4J"
+          },
+          {
+            "Key": "Project",
+            "Value": "PhenomicsResearch"
+          },
+          {
+            "Key": "App",
+            "Value": "Neo4j-Graph-db"
+          },
+          {
+            "Key": "Contact",
+            "Value": "Ahmed"
+          }
+        ]
+      },
+      "Type": "AWS::EC2::Instance"
+    },
+    "neo4jSearchDns": {
+      "Properties": {
+        "HostedZoneName": "phenomics.awsinternal.",
+        "Name": "neo4j.phenomics.awsinternal.",
+        "Type": "A",
+        "TTL": 300,
+        "ResourceRecords": [
+          {
+            "Fn::GetAtt": [
+              "neo4jInstance",
+              "PrivateIp"
+            ]
+          }
+        ]
+      },
+      "Type": "AWS::Route53::RecordSet"
+    }
+  },
+  "Outputs": {
+    "SecurityGroup": {
+      "Value": {
+        "Fn::GetAtt": [
+          "neo4jSecurityGroup",
+          "GroupId"
+        ]
+      }
+    }
+  }
+}
