@@ -30,15 +30,15 @@ public class GraphDBHandlerTest {
     private BaseConnector testConnector;
     private List<Article> articles;
 
-    @Before
-    public void init() {
-
-        testConnector = new JsonConnector();
-        articles =  testConnector.getArticles("test1000.json", CommonParams.FILENAME);
-
-    }
-
-
+//    @Before
+//    public void init() {
+//
+//        testConnector = new JsonConnector();
+//        articles =  testConnector.getArticles("test1000.json", CommonParams.FILENAME);
+//        gdb = new GraphDBHandler("http://52.64.25.182:7474/","neo4j", "neodev");
+//    }
+//
+//
 //    @Test
 //    public void fetchArticlesWithGeneOne() throws Exception {
 //        Map<SearchQueryParams, Object> params = new HashMap<>();

@@ -2,8 +2,10 @@ package au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.EntityType;
+import jdk.nashorn.internal.objects.annotations.Constructor;
 import jdk.nashorn.internal.objects.annotations.Property;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.json.simple.JSONObject;
 import org.springframework.boot.actuate.autoconfigure.ShellProperties;
 
@@ -11,6 +13,7 @@ import org.springframework.boot.actuate.autoconfigure.ShellProperties;
 /**
  * Created by ahmed on 30/10/17.
  */
+@NoArgsConstructor
 public class Author {
 
     @Getter

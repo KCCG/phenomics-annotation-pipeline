@@ -37,7 +37,7 @@ public class S3Handler {
     }
 
     @Autowired
-    public S3Handler(@Value("${s3_abstracts_bucket}") String s3AbstractsBucket){
+    public S3Handler(@Value("${spring.dbhandlers.S3.abstractbucket}") String s3AbstractsBucket){
 
         bucketName = s3AbstractsBucket;
         slf4jLogger.info(String.format("GraphDBHandler wired with bucket name:%s", s3AbstractsBucket));

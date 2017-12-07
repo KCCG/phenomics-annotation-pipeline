@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 public class GraphDBHandler {
 
 
-    @Value("${enable_graph_db_printing}")
+    @Value("${spring.dbhandlers.graphdb.graphprinting}")
     private boolean ENABLE_PRINTING;
 
     private final Logger slf4jLogger = LoggerFactory.getLogger(GraphDBHandler.class);
@@ -52,10 +52,12 @@ public class GraphDBHandler {
 
 
     @Autowired
-    public GraphDBHandler(@Value("${neo4j_db_endpoint}") String neo4jDbEndpoint) {
+    public GraphDBHandler(@Value("${spring.dbhandlers.graphdb.endpoint}") String neo4jDbEndpoint ,
+                          @Value("${spring.dbhandlers.graphdb.username}") String userName,
+                          @Value("${spring.dbhandlers.graphdb.password}") String password) {
 
         props.setProperty(DBProperties.SERVER_ROOT_URI, neo4jDbEndpoint);
-        remote = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+        remote = DBAccessFactory.createDBAccess(DBType.REMOTE, props, userName, password);
         slf4jLogger.info(String.format("GraphDBHandler wired with endpoint:%s", neo4jDbEndpoint));
 
 
@@ -268,8 +270,13 @@ public class GraphDBHandler {
         {
             List<String> messages =  result.getGeneralErrors().stream().filter(x->x.getMessage().contains("(Connection refused)")).map(t->t.getMessage()).collect(Collectors.toList());
             if(messages.size()>0) {
-                slf4jLogger.info(String.format("General errors while executing NEO4J query. Message: %s and Exception", messages.get(0), result.getGeneralErrors().toString()));
+                slf4jLogger.info(String.format("General errors while executing NEO4J query. Message: %s and Exception: %s", messages.get(0), result.getGeneralErrors().toString()));
                 reconnectDb();
+            }
+            else
+            {
+                slf4jLogger.info(String.format("General errors while executing NEO4J query. Message: %s", result.getGeneralErrors().toString()));
+
             }
         }
         else if (result.getDBErrors().size()>0){
@@ -404,6 +411,10 @@ public class GraphDBHandler {
 
         JcNode article = new JcNode("a");
         List<IClause> queryClauses = new ArrayList<>();
+
+
+        if(genes.size()>3)
+            genes = genes.subList(0,3);
 
         switch (genes.size()) {
 

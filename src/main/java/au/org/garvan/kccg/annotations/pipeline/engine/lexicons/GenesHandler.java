@@ -3,6 +3,7 @@ package au.org.garvan.kccg.annotations.pipeline.engine.lexicons;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -28,6 +29,8 @@ public class GenesHandler extends BaseLexiconHandler {
         try {
             readFile("\t");
         } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
         if (verifyHeader(HGNCFileHeader)) {

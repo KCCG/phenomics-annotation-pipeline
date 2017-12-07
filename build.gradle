@@ -10,6 +10,7 @@ buildscript {
     }
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:1.5.8.RELEASE")
+        classpath("se.transmode.gradle:gradle-docker:1.2")
     }
 }
 
@@ -17,6 +18,8 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin: 'org.springframework.boot'
+apply plugin: 'docker'
+
 sourceCompatibility = 1.8
 
 
@@ -37,11 +40,13 @@ dependencies {
             "org.springframework.boot:spring-boot-starter-web",
             "org.springframework.boot:spring-boot-starter-actuator",
             "io.springfox:springfox-swagger2:2.5.0",
-            "io.springfox:springfox-swagger-ui:2.5.0"
+            "io.springfox:springfox-swagger-ui:2.5.0",
+
     )
 
 
     testCompile 'junit:junit:4.12'
+
 }
 
 
@@ -49,9 +54,27 @@ jar {
     manifest {
         attributes 'Main-Class': 'au.org.garvan.kccg.annotations.pipeline.managers.DocumentProcessor'
     }
+
+    exclude('au/org/garvan/kccg/annotations/pipeline/engine/userinterfaces/**')
 }
 
 bootRun {
     systemProperties System.properties
+
+
 }
+
+task buildDocker(type: Docker) {
+    baseImage = 'develar/java:latest'
+    push = project.hasProperty('push')
+    tag = 'phenomics-pipepline'
+    addFile {
+        from jar
+        rename {'app.jar'}
+    }
+    entryPoint(['java', '-Djava.security.egd=file:/dev/./urandom',  '-Dspring.profiles.active=docker', '-jar', '/app.jar' ])
+    exposePort(9080)
+}
+
+buildDocker.dependsOn(build)
 
