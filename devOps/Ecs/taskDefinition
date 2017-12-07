@@ -1,0 +1,56 @@
+{
+    "containerDefinitions": [
+        {
+            "dnsSearchDomains": null,
+            "logConfiguration": null,
+            "entryPoint": null,
+            "portMappings": [
+                {
+                    "hostPort": 9080,
+                    "protocol": "tcp",
+                    "containerPort": 9080
+                }
+            ],
+            "command": null,
+            "linuxParameters": null,
+            "cpu": 1024,
+            "environment": [],
+            "ulimits": null,
+            "dnsServers": null,
+            "mountPoints": [
+        {
+          "sourceVolume": "springlogs",
+          "containerPath": "/logs"
+        }
+      ],
+            "workingDirectory": null,
+            "dockerSecurityOptions": null,
+            "memory": 1024,
+            "memoryReservation": null,
+            "volumesFrom": [],
+            "image": "482667004524.dkr.ecr.ap-southeast-2.amazonaws.com/phenomics:latest",
+            "disableNetworking": null,
+            "essential": true,
+            "links": null,
+            "hostname": null,
+            "extraHosts": null,
+            "user": null,
+            "readonlyRootFilesystem": null,
+            "dockerLabels": null,
+            "privileged": null,
+            "name": "phenomics-pipeline-dontainer"
+        }
+    ],
+    "taskRoleArn": null,
+    "family": "phenomics-pipeline-task",
+    "networkMode": null,
+    "volumes": [
+    {
+      "name": "springlogs",
+      "host": {
+        "sourcePath": "/var/log/"
+      }
+    }
+  ],
+    "placementConstraints": []
+}
