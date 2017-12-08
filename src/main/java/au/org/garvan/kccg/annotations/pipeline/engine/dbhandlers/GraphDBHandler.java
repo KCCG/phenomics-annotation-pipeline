@@ -29,9 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
-import javax.xml.bind.attachment.AttachmentUnmarshaller;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -50,7 +48,6 @@ public class GraphDBHandler {
     Properties props = new Properties();
     IDBAccess remote;
 
-
     @Autowired
     public GraphDBHandler(@Value("${spring.dbhandlers.graphdb.endpoint}") String neo4jDbEndpoint ,
                           @Value("${spring.dbhandlers.graphdb.username}") String userName,
@@ -59,7 +56,6 @@ public class GraphDBHandler {
         props.setProperty(DBProperties.SERVER_ROOT_URI, neo4jDbEndpoint);
         remote = DBAccessFactory.createDBAccess(DBType.REMOTE, props, userName, password);
         slf4jLogger.info(String.format("GraphDBHandler wired with endpoint:%s", neo4jDbEndpoint));
-
 
     }
 
@@ -74,6 +70,7 @@ public class GraphDBHandler {
         System.out.println("QUERY: " + title + " --------------------");
         // map to Cypher
         String cypher = iot.jcypher.util.Util.toCypher(query, format);
+
         System.out.println("CYPHER --------------------");
         System.out.println(cypher);
 
@@ -208,7 +205,6 @@ public class GraphDBHandler {
      */
 
 
-
     public Set<String> fetchArticles(Map<SearchQueryParams, Object> params) {
         Set<String> shortListedArticles = new HashSet<>();
 
@@ -231,8 +227,8 @@ public class GraphDBHandler {
         }
 
         if (params.containsKey(SearchQueryParams.GENES)) {
-            List<String> genes = (List<String>) params.get(SearchQueryParams.GENES);
-            shortListedArticles = runGenesQuery(collectedResults, genes, shortListedArticles);
+            Pair<String,List<String>> gene = (Pair<String,List<String>>) params.get(SearchQueryParams.GENES);
+            shortListedArticles = runGenesQuery(collectedResults,gene.getFirst(),  gene.getSecond(), shortListedArticles);
             if (shortListedArticles.size() == 0)
                 return shortListedArticles;
         }
@@ -407,22 +403,101 @@ public class GraphDBHandler {
     }
 
 
-    private Set<String> runGenesQuery(LinkedHashMap<SearchQueryParams, JcQueryResult> collectedResults, List<String> genes, Set<String> shortListedArticles) {
+    private Set<String> runGenesQuery(LinkedHashMap<SearchQueryParams, JcQueryResult> collectedResults, String condition, List<String> genes, Set<String> shortListedArticles) {
 
         JcNode article = new JcNode("a");
         List<IClause> queryClauses = new ArrayList<>();
 
+        switch (condition){
+            case "AND":
+                if(genes.size()>3)
+                    genes = genes.subList(0,3);
 
-        if(genes.size()>3)
-            genes = genes.subList(0,3);
+                switch (genes.size()) {
 
-        switch (genes.size()) {
+                    case 0:
+                        collectedResults.put(SearchQueryParams.GENES, null);
+                        return processQueryResult(null, SearchQueryParams.GENES);
 
-            case 0:
-                collectedResults.put(SearchQueryParams.GENES, null);
-                return processQueryResult(null, SearchQueryParams.GENES);
+                    case 1:
+                        JcNode gene1 = new JcNode("g1");
+                        JcString PMID = new JcString("PMID");
+                        queryClauses.add(MATCH.node(article).label("Article")
+                                .relation().out().type("CONTAINS")
+                                .node(gene1).label("Gene"));
 
-            case 1:
+                        if (shortListedArticles.size() > 0) {
+                            queryClauses.add(WHERE.valueOf(gene1.property("Symbol")).EQUALS(genes.get(0))
+                                    .AND().valueOf(article.property("PMID")).IN(new JcCollection(new ArrayList<>(shortListedArticles))));
+
+                        } else {
+                            queryClauses.add(WHERE.valueOf(gene1.property("Symbol")).EQUALS(genes.get(0)));
+
+                        }
+
+                        queryClauses.add(RETURN.value(article.property("PMID")).AS(PMID));
+
+                        break;
+                    case 2:
+
+                        JcNode gene21 = new JcNode("g1");
+                        JcNode gene22 = new JcNode("g2");
+                        JcString PMID2 = new JcString("PMID");
+
+                        queryClauses.add(MATCH.node(article).label("Article"));
+                        queryClauses.add(MATCH.node(article)
+                                .relation().out().type("CONTAINS")
+                                .node(gene21).label("Gene"));
+                        queryClauses.add(MATCH.node(article)
+                                .relation().out().type("CONTAINS")
+                                .node(gene22).label("Gene"));
+
+                        if (shortListedArticles.size() > 0) {
+                            queryClauses.add(WHERE.valueOf(gene21.property("Symbol")).EQUALS(genes.get(0))
+                                    .AND().valueOf(gene22.property("Symbol")).EQUALS(genes.get(1))
+                                    .AND().valueOf(article.property("PMID")).IN(new JcCollection(new ArrayList<>(shortListedArticles))));
+                        } else {
+                            queryClauses.add(WHERE.valueOf(gene21.property("Symbol")).EQUALS(genes.get(0))
+                                    .AND().valueOf(gene22.property("Symbol")).EQUALS(genes.get(1)));
+                        }
+                        queryClauses.add(RETURN.value(article.property("PMID")).AS(PMID2));
+
+                        break;
+                    case 3:
+                        JcNode gene31 = new JcNode("g1");
+                        JcNode gene32 = new JcNode("g2");
+                        JcNode gene33 = new JcNode("g3");
+
+                        JcString PMID3 = new JcString("PMID");
+
+                        queryClauses.add(MATCH.node(article).label("Article"));
+                        queryClauses.add(MATCH.node(article)
+                                .relation().out().type("CONTAINS")
+                                .node(gene31).label("Gene"));
+                        queryClauses.add(MATCH.node(article)
+                                .relation().out().type("CONTAINS")
+                                .node(gene32).label("Gene"));
+                        queryClauses.add(MATCH.node(article)
+                                .relation().out().type("CONTAINS")
+                                .node(gene33).label("Gene"));
+
+
+                        if (shortListedArticles.size() > 0) {
+                            queryClauses.add(WHERE.valueOf(gene31.property("Symbol")).EQUALS(genes.get(0))
+                                    .AND().valueOf(gene32.property("Symbol")).EQUALS(genes.get(1))
+                                    .AND().valueOf(gene33.property("Symbol")).EQUALS(genes.get(2))
+                                    .AND().valueOf(article.property("PMID")).IN(new JcCollection(new ArrayList<>(shortListedArticles))));
+                        } else {
+                            queryClauses.add(WHERE.valueOf(gene31.property("Symbol")).EQUALS(genes.get(0))
+                                    .AND().valueOf(gene32.property("Symbol")).EQUALS(genes.get(1))
+                                    .AND().valueOf(gene33.property("Symbol")).EQUALS(genes.get(2)));
+                        }
+                        queryClauses.add(RETURN.value(article.property("PMID")).AS(PMID3));
+                        break;
+                }//Size
+                break;
+
+            case "OR":
                 JcNode gene1 = new JcNode("g1");
                 JcString PMID = new JcString("PMID");
                 queryClauses.add(MATCH.node(article).label("Article")
@@ -430,73 +505,19 @@ public class GraphDBHandler {
                         .node(gene1).label("Gene"));
 
                 if (shortListedArticles.size() > 0) {
-                    queryClauses.add(WHERE.valueOf(gene1.property("Symbol")).EQUALS(genes.get(0))
+                    queryClauses.add(WHERE.valueOf(gene1.property("Symbol")).IN(new JcCollection(new ArrayList<>(genes)))
                             .AND().valueOf(article.property("PMID")).IN(new JcCollection(new ArrayList<>(shortListedArticles))));
 
                 } else {
-                    queryClauses.add(WHERE.valueOf(gene1.property("Symbol")).EQUALS(genes.get(0)));
-
+                    queryClauses.add(WHERE.valueOf(gene1.property("Symbol")).IN(new JcCollection(new ArrayList<>(genes))));
                 }
 
                 queryClauses.add(RETURN.value(article.property("PMID")).AS(PMID));
 
                 break;
-            case 2:
-
-                JcNode gene21 = new JcNode("g1");
-                JcNode gene22 = new JcNode("g2");
-                JcString PMID2 = new JcString("PMID");
-
-                queryClauses.add(MATCH.node(article).label("Article"));
-                queryClauses.add(MATCH.node(article)
-                        .relation().out().type("CONTAINS")
-                        .node(gene21).label("Gene"));
-                queryClauses.add(MATCH.node(article)
-                        .relation().out().type("CONTAINS")
-                        .node(gene22).label("Gene"));
-
-                if (shortListedArticles.size() > 0) {
-                    queryClauses.add(WHERE.valueOf(gene21.property("Symbol")).EQUALS(genes.get(0))
-                            .AND().valueOf(gene22.property("Symbol")).EQUALS(genes.get(1))
-                            .AND().valueOf(article.property("PMID")).IN(new JcCollection(new ArrayList<>(shortListedArticles))));
-                } else {
-                    queryClauses.add(WHERE.valueOf(gene21.property("Symbol")).EQUALS(genes.get(0))
-                            .AND().valueOf(gene22.property("Symbol")).EQUALS(genes.get(1)));
-                }
-                queryClauses.add(RETURN.value(article.property("PMID")).AS(PMID2));
-
-                break;
-            case 3:
-                JcNode gene31 = new JcNode("g1");
-                JcNode gene32 = new JcNode("g2");
-                JcNode gene33 = new JcNode("g3");
-                JcString PMID3 = new JcString("PMID");
-
-                queryClauses.add(MATCH.node(article).label("Article"));
-                queryClauses.add(MATCH.node(article)
-                        .relation().out().type("CONTAINS")
-                        .node(gene31).label("Gene"));
-                queryClauses.add(MATCH.node(article)
-                        .relation().out().type("CONTAINS")
-                        .node(gene32).label("Gene"));
-                queryClauses.add(MATCH.node(article)
-                        .relation().out().type("CONTAINS")
-                        .node(gene33).label("Gene"));
 
 
-                if (shortListedArticles.size() > 0) {
-                    queryClauses.add(WHERE.valueOf(gene31.property("Symbol")).EQUALS(genes.get(0))
-                            .AND().valueOf(gene32.property("Symbol")).EQUALS(genes.get(1))
-                            .AND().valueOf(gene33.property("Symbol")).EQUALS(genes.get(2))
-                            .AND().valueOf(article.property("PMID")).IN(new JcCollection(new ArrayList<>(shortListedArticles))));
-                } else {
-                    queryClauses.add(WHERE.valueOf(gene31.property("Symbol")).EQUALS(genes.get(0))
-                            .AND().valueOf(gene32.property("Symbol")).EQUALS(genes.get(1))
-                            .AND().valueOf(gene33.property("Symbol")).EQUALS(genes.get(2)));
-                }
-                queryClauses.add(RETURN.value(article.property("PMID")).AS(PMID3));
-                break;
-        }//Size
+        }
 
 
         JcQueryResult result = executeQueryClauses(queryClauses);

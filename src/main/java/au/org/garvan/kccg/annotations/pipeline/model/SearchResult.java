@@ -28,7 +28,11 @@ public class SearchResult {
 
 
     @JsonProperty
-    int PMID;
+    int pmid;
+
+
+    @JsonProperty
+    int articleRank;
 
     @JsonProperty
     String articleTitle;
@@ -51,14 +55,15 @@ public class SearchResult {
     public void fillGenes (JSONArray jsonGenes)
     {
         annotations = new dtoAnnotations();
-        List<dtoGene> geneList = new ArrayList<>();
+        List<dtoOutputGene> geneList = new ArrayList<>();
 
         for (Object obj:jsonGenes)
         {
             JSONObject jsonObject = (JSONObject) obj;
-            dtoGene tempGene;
+            dtoOutputGene tempGene;
+            //Check if gene is already in the list then append offset, otherwise add it.
             boolean geneExists = geneList.stream()
-                    .map(dtoGene::getGeneSymbol)
+                    .map(dtoOutputGene::getGeneSymbol)
                     .anyMatch(jsonObject.get("annotationId")::equals);
             if (geneExists){
                 tempGene = geneList.stream().filter(g-> g.geneSymbol.equals(jsonObject.get("annotationId"))).collect(Collectors.toList()).get(0);
@@ -66,7 +71,7 @@ public class SearchResult {
             }
             else
             {
-                tempGene = new dtoGene(jsonObject.get("annotationId").toString(),
+                tempGene = new dtoOutputGene(jsonObject.get("annotationId").toString(),
                         jsonObject.get("field").toString(),
                         jsonObject.get("standard").toString(),
                         new ArrayList<>(Arrays.asList(constructOffset(jsonObject.get("globalOffset").toString())))
@@ -77,35 +82,41 @@ public class SearchResult {
         }
         annotations.genes = geneList;
 
-
-
     }
 
     private class dtoAnnotations {
         @JsonProperty
-        List<dtoGene> genes;
+        List<dtoOutputGene> genes;
 
     }
     @NoArgsConstructor
     @AllArgsConstructor
-    private class dtoGene {
+    @Data
+    private class dtoOutputGene {
 
         @JsonProperty
-        @Getter
         String geneSymbol;
         @JsonProperty
         String field;
         @JsonProperty
         String standard;
         @JsonProperty
-        List<Point> offsets;
+        List<dtoOffset> offsets;
 
 
     }
+    @Data
+    @AllArgsConstructor
+    private class dtoOffset{
+        @JsonProperty
+        int startIndex;
+        @JsonProperty
+        int endIndex;
+    }
 
-    private Point constructOffset(String globalOffset){
+    private dtoOffset constructOffset(String globalOffset){
         String[] offsets =  globalOffset.split(":");
-        return new Point(Integer.parseInt(offsets[0]), Integer.parseInt(offsets[1]));
+        return new dtoOffset(Integer.parseInt(offsets[0]), Integer.parseInt(offsets[1]));
     }
 
 

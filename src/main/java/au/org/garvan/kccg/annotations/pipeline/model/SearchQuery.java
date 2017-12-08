@@ -27,7 +27,7 @@ public class SearchQuery {
 
     @JsonProperty
     @ApiModelProperty(notes = "Gene list to search the articles(1-3 Allowed so far); if more than one than it will be handles as AND condition")
-    private List<String> genes;
+    private dtoInputGene gene;
 
     @JsonProperty
     private Author author;
@@ -45,6 +45,16 @@ public class SearchQuery {
 //        String endDate;
 //
 //    }
+
+    @Data
+    public class dtoInputGene{
+
+        @JsonProperty
+        List<String> symbols;
+        @JsonProperty
+        String condition;
+
+    }
 
 
 }

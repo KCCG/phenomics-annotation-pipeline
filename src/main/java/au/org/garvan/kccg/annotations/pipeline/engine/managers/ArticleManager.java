@@ -33,6 +33,7 @@ public class ArticleManager {
     @Async
     public void processArticles(List<RawArticle> articleList)
     {
+        slf4jLogger.info(String.format("Received articles batch for processing. Batch Size: %d", articleList.size()));
         for (RawArticle input: articleList){
 
             Article article = constructArticle(input);
@@ -40,7 +41,6 @@ public class ArticleManager {
                 if (!isDuplicate(article)) {
                     article.getArticleAbstract().hatch();
                     slf4jLogger.info(String.format("Article processed successfully, ID: %d", article.getPubMedID()));
-
                     dbManager.persistArticle(article);
 
                 } else {
