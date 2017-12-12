@@ -84,6 +84,7 @@ public class QueryManager {
         searchResult.setArticleTitle(article.getArticleTitle());
         searchResult.setLanguage(article.getLanguage());
         searchResult.setAuthors(article.getAuthors());
+        searchResult.setPublication(article.getPublication());
 
         if(!annotations.isEmpty())
         {

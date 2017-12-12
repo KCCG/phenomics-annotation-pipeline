@@ -1,6 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.model;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Author;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Publication;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
@@ -51,6 +52,9 @@ public class SearchResult {
 
     @JsonProperty
     dtoAnnotations annotations;
+
+    @JsonProperty
+    Publication publication;
 
     public void fillGenes (JSONArray jsonGenes)
     {
