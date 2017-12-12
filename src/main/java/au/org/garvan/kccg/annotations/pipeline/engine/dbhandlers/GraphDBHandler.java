@@ -91,64 +91,69 @@ public class GraphDBHandler {
 
     public void createArticleQuery(Article article) {
 
-        List<IClause> queryClauses = new ArrayList<>();
 
-        //Create Article node and creation clause
-        JcNode nodeArticle = new JcNode("nodeArticle");
-        IClause articleClause = MERGE.node(nodeArticle).label("Article")
-                .property("PMID").value(Integer.toString(article.getPubMedID()))
-                .property("Language").value(article.getLanguage());
+        try {
+            List<IClause> queryClauses = new ArrayList<>();
+
+            //Create Article node and creation clause
+            JcNode nodeArticle = new JcNode("nodeArticle");
+            IClause articleClause = MERGE.node(nodeArticle).label("Article")
+                    .property("PMID").value(Integer.toString(article.getPubMedID()))
+                    .property("Language").value(article.getLanguage());
 
 
-        //Create authors nodes and their respective clauses (This includes both creation and mapping clauses)
-        List<JcNode> nodeListAuthors = new ArrayList<>();
-        List<IClause> authorsClauses = new ArrayList<>();
+            //Create authors nodes and their respective clauses (This includes both creation and mapping clauses)
+            List<JcNode> nodeListAuthors = new ArrayList<>();
+            List<IClause> authorsClauses = new ArrayList<>();
 
-        for (int x = 0; x < article.getAuthors().size(); x++) {
-            Author currentAuthor = article.getAuthors().get(x);
-            if(currentAuthor.checkValidName())
-            {
-                JcNode tempAuthor = new JcNode("nodeAuthor" + Integer.toString(x));
-                nodeListAuthors.add(tempAuthor);
-                authorsClauses.add(MERGE.node(tempAuthor).label("Author")
-                        .property("Initials").value(currentAuthor.getInitials())
-                        .property("ForeName").value(currentAuthor.getForeName())
-                        .property("LastName").value(currentAuthor.getLastName()));
-                authorsClauses.add(CREATE.node(tempAuthor).relation().out()
-                        .type("WROTE").property("Order").value(x + 1)
-                        .node(nodeArticle));
+            for (int x = 0; x < article.getAuthors().size(); x++) {
+                Author currentAuthor = article.getAuthors().get(x);
+                if (currentAuthor.checkValidName()) {
+                    JcNode tempAuthor = new JcNode("nodeAuthor" + Integer.toString(x));
+                    nodeListAuthors.add(tempAuthor);
+                    authorsClauses.add(MERGE.node(tempAuthor).label("Author")
+                            .property("Initials").value(currentAuthor.getInitials())
+                            .property("ForeName").value(currentAuthor.getForeName())
+                            .property("LastName").value(currentAuthor.getLastName()));
+                    authorsClauses.add(CREATE.node(tempAuthor).relation().out()
+                            .type("WROTE").property("Order").value(x + 1)
+                            .node(nodeArticle));
+
+                }
+
 
             }
 
+            //Create publicational node and creation clause
+            JcNode nodePublication = new JcNode("nodePublication");
+            IClause publicationClause = MERGE.node(nodePublication).label("Publication")
+                    .property("Title").value(article.getPublication().getTitle())
+                    .property("IsoAbbreviation").value(article.getPublication().getIsoAbbreviation())
+                    .property("IssnType").value(article.getPublication().getIssnType())
+                    .property("IssnNumber").value(article.getPublication().getIssnNumber());
+            IClause publicationLinkClause = CREATE.node(nodeArticle).relation().out().type("PUBLISHED")
+                    .property("DatePublished")
+                    .value(article.getDatePublished())
+                    .node(nodePublication);
 
+            queryClauses.add(articleClause);
+
+            queryClauses.addAll(authorsClauses);
+            queryClauses.add(publicationClause);
+            queryClauses.add(publicationLinkClause);
+
+            fillEntitiesGraphData(queryClauses, article, nodeArticle);
+
+            JcQueryResult result = executeQueryClauses(queryClauses);
+
+            if (result == null)
+                slf4jLogger.info(String.format("Graph DB Insertion Failed"));
+            else
+                slf4jLogger.info(String.format("Graph DB Insertion done without errors for Article ID: %d", article.getPubMedID()));
         }
-
-        //Create publicational node and creation clause
-        JcNode nodePublication = new JcNode("nodePublication");
-        IClause publicationClause = MERGE.node(nodePublication).label("Publication")
-                .property("Title").value(article.getPublication().getTitle())
-                .property("IsoAbbreviation").value(article.getPublication().getIsoAbbreviation())
-                .property("IssnType").value(article.getPublication().getIssnType())
-                .property("IssnNumber").value(article.getPublication().getIssnNumber());
-        IClause publicationLinkClause = CREATE.node(nodeArticle).relation().out().type("PUBLISHED")
-                .property("DatePublished")
-                .value(article.getDatePublished())
-                .node(nodePublication);
-
-        queryClauses.add(articleClause);
-
-        queryClauses.addAll(authorsClauses);
-        queryClauses.add(publicationClause);
-        queryClauses.add(publicationLinkClause);
-
-        fillEntitiesGraphData(queryClauses, article, nodeArticle);
-
-        JcQueryResult result = executeQueryClauses(queryClauses);
-
-        if (result==null)
-            slf4jLogger.info(String.format("Graph DB Insertion Failed"));
-        else
-            slf4jLogger.info(String.format("Graph DB Insertion done without errors for Article ID: %d", article.getPubMedID()));
+        catch (Exception e){
+            slf4jLogger.info(String.format("Graph DB Insertion Failed with exception: ",e.getMessage()));
+        }
 
 
     }
