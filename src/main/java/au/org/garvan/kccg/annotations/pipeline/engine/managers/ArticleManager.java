@@ -31,9 +31,9 @@ public class ArticleManager {
     }
 
     @Async
-    public void processArticles(List<RawArticle> articleList)
+    public void processArticles(List<RawArticle> articleList, String batchId)
     {
-        slf4jLogger.info(String.format("Received articles batch for processing. Batch Size: %d", articleList.size()));
+        slf4jLogger.info(String.format("Received articles batch for processing. Batch Id:%s Batch Size: %d", batchId,  articleList.size()));
         for (RawArticle input: articleList){
 
             Article article = constructArticle(input);
@@ -55,8 +55,9 @@ public class ArticleManager {
 
 
         }//Article Loop
-
-
+        slf4jLogger.info(String.format("Finished articles batch for processing. Batch Id:%s ", batchId));
+        slf4jLogger.info(String.format("Calling CoreNLP Manager to cleanup memory"));
+        CoreNLPManager.clearMemory();
     }
 
     private boolean isDuplicate(Article article){
