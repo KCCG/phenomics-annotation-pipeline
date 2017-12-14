@@ -33,7 +33,7 @@ public class QueryManager {
 
 
     public List<SearchResult> processQuery(SearchQuery query){
-        slf4jLogger.info(String.format("Processing search query with id: %s",query.getQueryId()));
+        slf4jLogger.info(String.format("Processing search query with id:%s and content:%s",query.getQueryId(),query.toString()));
 
         List<SearchResult> results = new ArrayList<>();
         Map<SearchQueryParams, Object> params = new HashMap<>();
