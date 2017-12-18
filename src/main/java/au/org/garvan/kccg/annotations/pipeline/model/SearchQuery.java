@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
+import org.json.simple.JSONObject;
 
 import java.util.Date;
 import java.util.List;
@@ -54,6 +55,32 @@ public class SearchQuery {
         @JsonProperty
         String condition;
 
+    }
+
+
+
+    public JSONObject constructJson(){
+        JSONObject returnObject = new JSONObject();
+
+        if(author==null && publication == null && gene==null)
+        {return returnObject;}
+
+        returnObject.put("queryId", queryId);
+        if (author != null) {
+            returnObject.put("author", author.constructJson());
+        }
+        if(publication !=null)
+        {
+            returnObject.put("publication", publication.constructJson());
+        }
+        if (gene != null){
+            JSONObject jsonGene = new JSONObject();
+            jsonGene.put("condition", gene.getCondition());
+            jsonGene.put("symbols", gene.getSymbols());
+            returnObject.put("gene",jsonGene);
+        }
+
+        return returnObject;
     }
 
 

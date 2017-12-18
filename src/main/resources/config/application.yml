@@ -5,12 +5,15 @@ spring:
     dynamodb:
       articletablename: test-phenomics-articles
       annotationtablename: test-phenomics-annotations
+      subscriptiontablename: test-phenomics-subscriptions
     graphdb:
       endpoint: http://localhost:7474/
       graphprinting: false
       username:
       password:
 
+  subscriptionservice:
+    subscriptiontime: 2
 logging:
   path: ./logs/
   pattern:

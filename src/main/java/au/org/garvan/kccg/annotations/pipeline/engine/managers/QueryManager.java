@@ -28,7 +28,6 @@ public class QueryManager {
     public void init(){
 
         slf4jLogger.info(String.format("Query Manager init() called."));
-//        dbManager = new DatabaseManager();
     }
 
 
