@@ -114,6 +114,10 @@ public class DatabaseManager {
         return dynamoDBHandler.checkSubscription(qId);
     }
 
+    public JSONObject getSubscription(String qId){
+        return dynamoDBHandler.getSubscription(qId);
+    }
+
 
 
 }

@@ -2,6 +2,7 @@ package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
 import au.org.garvan.kccg.annotations.pipeline.model.SubscriptionQuery;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import javax.mail.internet.AddressException;
 import javax.mail.internet.InternetAddress;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -87,7 +89,7 @@ public class SubscriptionManager {
         argumentMap.put("lastRunDate", LocalDate.now().minusDays(1).toEpochDay());
         argumentMap.put("subscriptionId", subRequest.getSubscriptionId());
         argumentMap.put("emailId", subRequest.getEmailId());
-        argumentMap.put("searchQuery", jsonQuery);
+        argumentMap.put("query", jsonQuery);
         argumentMap.put("frequencyInDays", frequencyInDays);
         argumentMap.put("searchName", subRequest.getSearchName());
         dbManager.persistSubscription(argumentMap);
@@ -97,6 +99,27 @@ public class SubscriptionManager {
         LocalDateTime processTime = LocalDateTime.of(nextRunDate, LocalTime.of(subscriptionTime,0,0));
         String text = processTime.atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_DATE_TIME);
         return new Pair<>(true, text);
+    }
+
+
+
+
+    public  Pair<Boolean,Object> getSubscription(String id){
+        JSONObject jsonSubscription = dbManager.getSubscription(id);
+        if(jsonSubscription.containsKey("subscriptionId")){
+            ObjectMapper objectMapper = new ObjectMapper();
+            SubscriptionQuery returnObject = new SubscriptionQuery();
+            try {
+                returnObject= objectMapper.readValue(jsonSubscription.toJSONString(), SubscriptionQuery.class);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return new Pair<>(true,returnObject);
+        }
+        else
+            return new Pair<>(false, "Subscription not found. ");
+
+
     }
 
     private LocalDate getNextRunDate(int frequencyInDays){

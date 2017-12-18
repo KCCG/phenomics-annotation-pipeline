@@ -59,14 +59,14 @@ public class SubscriptionController {
     @CrossOrigin
     public ResponseEntity<?> getSubscription(@PathVariable(value="subscriptionId") @ApiParam("subscriptionId") String subscriptionId) {
 
-        return new ResponseEntity<>(new CustomErrorType(" Hello"),
-                HttpStatus.OK);
-
+        Pair<Boolean, Object> result = engine.getSubscription(subscriptionId);
+        if (result.getFirst()) {
+            return new ResponseEntity<>(result.getSecond(), HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(new CustomErrorType(result.getSecond().toString()),
+                    HttpStatus.NO_CONTENT);
+        }
     }
-
-
-
-
 
 
     public class CustomErrorType {

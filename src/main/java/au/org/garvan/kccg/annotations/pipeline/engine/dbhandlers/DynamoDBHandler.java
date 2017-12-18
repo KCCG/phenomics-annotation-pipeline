@@ -118,6 +118,18 @@ public class DynamoDBHandler {
 //        return true;
 //    }
 
+
+
+    public JSONObject getSubscription(String id){
+        Table table =  dynamoDB.getTable(subscriptionTableName);
+        Item item =  table.getItem("subscriptionId", id);
+        if (item == null)
+            return new JSONObject();
+        else
+            return  (JSONObject) JSONValue.parse(item.toJSON());
+
+    }
+
     // TODO: If used by more than one functions then make it generic
     public boolean checkSubscription(String id){
         Table table =  dynamoDB.getTable(subscriptionTableName);
