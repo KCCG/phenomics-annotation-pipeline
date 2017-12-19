@@ -6,7 +6,6 @@ echo 'Tagging completed for docker image'
 
 
 echo 'Getting ECR credentials'
-cd pwd
 eval $(aws ecr get-login --no-include-email | sed 's|https://||')
 echo 'Received credentials, activated for 12 hours'
 

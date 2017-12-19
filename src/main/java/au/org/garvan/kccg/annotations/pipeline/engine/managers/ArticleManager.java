@@ -71,6 +71,7 @@ public class ArticleManager {
 
     private Article constructArticle(RawArticle rawArticle){
         Article article = new Article(rawArticle.getPubMedID(),
+                LocalDate.now().toEpochDay(),
                 LocalDate.parse(rawArticle.getDatePublished()),
                 LocalDate.parse(rawArticle.getDateCreated()),
                 LocalDate.parse(rawArticle.getDateRevised()),

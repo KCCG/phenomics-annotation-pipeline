@@ -99,8 +99,8 @@ public class GraphDBHandler {
             JcNode nodeArticle = new JcNode("nodeArticle");
             IClause articleClause = MERGE.node(nodeArticle).label("Article")
                     .property("PMID").value(Integer.toString(article.getPubMedID()))
-                    .property("Language").value(article.getLanguage());
-
+                    .property("Language").value(article.getLanguage())
+                    .property("ProcessingDate").value(article.getProcessingDate());
 
             //Create authors nodes and their respective clauses (This includes both creation and mapping clauses)
             List<JcNode> nodeListAuthors = new ArrayList<>();

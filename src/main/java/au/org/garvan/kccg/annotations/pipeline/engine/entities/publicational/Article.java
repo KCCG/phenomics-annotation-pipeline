@@ -39,6 +39,10 @@ public class Article {
 
     @Getter
     @Setter
+    private long processingDate;
+
+    @Getter
+    @Setter
     private LocalDate datePublished;
 
     @Getter
@@ -98,11 +102,19 @@ public class Article {
         {
 
             pubMedID = Integer.parseInt(dbObject.getJsonObject().get("pubMedID").toString());
+
             datePublished = LocalDate.parse(dbObject.getJsonObject().get("datePublished").toString());
             dateCreated = LocalDate.parse(dbObject.getJsonObject().get("dateCreated").toString());
             dateRevised = LocalDate.parse(dbObject.getJsonObject().get("dateRevised").toString());
             articleTitle = dbObject.getJsonObject().get("articleTitle").toString();
             language = dbObject.getJsonObject().get("language").toString();
+
+
+            if(dbObject.getJsonObject().containsKey("processingDate")) {
+                processingDate = Long.parseLong(dbObject.getJsonObject().get("processingDate").toString());
+            }
+            else
+                processingDate = dateCreated.toEpochDay();
 
             if(dbObject.getJsonObject().containsKey("authors"))
             {
@@ -178,6 +190,7 @@ public class Article {
     public JSONObject constructJson(){
         JSONObject returnObject = new JSONObject();
         returnObject.put("pubMedID", Integer.toString(pubMedID));
+        returnObject.put("processingDate", processingDate);
         returnObject.put("datePublished", datePublished.toString());
         returnObject.put("dateCreated", dateCreated.toString());
         returnObject.put("dateRevised", dateRevised.toString());
