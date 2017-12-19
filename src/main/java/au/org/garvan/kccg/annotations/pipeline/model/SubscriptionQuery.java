@@ -39,5 +39,9 @@ public class SubscriptionQuery {
     @ApiModelProperty(required = true)
     private int digestFrequencyInDays;
 
+    @JsonProperty
+    @ApiModelProperty(hidden = true)
+    private String nextRunTime;
+
 
 }

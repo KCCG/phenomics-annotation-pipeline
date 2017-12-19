@@ -14,6 +14,7 @@ spring:
 
   subscriptionservice:
     subscriptiontime: 2
+
 logging:
   path: ./logs/
   pattern:
@@ -22,5 +23,6 @@ logging:
   level:
     root: WARN
     au.org.garvan.kccg.annotations.pipeline: INFO
+
 server:
     port: 9080

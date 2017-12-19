@@ -29,16 +29,16 @@ public class DynamoDBHandler {
     private final Logger slf4jLogger = LoggerFactory.getLogger(DynamoDBHandler.class);
 
     AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard()
-            .withRegion("ap-southeast-2").build() ;
+            .withRegion("ap-southeast-2").build();
     DynamoDB dynamoDB = new DynamoDB(client);
-    String articleTableName ;
+    String articleTableName;
     String annotationTableName;
     String subscriptionTableName;
 
     @Autowired
     public DynamoDBHandler(@Value("${spring.dbhandlers.dynamodb.articletablename}") String configArticleTableName,
                            @Value("${spring.dbhandlers.dynamodb.annotationtablename}") String configAnnotationTableName,
-                           @Value("${spring.dbhandlers.dynamodb.subscriptiontablename}") String configSubscriptionTableName ){
+                           @Value("${spring.dbhandlers.dynamodb.subscriptiontablename}") String configSubscriptionTableName) {
         articleTableName = configArticleTableName;
         annotationTableName = configAnnotationTableName;
         subscriptionTableName = configSubscriptionTableName;
@@ -47,14 +47,13 @@ public class DynamoDBHandler {
 
     }
 
-    public void insertItem(JSONObject jsonArticle, JSONObject jsonAnnotations)
-    {
+    public void insertItem(JSONObject jsonArticle, JSONObject jsonAnnotations) {
 
-        Table articleTable =  dynamoDB.getTable(articleTableName);
+        Table articleTable = dynamoDB.getTable(articleTableName);
         Item article = Item.fromJSON(jsonArticle.toString());
         articleTable.putItem(article);
 
-        if(jsonAnnotations.containsKey("pubMedID")) {
+        if (jsonAnnotations.containsKey("pubMedID")) {
             Table annotationTable = dynamoDB.getTable(annotationTableName);
             Item annotations = Item.fromJSON(jsonAnnotations.toString());
             annotationTable.putItem(annotations);
@@ -63,23 +62,23 @@ public class DynamoDBHandler {
 
     }
 
-    public JSONObject getArticle(int pubMedId){
-        Table table =  dynamoDB.getTable(articleTableName);
-        Item item =  table.getItem("pubMedID", Integer.toString(pubMedId));
+    public JSONObject getArticle(int pubMedId) {
+        Table table = dynamoDB.getTable(articleTableName);
+        Item item = table.getItem("pubMedID", Integer.toString(pubMedId));
         if (item == null)
             return new JSONObject();
         else
-            return  (JSONObject) JSONValue.parse(item.toJSON());
+            return (JSONObject) JSONValue.parse(item.toJSON());
 
     }
 
-   public JSONObject getAnnotations(int pubMedId, AnnotationType aType){
-        Table table =  dynamoDB.getTable(annotationTableName);
-        Item item =  table.getItem("pubMedID", Integer.toString(pubMedId),"annotationType",aType.toString());
+    public JSONObject getAnnotations(int pubMedId, AnnotationType aType) {
+        Table table = dynamoDB.getTable(annotationTableName);
+        Item item = table.getItem("pubMedID", Integer.toString(pubMedId), "annotationType", aType.toString());
         if (item == null)
             return new JSONObject();
         else
-            return  (JSONObject) JSONValue.parse(item.toJSON());
+            return (JSONObject) JSONValue.parse(item.toJSON());
 
     }
 
@@ -88,8 +87,8 @@ public class DynamoDBHandler {
      * @param jsonSubscription
      * @return
      */
-    public boolean insertSubscription(JSONObject jsonSubscription){
-        Table table =  dynamoDB.getTable(subscriptionTableName);
+    public boolean insertSubscription(JSONObject jsonSubscription) {
+        Table table = dynamoDB.getTable(subscriptionTableName);
         Item subscription = Item.fromJSON(jsonSubscription.toString());
         PutItemOutcome outcome = table.putItem(subscription);
 //        slf4jLogger.info( outcome.getPutItemResult().toString());
@@ -119,21 +118,20 @@ public class DynamoDBHandler {
 //    }
 
 
-
-    public JSONObject getSubscription(String id){
-        Table table =  dynamoDB.getTable(subscriptionTableName);
-        Item item =  table.getItem("subscriptionId", id);
+    public JSONObject getSubscription(String id) {
+        Table table = dynamoDB.getTable(subscriptionTableName);
+        Item item = table.getItem("subscriptionId", id);
         if (item == null)
             return new JSONObject();
         else
-            return  (JSONObject) JSONValue.parse(item.toJSON());
+            return (JSONObject) JSONValue.parse(item.toJSON());
 
     }
 
     // TODO: If used by more than one functions then make it generic
-    public boolean checkSubscription(String id){
-        Table table =  dynamoDB.getTable(subscriptionTableName);
-        Item item =  table.getItem("subscriptionId", id);
+    public boolean checkSubscription(String id) {
+        Table table = dynamoDB.getTable(subscriptionTableName);
+        Item item = table.getItem("subscriptionId", id);
         if (item == null)
             return false;
         else
@@ -141,10 +139,12 @@ public class DynamoDBHandler {
 
     }
 
-
-
-
-
+    public boolean deleteSubscription(String id) {
+        Table table = dynamoDB.getTable(subscriptionTableName);
+        DeleteItemOutcome deleteItemOutcome = table.deleteItem("subscriptionId", id);
+        deleteItemOutcome.getDeleteItemResult().getAttributes();
+        return true;
+    }
 
 
 }

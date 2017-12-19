@@ -68,6 +68,29 @@ public class SubscriptionController {
         }
     }
 
+    @ApiOperation(value = "deleteSubscription", nickname = "deleteSubscription" , notes = "")
+    @RequestMapping(value = "/subscription/{subscriptionId}", method = RequestMethod.DELETE, produces = "application/json")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Success", response = ResponseEntity.class ),
+            @ApiResponse(code = 401, message = "Unauthorized"),
+            @ApiResponse(code = 403, message = "Forbidden"),
+            @ApiResponse(code = 404, message = "Not Found"),
+            @ApiResponse(code = 500, message = "Failure")})
+    @CrossOrigin
+    public ResponseEntity<?> deleteSubscription(@PathVariable(value="subscriptionId") @ApiParam("subscriptionId") String subscriptionId) {
+
+        Pair<Boolean, Object> result = engine.deleteSubscription(subscriptionId);
+        if (result.getFirst()) {
+            return new ResponseEntity<>(HttpStatus.OK);
+
+        } else {
+            return new ResponseEntity<>(new CustomErrorType(result.getSecond().toString()),
+                    HttpStatus.NO_CONTENT);
+        }
+    }
+
+
+
 
     public class CustomErrorType {
 

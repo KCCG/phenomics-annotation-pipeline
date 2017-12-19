@@ -118,6 +118,10 @@ public class DatabaseManager {
         return dynamoDBHandler.getSubscription(qId);
     }
 
+    public boolean deleteSubscription(String qId){
+        return dynamoDBHandler.deleteSubscription(qId);
+    }
+
 
 
 }

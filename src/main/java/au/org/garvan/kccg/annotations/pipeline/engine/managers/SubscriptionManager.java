@@ -69,7 +69,8 @@ public class SubscriptionManager {
         // Frequency should be between 1-7
         int frequencyInDays =  Math.min(30, Math.max(1, subRequest.getDigestFrequencyInDays()));
         LocalDate nextRunDate = getNextRunDate(frequencyInDays);
-
+        LocalDateTime processTime = LocalDateTime.of(nextRunDate, LocalTime.of(subscriptionTime,0,0));
+        String nextRunTime = processTime.atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_DATE_TIME);
 
         //Check email Id validity .
         StringBuilder message = new StringBuilder();
@@ -85,20 +86,23 @@ public class SubscriptionManager {
             return new Pair<>(false, "Search query is invalid.");
         }
 
+
+
+
         Map<String, Object> argumentMap = new HashMap<>();
         argumentMap.put("lastRunDate", LocalDate.now().minusDays(1).toEpochDay());
+        argumentMap.put("nextRunTime", nextRunTime);
+
+        //Following parameters should be stored with actual object's property name.
         argumentMap.put("subscriptionId", subRequest.getSubscriptionId());
         argumentMap.put("emailId", subRequest.getEmailId());
         argumentMap.put("query", jsonQuery);
-        argumentMap.put("frequencyInDays", frequencyInDays);
+        argumentMap.put("digestFrequencyInDays", frequencyInDays);
         argumentMap.put("searchName", subRequest.getSearchName());
         dbManager.persistSubscription(argumentMap);
         slf4jLogger.info(String.format("Finished subscription request for processing. Subscription Id:%s ", subRequest.getSubscriptionId()));
 
-
-        LocalDateTime processTime = LocalDateTime.of(nextRunDate, LocalTime.of(subscriptionTime,0,0));
-        String text = processTime.atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_DATE_TIME);
-        return new Pair<>(true, text);
+        return new Pair<>(true, nextRunTime);
     }
 
 
@@ -115,6 +119,19 @@ public class SubscriptionManager {
                 e.printStackTrace();
             }
             return new Pair<>(true,returnObject);
+        }
+        else
+            return new Pair<>(false, "Subscription not found. ");
+
+
+    }
+
+    public  Pair<Boolean,Object> deleteSubscription(String id){
+
+        if(dbManager.checkIfSubscriptionExists(id))
+        {
+            dbManager.deleteSubscription(id);
+            return new Pair<>(true, id );
         }
         else
             return new Pair<>(false, "Subscription not found. ");
