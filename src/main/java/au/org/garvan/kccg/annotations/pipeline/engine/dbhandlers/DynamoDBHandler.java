@@ -1,24 +1,23 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
-import au.org.garvan.kccg.annotations.pipeline.engine.managers.ArticleManager;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.*;
-import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
-import com.amazonaws.services.dynamodbv2.document.utils.NameMap;
-import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
+import com.amazonaws.services.dynamodbv2.model.*;
+import com.google.common.util.concurrent.RateLimiter;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
-import org.omg.CORBA.Environment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
-import java.util.Iterator;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by ahmed on 7/11/17.
@@ -43,7 +42,7 @@ public class DynamoDBHandler {
         annotationTableName = configAnnotationTableName;
         subscriptionTableName = configSubscriptionTableName;
 
-        slf4jLogger.info(String.format("DynamoDBHandler wired with Articles Table: %s and Annotations Table:%s.", articleTableName, annotationTableName));
+        slf4jLogger.info(String.format("DynamoDBHandler wired with Articles Table: %s, Annotations Table:%s and Subscriptions Table:%s", articleTableName, annotationTableName,subscriptionTableName));
 
     }
 
@@ -91,40 +90,57 @@ public class DynamoDBHandler {
         Table table = dynamoDB.getTable(subscriptionTableName);
         Item subscription = Item.fromJSON(jsonSubscription.toString());
         PutItemOutcome outcome = table.putItem(subscription);
-//        slf4jLogger.info( outcome.getPutItemResult().toString());
         //TODO: Update result based on information
         return true;
     }
 
-//    public boolean getSubscription(){
-//        Table table =  dynamoDB.getTable(subscriptionTableName);
-//        Index index = table.getIndex("nextRunDate-index");
-//
-//        QuerySpec spec = new QuerySpec()
-//                .withKeyConditionExpression("#d = :v_date ")
-//                .withNameMap(new NameMap()
-//                        .with("#d", "nextRunDate"))
-//                .withValueMap(new ValueMap()
-//                        .withNumber(":v_date", 0));
-//
-//        ItemCollection<QueryOutcome> items = index.query(spec);
-//        Iterator<Item> iter = items.iterator();
-//        while (iter.hasNext()) {
-//            System.out.println(iter.next().toJSONPretty());
-//        }
+    public JSONArray getSubscriptions(){
+        JSONArray results = new JSONArray();
+        RateLimiter limiter = RateLimiter.create(1.0);
+        Map<String, AttributeValue> lastKeyEvaluated = null;
+        do {
+            limiter.acquire();
+            ScanRequest scanRequest = new ScanRequest()
+                    .withTableName(subscriptionTableName)
+                    .withLimit(50)
+                    .withExclusiveStartKey(lastKeyEvaluated)
+                    .withAttributesToGet(Arrays.asList("subscriptionId"));
 
-//        slf4jLogger.info( outcome.getPutItemResult().toString());
-//        return true;
-//    }
+            ScanResult result = client.scan(scanRequest);
+
+            for (Map<String, AttributeValue> item : result.getItems()){
+                results.add(collectScanResult(item));
+            }
+            lastKeyEvaluated = result.getLastEvaluatedKey();
+        } while (lastKeyEvaluated != null);
+        return results;
+    }
 
 
     public JSONObject getSubscription(String id) {
         Table table = dynamoDB.getTable(subscriptionTableName);
         Item item = table.getItem("subscriptionId", id);
+
         if (item == null)
             return new JSONObject();
         else
             return (JSONObject) JSONValue.parse(item.toJSON());
+
+    }
+
+    public boolean updateSubscriptionTime(String id, String time) {
+
+        Map<String,AttributeValue> key = new HashMap<>();
+        key.put("subscriptionId",new AttributeValue().withS(id));
+
+        UpdateItemRequest updateItemRequest = new UpdateItemRequest()
+                .withTableName(subscriptionTableName)
+                .withKey(key)
+                .addAttributeUpdatesEntry("nextRunTime",
+                        new AttributeValueUpdate().withValue(new AttributeValue().withS(time)));
+
+        UpdateItemResult updateItemResult = client.updateItem(updateItemRequest);
+        return true;
 
     }
 
@@ -144,6 +160,12 @@ public class DynamoDBHandler {
         DeleteItemOutcome deleteItemOutcome = table.deleteItem("subscriptionId", id);
         deleteItemOutcome.getDeleteItemResult().getAttributes();
         return true;
+    }
+
+    private JSONObject collectScanResult(Map<String, AttributeValue> item)
+    {
+        String subscriptionKey = item.get("subscriptionId").getS();
+        return getSubscription(subscriptionKey);
     }
 
 

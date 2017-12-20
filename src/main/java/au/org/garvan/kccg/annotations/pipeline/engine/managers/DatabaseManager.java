@@ -13,6 +13,7 @@ import au.org.garvan.kccg.annotations.pipeline.model.SearchResult;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,8 +119,16 @@ public class DatabaseManager {
         return dynamoDBHandler.getSubscription(qId);
     }
 
+    public JSONArray getSubscriptions(){
+        return dynamoDBHandler.getSubscriptions();
+    }
+
     public boolean deleteSubscription(String qId){
         return dynamoDBHandler.deleteSubscription(qId);
+    }
+
+    public boolean updateSubscriptionTime(String qId, String timeStamp){
+        return dynamoDBHandler.updateSubscriptionTime(qId, timeStamp);
     }
 
 

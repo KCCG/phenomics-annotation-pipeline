@@ -4,6 +4,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
 import au.org.garvan.kccg.annotations.pipeline.model.SubscriptionQuery;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,9 +19,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import java.time.format.DateTimeFormatter;
 /**
@@ -126,11 +125,54 @@ public class SubscriptionManager {
 
     }
 
+    public  Pair<Boolean,Object> getSubscriptions(){
+        //Fetch all subscriptions from DB Manager
+        JSONArray jsonSubscriptions = dbManager.getSubscriptions();
+
+        List<SubscriptionQuery> returnList = new ArrayList<>();
+        if(jsonSubscriptions.size()>0){
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            for(Object obj: jsonSubscriptions){
+                JSONObject jSubscription = (JSONObject) obj;
+                SubscriptionQuery returnObject = new SubscriptionQuery();
+                try {
+                    returnObject= objectMapper.readValue(jSubscription.toJSONString(), SubscriptionQuery.class);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                returnList.add(returnObject);
+
+            }
+
+            return new Pair<>(true,returnList);
+        }
+        else
+            return new Pair<>(false, "No subscription found.");
+
+
+    }
+
     public  Pair<Boolean,Object> deleteSubscription(String id){
 
         if(dbManager.checkIfSubscriptionExists(id))
         {
             dbManager.deleteSubscription(id);
+            return new Pair<>(true, id );
+        }
+        else
+            return new Pair<>(false, "Subscription not found. ");
+
+
+    }
+
+
+
+    public  Pair<Boolean,Object> updateSubscriptionTime(String id, String timeStamp){
+
+        if(dbManager.checkIfSubscriptionExists(id))
+        {
+            dbManager.updateSubscriptionTime(id,timeStamp);
             return new Pair<>(true, id );
         }
         else

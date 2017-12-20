@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 public class SubscriptionResult{
 
     @JsonProperty
-    String nextNotificationDateTime;
+    String nextRunTime;
 
     @JsonProperty
     String subscriptionId;

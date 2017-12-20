@@ -68,6 +68,27 @@ public class SubscriptionController {
         }
     }
 
+
+    @ApiOperation(value = "getSubscriptions", nickname = "getSubscriptions" , notes = "")
+    @RequestMapping(value = "/subscription/", method = RequestMethod.GET, produces = "application/json")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Success", response = ResponseEntity.class ),
+            @ApiResponse(code = 401, message = "Unauthorized"),
+            @ApiResponse(code = 403, message = "Forbidden"),
+            @ApiResponse(code = 404, message = "Not Found"),
+            @ApiResponse(code = 500, message = "Failure")})
+    @CrossOrigin
+    public ResponseEntity<?> getSubscriptions() {
+
+        Pair<Boolean, Object> result = engine.getSubscriptions();
+        if (result.getFirst()) {
+            return new ResponseEntity<>(result.getSecond(), HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(new CustomErrorType(result.getSecond().toString()),
+                    HttpStatus.NO_CONTENT);
+        }
+    }
+
     @ApiOperation(value = "deleteSubscription", nickname = "deleteSubscription" , notes = "")
     @RequestMapping(value = "/subscription/{subscriptionId}", method = RequestMethod.DELETE, produces = "application/json")
     @ApiResponses(value = {
@@ -89,6 +110,30 @@ public class SubscriptionController {
         }
     }
 
+
+
+
+    @ApiOperation(value = "updateSubscription", nickname = "updateSubscription" , notes = "")
+    @RequestMapping(value = "/subscription/{subscriptionId}/{timeStamp}", method = RequestMethod.PUT, produces = "application/json")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Success", response = ResponseEntity.class ),
+            @ApiResponse(code = 401, message = "Unauthorized"),
+            @ApiResponse(code = 403, message = "Forbidden"),
+            @ApiResponse(code = 404, message = "Not Found"),
+            @ApiResponse(code = 500, message = "Failure")})
+    @CrossOrigin
+    public ResponseEntity<?> updateSubscriptionTime(@PathVariable(value="subscriptionId") @ApiParam("subscriptionId") String subscriptionId,
+                                                    @PathVariable(value="timeStamp") @ApiParam("timeStamp") String timeStamp) {
+
+        Pair<Boolean, Object> result = engine.updateSubscriptionTime(subscriptionId, timeStamp);
+        if (result.getFirst()) {
+            return new ResponseEntity<>(HttpStatus.OK);
+
+        } else {
+            return new ResponseEntity<>(new CustomErrorType(result.getSecond().toString()),
+                    HttpStatus.NO_CONTENT);
+        }
+    }
 
 
 
