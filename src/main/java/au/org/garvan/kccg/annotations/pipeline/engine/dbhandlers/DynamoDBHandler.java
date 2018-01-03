@@ -128,7 +128,7 @@ public class DynamoDBHandler {
 
     }
 
-    public boolean updateSubscriptionTime(String id, String time) {
+    public boolean updateSubscriptionTime(String id, long rundate,  String time) {
 
         Map<String,AttributeValue> key = new HashMap<>();
         key.put("subscriptionId",new AttributeValue().withS(id));
@@ -137,7 +137,9 @@ public class DynamoDBHandler {
                 .withTableName(subscriptionTableName)
                 .withKey(key)
                 .addAttributeUpdatesEntry("nextRunTime",
-                        new AttributeValueUpdate().withValue(new AttributeValue().withS(time)));
+                        new AttributeValueUpdate().withValue(new AttributeValue().withS(time)))
+                .addAttributeUpdatesEntry("lastRunDate",
+                        new AttributeValueUpdate().withValue(new AttributeValue().withN(String.valueOf(rundate))));
 
         UpdateItemResult updateItemResult = client.updateItem(updateItemRequest);
         return true;

@@ -114,7 +114,7 @@ public class SubscriptionController {
 
 
     @ApiOperation(value = "updateSubscription", nickname = "updateSubscription" , notes = "")
-    @RequestMapping(value = "/subscription/{subscriptionId}/{timeStamp}", method = RequestMethod.PUT, produces = "application/json")
+    @RequestMapping(value = "/subscription/{subscriptionId}/{runDate}/{timeStamp}", method = RequestMethod.PUT, produces = "application/json")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Success", response = ResponseEntity.class ),
             @ApiResponse(code = 401, message = "Unauthorized"),
@@ -123,9 +123,10 @@ public class SubscriptionController {
             @ApiResponse(code = 500, message = "Failure")})
     @CrossOrigin
     public ResponseEntity<?> updateSubscriptionTime(@PathVariable(value="subscriptionId") @ApiParam("subscriptionId") String subscriptionId,
-                                                    @PathVariable(value="timeStamp") @ApiParam("timeStamp") String timeStamp) {
+                                                    @PathVariable(value="timeStamp") @ApiParam("timeStamp") String timeStamp,
+                                                    @PathVariable(value="runDate") @ApiParam("runDate") long runDate) {
 
-        Pair<Boolean, Object> result = engine.updateSubscriptionTime(subscriptionId, timeStamp);
+        Pair<Boolean, Object> result = engine.updateSubscriptionTime(subscriptionId,runDate, timeStamp);
         if (result.getFirst()) {
             return new ResponseEntity<>(HttpStatus.OK);
 

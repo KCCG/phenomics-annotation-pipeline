@@ -43,5 +43,10 @@ public class SubscriptionQuery {
     @ApiModelProperty(hidden = true)
     private String nextRunTime;
 
+    @JsonProperty
+    @ApiModelProperty(hidden = true)
+    private double lastRunDate;
+
+
 
 }
