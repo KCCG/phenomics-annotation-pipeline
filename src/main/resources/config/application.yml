@@ -5,11 +5,15 @@ spring:
     dynamodb:
       articletablename: test-phenomics-articles
       annotationtablename: test-phenomics-annotations
+      subscriptiontablename: test-phenomics-subscriptions
     graphdb:
       endpoint: http://localhost:7474/
       graphprinting: false
       username:
       password:
+
+  subscriptionservice:
+    subscriptiontime: 2
 
 logging:
   path: ./logs/
@@ -19,5 +23,6 @@ logging:
   level:
     root: WARN
     au.org.garvan.kccg.annotations.pipeline: INFO
+
 server:
     port: 9080

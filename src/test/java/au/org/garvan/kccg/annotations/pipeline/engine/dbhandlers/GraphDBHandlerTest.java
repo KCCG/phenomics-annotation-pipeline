@@ -6,6 +6,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Art
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Publication;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.CommonParams;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
+import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
 import edu.stanford.nlp.util.ArrayMap;
 import org.json.simple.JSONObject;
 import org.junit.Before;
@@ -35,17 +36,17 @@ public class GraphDBHandlerTest {
 //
 //        testConnector = new JsonConnector();
 //        articles =  testConnector.getArticles("test1000.json", CommonParams.FILENAME);
-//        gdb = new GraphDBHandler("http://52.64.25.182:7474/","neo4j", "neodev");
+//        gdb = new GraphDBHandler("http://localhost:7474/","", "");
 //    }
 //
 //
 //    @Test
 //    public void fetchArticlesWithGeneOne() throws Exception {
 //        Map<SearchQueryParams, Object> params = new HashMap<>();
-//        params.put(SearchQueryParams.GENES, Arrays.asList("TNF"));
+//        params.put(SearchQueryParams.GENES, new Pair<>("OR" ,Arrays.asList("TNF")));
 //        gdb.fetchArticles(params);
 //    }
-//
+
 //    @Test
 //    public void fetchArticlesWithGeneTwo() throws Exception {
 //        Map<SearchQueryParams,Object> params = new HashMap<>();

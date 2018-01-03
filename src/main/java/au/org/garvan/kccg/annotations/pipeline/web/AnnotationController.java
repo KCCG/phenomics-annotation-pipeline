@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Created by ahmed on 27/11/17.
@@ -30,7 +31,7 @@ public class AnnotationController {
             @ApiResponse(code = 404, message = "Not Found"),
             @ApiResponse(code = 500, message = "Failure")})
     public boolean annotateArticles(@ApiParam("articles") @RequestBody List<RawArticle> articles) {
-        engine.processArticles(articles);
+        engine.processArticles(articles, UUID.randomUUID().toString());
         return true;
     }
 

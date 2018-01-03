@@ -5,11 +5,15 @@ spring:
     dynamodb:
       articletablename: phenomics-articles
       annotationtablename: phenomics-annotations
+      subscriptiontablename: phenomics-subscriptions
     graphdb:
       endpoint: http://52.64.25.182:7474/
       graphprinting: false
       username: neo4j
       password: neodev
+
+  subscriptionservice:
+    subscriptiontime: 2
 
 logging:
   path: ./logs/

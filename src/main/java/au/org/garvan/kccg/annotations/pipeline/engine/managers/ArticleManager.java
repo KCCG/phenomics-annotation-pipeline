@@ -31,8 +31,9 @@ public class ArticleManager {
     }
 
     @Async
-    public void processArticles(List<RawArticle> articleList)
+    public void processArticles(List<RawArticle> articleList, String batchId)
     {
+        slf4jLogger.info(String.format("Received articles batch for processing. Batch Id:%s Batch Size: %d", batchId,  articleList.size()));
         for (RawArticle input: articleList){
 
             Article article = constructArticle(input);
@@ -40,7 +41,6 @@ public class ArticleManager {
                 if (!isDuplicate(article)) {
                     article.getArticleAbstract().hatch();
                     slf4jLogger.info(String.format("Article processed successfully, ID: %d", article.getPubMedID()));
-
                     dbManager.persistArticle(article);
 
                 } else {
@@ -55,8 +55,9 @@ public class ArticleManager {
 
 
         }//Article Loop
-
-
+        slf4jLogger.info(String.format("Finished articles batch for processing. Batch Id:%s ", batchId));
+        slf4jLogger.info(String.format("Calling CoreNLP Manager to cleanup memory"));
+        CoreNLPManager.clearMemory();
     }
 
     private boolean isDuplicate(Article article){
@@ -70,6 +71,7 @@ public class ArticleManager {
 
     private Article constructArticle(RawArticle rawArticle){
         Article article = new Article(rawArticle.getPubMedID(),
+                LocalDate.now().toEpochDay(),
                 LocalDate.parse(rawArticle.getDatePublished()),
                 LocalDate.parse(rawArticle.getDateCreated()),
                 LocalDate.parse(rawArticle.getDateRevised()),

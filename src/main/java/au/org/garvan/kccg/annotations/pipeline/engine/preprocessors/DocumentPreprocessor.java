@@ -53,7 +53,6 @@ public class DocumentPreprocessor {
 
         //Using cleaned text after prepossessing is done
         Annotation docAnnotation = CoreNLPManager.annotateDocText(doc.getCleanedText());
-
         List<CoreMap> sentencesMap = docAnnotation.get(CoreAnnotations.SentencesAnnotation.class);
 
 

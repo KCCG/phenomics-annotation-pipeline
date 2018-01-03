@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
+import org.json.simple.JSONObject;
 
 import java.util.Date;
 import java.util.List;
@@ -27,7 +28,7 @@ public class SearchQuery {
 
     @JsonProperty
     @ApiModelProperty(notes = "Gene list to search the articles(1-3 Allowed so far); if more than one than it will be handles as AND condition")
-    private List<String> genes;
+    private dtoInputGene gene;
 
     @JsonProperty
     private Author author;
@@ -45,6 +46,42 @@ public class SearchQuery {
 //        String endDate;
 //
 //    }
+
+    @Data
+    public class dtoInputGene{
+
+        @JsonProperty
+        List<String> symbols;
+        @JsonProperty
+        String condition;
+
+    }
+
+
+
+    public JSONObject constructJson(){
+        JSONObject returnObject = new JSONObject();
+
+        if(author==null && publication == null && gene==null)
+        {return returnObject;}
+
+        returnObject.put("queryId", queryId);
+        if (author != null) {
+            returnObject.put("author", author.constructJson());
+        }
+        if(publication !=null)
+        {
+            returnObject.put("publication", publication.constructJson());
+        }
+        if (gene != null){
+            JSONObject jsonGene = new JSONObject();
+            jsonGene.put("condition", gene.getCondition());
+            jsonGene.put("symbols", gene.getSymbols());
+            returnObject.put("gene",jsonGene);
+        }
+
+        return returnObject;
+    }
 
 
 }

@@ -10,6 +10,10 @@ import au.org.garvan.kccg.annotations.pipeline.engine.enums.EntityType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
 import au.org.garvan.kccg.annotations.pipeline.model.SearchQuery;
 import au.org.garvan.kccg.annotations.pipeline.model.SearchResult;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +27,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Created by ahmed on 22/11/17.
  */
-
+@NoArgsConstructor
+@AllArgsConstructor
 @Component
 public class DatabaseManager {
 
@@ -91,6 +96,40 @@ public class DatabaseManager {
         return dynamoDBHandler.getArticle(Integer.parseInt(id));
     }
 
+
+
+//    Subscription Methods
+//    *****************************
+
+    public boolean persistSubscription(Map<String, Object> subscriptionRequest ){
+
+        JSONObject jsonSubscriptionRequest = new JSONObject();
+        for (Map.Entry<String, Object> entry : subscriptionRequest.entrySet()) {
+            jsonSubscriptionRequest.put(entry.getKey(),entry.getValue());
+        }
+        return dynamoDBHandler.insertSubscription(jsonSubscriptionRequest);
+    }
+
+    public boolean checkIfSubscriptionExists(String qId){
+
+        return dynamoDBHandler.checkSubscription(qId);
+    }
+
+    public JSONObject getSubscription(String qId){
+        return dynamoDBHandler.getSubscription(qId);
+    }
+
+    public JSONArray getSubscriptions(){
+        return dynamoDBHandler.getSubscriptions();
+    }
+
+    public boolean deleteSubscription(String qId){
+        return dynamoDBHandler.deleteSubscription(qId);
+    }
+
+    public boolean updateSubscriptionTime(String qId, String timeStamp){
+        return dynamoDBHandler.updateSubscriptionTime(qId, timeStamp);
+    }
 
 
 
