@@ -40,8 +40,8 @@ public class QueryManager {
             params.put(SearchQueryParams.AUTHOR, query.getAuthor());
         if (query.getGene()!=null)
             params.put(SearchQueryParams.GENES, new Pair<String,List<String>> (query.getGene().getCondition(), query.getGene().getSymbols()));
-//        if (query.getDateRange()!=null)
-//            params.put(SearchQueryParams.DATERANGE, query.getDateRange());
+        if (query.getDateRange()!=null)
+            params.put(SearchQueryParams.DATERANGE,  new Pair<>(query.getDateRange().getStartDate(), query.getDateRange().getEndDate()));
          if (query.getPublication()!=null)
             params.put(SearchQueryParams.PUBLICATION, query.getPublication());
 

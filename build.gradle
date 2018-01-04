@@ -31,7 +31,6 @@ dependencies {
     compile(
             'com.googlecode.json-simple:json-simple:1.1.1',
             'org.projectlombok:lombok:1.16.14',
-            'com.squareup.okhttp3:okhttp:3.6.0',
             'edu.stanford.nlp:stanford-corenlp:3.8.0',
             'edu.stanford.nlp:stanford-corenlp:3.8.0:models',
             'net.iot-solutions.graphdb:jcypher:3.8.0',
@@ -41,7 +40,8 @@ dependencies {
             "org.springframework.boot:spring-boot-starter-actuator",
             "io.springfox:springfox-swagger2:2.5.0",
             "io.springfox:springfox-swagger-ui:2.5.0",
-            "javax.mail:mail:1.4"
+            "javax.mail:mail:1.4",
+            'com.squareup.okhttp3:okhttp:3.6.0'
 
 
     )
