@@ -237,6 +237,15 @@ public class GraphDBHandler {
             if (shortListedArticles.size() == 0)
                 return shortListedArticles;
         }
+
+        if (params.containsKey(SearchQueryParams.DATERANGE)) {
+            Pair<Long,Long> dateRange = (Pair<Long,Long>) params.get(SearchQueryParams.DATERANGE);
+            shortListedArticles = runDateRangeQuery(collectedResults, dateRange.getFirst(),  dateRange.getSecond(), shortListedArticles);
+            if (shortListedArticles.size() == 0)
+                return shortListedArticles;
+        }
+
+
         return shortListedArticles;
 
     }
@@ -405,6 +414,32 @@ public class GraphDBHandler {
             slf4jLogger.info(String.format("Incorrect publication parameters provided. Will result in zero result."));
             return new HashSet<>();
         }
+    }
+
+    private Set<String> runDateRangeQuery(LinkedHashMap<SearchQueryParams, JcQueryResult> collectedResults, Long sDate, Long eDate, Set<String> shortListedArticles) {
+
+            JcNode article = new JcNode("a");
+            List<IClause> queryClauses = new ArrayList<>();
+            JcString PMID = new JcString("PMID");
+            queryClauses.add(MATCH.node(article).label("Article"));
+
+            if (shortListedArticles.size() > 0) {
+                queryClauses.add(WHERE.valueOf(article.property("ProcessingDate")).GT(sDate)
+                        .AND().valueOf(article.property("ProcessingDate")).LTE(eDate)
+                        .AND().valueOf(article.property("PMID")).IN(new JcCollection(new ArrayList<>(shortListedArticles))));
+
+            } else {
+                queryClauses.add(WHERE.valueOf(article.property("ProcessingDate")).GT(sDate)
+                        .AND().valueOf(article.property("ProcessingDate")).LTE(eDate));
+
+            }
+            queryClauses.add(RETURN.value(article.property("PMID")).AS(PMID));
+            JcQueryResult result = executeQueryClauses(queryClauses);
+            collectedResults.put(SearchQueryParams.DATERANGE, result);
+
+
+            return processQueryResult(result, SearchQueryParams.DATERANGE);
+
     }
 
 

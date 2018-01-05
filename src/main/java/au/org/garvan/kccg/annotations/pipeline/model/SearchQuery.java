@@ -36,16 +36,17 @@ public class SearchQuery {
     @JsonProperty
     private Publication publication;
 
-//    @JsonProperty
-//    DateRange dateRange;
-//
-//    public class DateRange{
-//        @JsonProperty
-//        String startDate;
-//        @JsonProperty
-//        String endDate;
-//
-//    }
+    @JsonProperty(required = false)
+    DateRange dateRange;
+
+
+    @Data
+    public class DateRange{
+        @JsonProperty
+        long startDate;
+        @JsonProperty
+        long endDate;
+    }
 
     @Data
     public class dtoInputGene{
@@ -56,6 +57,8 @@ public class SearchQuery {
         String condition;
 
     }
+
+
 
 
 

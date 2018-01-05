@@ -65,9 +65,9 @@ public class SubscriptionManager {
         }
 
 
-        // Frequency should be between 1-7
+        // Frequency should be between 1-30
         int frequencyInDays =  Math.min(30, Math.max(1, subRequest.getDigestFrequencyInDays()));
-        LocalDate nextRunDate = getNextRunDate(frequencyInDays);
+        LocalDate nextRunDate = getNextRunDate();
         LocalDateTime processTime = LocalDateTime.of(nextRunDate, LocalTime.of(subscriptionTime,0,0));
         String nextRunTime = processTime.atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_DATE_TIME);
 
@@ -86,10 +86,8 @@ public class SubscriptionManager {
         }
 
 
-
-
         Map<String, Object> argumentMap = new HashMap<>();
-        argumentMap.put("lastRunDate", LocalDate.now().minusDays(1).toEpochDay());
+        argumentMap.put("lastRunDate", 0L);
         argumentMap.put("nextRunTime", nextRunTime);
 
         //Following parameters should be stored with actual object's property name.
@@ -155,38 +153,46 @@ public class SubscriptionManager {
 
     public  Pair<Boolean,Object> deleteSubscription(String id){
 
+        slf4jLogger.info(String.format("Received a subscription delete request. subscription Id:%s", id));
+
         if(dbManager.checkIfSubscriptionExists(id))
         {
             dbManager.deleteSubscription(id);
+            slf4jLogger.info(String.format("Subscription with Id:%s is deleted. ", id));
+
             return new Pair<>(true, id );
         }
-        else
+        else {
+            slf4jLogger.info(String.format("Subscription with Id:%s is not found so cannot be deleted.", id));
             return new Pair<>(false, "Subscription not found. ");
 
+        }
 
     }
 
 
 
-    public  Pair<Boolean,Object> updateSubscriptionTime(String id, String timeStamp){
-
+    public  Pair<Boolean,Object> updateSubscriptionTime(String id, long runDate, String timeStamp){
+        slf4jLogger.info(String.format("Received a subscription update request. subscription Id:%s", id));
         if(dbManager.checkIfSubscriptionExists(id))
         {
-            dbManager.updateSubscriptionTime(id,timeStamp);
+            dbManager.updateSubscriptionTime(id, runDate , timeStamp);
+            slf4jLogger.info(String.format("Subscription with Id:%s is updated.", id));
             return new Pair<>(true, id );
         }
-        else
+        else {
+            slf4jLogger.info(String.format("Subscription with Id:%s is not found so cannot be updated.", id));
             return new Pair<>(false, "Subscription not found. ");
-
+        }
 
     }
 
-    private LocalDate getNextRunDate(int frequencyInDays){
+    private LocalDate getNextRunDate(){
         int hours = LocalDateTime.now().getHour();
         if (hours<subscriptionTime){
-          frequencyInDays--;
+            return LocalDate.now();
         }
-        return LocalDate.now().plusDays(frequencyInDays);
+        return LocalDate.now().plusDays(1);
 
     }
 

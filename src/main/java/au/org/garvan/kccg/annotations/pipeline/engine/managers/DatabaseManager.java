@@ -127,8 +127,8 @@ public class DatabaseManager {
         return dynamoDBHandler.deleteSubscription(qId);
     }
 
-    public boolean updateSubscriptionTime(String qId, String timeStamp){
-        return dynamoDBHandler.updateSubscriptionTime(qId, timeStamp);
+    public boolean updateSubscriptionTime(String qId, Long runDate, String timeStamp){
+        return dynamoDBHandler.updateSubscriptionTime(qId,runDate, timeStamp);
     }
 
 
