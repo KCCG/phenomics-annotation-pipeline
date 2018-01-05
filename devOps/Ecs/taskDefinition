@@ -25,7 +25,7 @@
       ],
             "workingDirectory": null,
             "dockerSecurityOptions": null,
-            "memory": 1024,
+            "memory": 4096,
             "memoryReservation": null,
             "volumesFrom": [],
             "image": "482667004524.dkr.ecr.ap-southeast-2.amazonaws.com/phenomics:pipeline-latest",
