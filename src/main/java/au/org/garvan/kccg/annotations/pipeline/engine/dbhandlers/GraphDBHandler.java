@@ -10,6 +10,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Pub
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
 import com.google.common.base.Strings;
+import edu.stanford.nlp.util.ArraySet;
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
@@ -41,15 +42,14 @@ import java.util.stream.Collectors;
 public class GraphDBHandler {
 
 
-    @Value("${spring.dbhandlers.graphdb.graphprinting}")
-    private boolean ENABLE_PRINTING;
-
     private final Logger slf4jLogger = LoggerFactory.getLogger(GraphDBHandler.class);
     Properties props = new Properties();
     IDBAccess remote;
+    @Value("${spring.dbhandlers.graphdb.graphprinting}")
+    private boolean ENABLE_PRINTING;
 
     @Autowired
-    public GraphDBHandler(@Value("${spring.dbhandlers.graphdb.endpoint}") String neo4jDbEndpoint ,
+    public GraphDBHandler(@Value("${spring.dbhandlers.graphdb.endpoint}") String neo4jDbEndpoint,
                           @Value("${spring.dbhandlers.graphdb.username}") String userName,
                           @Value("${spring.dbhandlers.graphdb.password}") String password) {
 
@@ -90,7 +90,6 @@ public class GraphDBHandler {
     }
 
     public void createArticleQuery(Article article) {
-
 
         try {
             List<IClause> queryClauses = new ArrayList<>();
@@ -150,9 +149,8 @@ public class GraphDBHandler {
                 slf4jLogger.info(String.format("Graph DB Insertion Failed"));
             else
                 slf4jLogger.info(String.format("Graph DB Insertion done without errors for Article ID: %d", article.getPubMedID()));
-        }
-        catch (Exception e){
-            slf4jLogger.info(String.format("Graph DB Insertion Failed with exception: ",e.getMessage()));
+        } catch (Exception e) {
+            slf4jLogger.info(String.format("Graph DB Insertion Failed with exception: ", e.getMessage()));
         }
 
 
@@ -232,15 +230,15 @@ public class GraphDBHandler {
         }
 
         if (params.containsKey(SearchQueryParams.GENES)) {
-            Pair<String,List<String>> gene = (Pair<String,List<String>>) params.get(SearchQueryParams.GENES);
-            shortListedArticles = runGenesQuery(collectedResults,gene.getFirst(),  gene.getSecond(), shortListedArticles);
+            Pair<String, List<String>> gene = (Pair<String, List<String>>) params.get(SearchQueryParams.GENES);
+            shortListedArticles = runGenesQueryCompact(collectedResults, gene.getFirst(), gene.getSecond(), shortListedArticles);
             if (shortListedArticles.size() == 0)
                 return shortListedArticles;
         }
 
         if (params.containsKey(SearchQueryParams.DATERANGE)) {
-            Pair<Long,Long> dateRange = (Pair<Long,Long>) params.get(SearchQueryParams.DATERANGE);
-            shortListedArticles = runDateRangeQuery(collectedResults, dateRange.getFirst(),  dateRange.getSecond(), shortListedArticles);
+            Pair<Long, Long> dateRange = (Pair<Long, Long>) params.get(SearchQueryParams.DATERANGE);
+            shortListedArticles = runDateRangeQuery(collectedResults, dateRange.getFirst(), dateRange.getSecond(), shortListedArticles);
             if (shortListedArticles.size() == 0)
                 return shortListedArticles;
         }
@@ -253,7 +251,7 @@ public class GraphDBHandler {
 
     private Set<String> processQueryResult(JcQueryResult result, SearchQueryParams qType) {
         Set<String> idList = new HashSet<>();
-        if (result==null) {
+        if (result == null) {
             slf4jLogger.info(String.format("Nothing to process as result is null. "));
         } else {
 
@@ -276,27 +274,22 @@ public class GraphDBHandler {
 
         JcQueryResult result = remote.execute(query);
 
-        if(result.getGeneralErrors().size()>0)
-        {
-            List<String> messages =  result.getGeneralErrors().stream().filter(x->x.getMessage().contains("(Connection refused)")).map(t->t.getMessage()).collect(Collectors.toList());
-            if(messages.size()>0) {
+        if (result.getGeneralErrors().size() > 0) {
+            List<String> messages = result.getGeneralErrors().stream().filter(x -> x.getMessage().contains("(Connection refused)")).map(t -> t.getMessage()).collect(Collectors.toList());
+            if (messages.size() > 0) {
                 slf4jLogger.info(String.format("General errors while executing NEO4J query. Message: %s and Exception: %s", messages.get(0), result.getGeneralErrors().toString()));
                 reconnectDb();
-            }
-            else
-            {
+            } else {
                 slf4jLogger.info(String.format("General errors while executing NEO4J query. Message: %s", result.getGeneralErrors().toString()));
 
             }
-        }
-        else if (result.getDBErrors().size()>0){
+        } else if (result.getDBErrors().size() > 0) {
             slf4jLogger.info(String.format("Database errors while executing NEO4J query. Errors:%s", result.getGeneralErrors().toString()));
 
-        }
-        else{
+        } else {
             if (ENABLE_PRINTING)
                 print(result, "Result");
-             return result;
+            return result;
         }
 
         return null;
@@ -304,8 +297,7 @@ public class GraphDBHandler {
 
     }
 
-    private void reconnectDb()
-    {
+    private void reconnectDb() {
         slf4jLogger.info(String.format("Reconnecting Graph Database"));
         this.remote = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
 
@@ -332,7 +324,7 @@ public class GraphDBHandler {
     private Set<String> runAuthorQuery(LinkedHashMap<SearchQueryParams, JcQueryResult> collectedResults, Author author, Set<String> shortListedArticles) {
         JcNode article = new JcNode("a");
         List<IClause> queryClauses = new ArrayList<>();
-        List<Pair<String,String>> lstParams = checkAuthorNameAndGetCaseNumber(author);
+        List<Pair<String, String>> lstParams = checkAuthorNameAndGetCaseNumber(author);
 
 
         JcNode auth = new JcNode("auth");
@@ -342,17 +334,12 @@ public class GraphDBHandler {
                 .relation(c).in().type("WROTE")
                 .node(auth).label("Author"));
 
-        if(lstParams.size()==1)
-        {
+        if (lstParams.size() == 1) {
             queryClauses.add(WHERE.valueOf(auth.property(lstParams.get(0).getFirst())).EQUALS(lstParams.get(0).getSecond()));
-        }
-        else  if(lstParams.size()==2)
-        {
+        } else if (lstParams.size() == 2) {
             queryClauses.add(WHERE.valueOf(auth.property(lstParams.get(0).getFirst())).EQUALS(lstParams.get(0).getSecond())
                     .AND().valueOf(auth.property(lstParams.get(1).getFirst())).EQUALS(lstParams.get(1).getSecond()));
-        }
-        else  if(lstParams.size()==3)
-        {
+        } else if (lstParams.size() == 3) {
             queryClauses.add(WHERE.valueOf(auth.property(lstParams.get(0).getFirst())).EQUALS(lstParams.get(0).getSecond())
                     .AND().valueOf(auth.property(lstParams.get(1).getFirst())).EQUALS(lstParams.get(1).getSecond())
                     .AND().valueOf(auth.property(lstParams.get(2).getFirst())).EQUALS(lstParams.get(2).getSecond()));
@@ -369,14 +356,14 @@ public class GraphDBHandler {
 
     }
 
-    private List<Pair<String,String>> checkAuthorNameAndGetCaseNumber(Author author) {
-        List<Pair<String,String>> lstParams = new ArrayList<>();
-        if(!Strings.isNullOrEmpty(author.getForeName()))
-            lstParams.add(Pair.of("ForeName", author.getForeName() ));
-        if(!Strings.isNullOrEmpty(author.getLastName()))
-            lstParams.add(Pair.of("LastName", author.getLastName() ));
-        if(!Strings.isNullOrEmpty(author.getInitials()))
-            lstParams.add(Pair.of("Initials", author.getInitials() ));
+    private List<Pair<String, String>> checkAuthorNameAndGetCaseNumber(Author author) {
+        List<Pair<String, String>> lstParams = new ArrayList<>();
+        if (!Strings.isNullOrEmpty(author.getForeName()))
+            lstParams.add(Pair.of("ForeName", author.getForeName()));
+        if (!Strings.isNullOrEmpty(author.getLastName()))
+            lstParams.add(Pair.of("LastName", author.getLastName()));
+        if (!Strings.isNullOrEmpty(author.getInitials()))
+            lstParams.add(Pair.of("Initials", author.getInitials()));
 
         return lstParams;
     }
@@ -418,40 +405,40 @@ public class GraphDBHandler {
 
     private Set<String> runDateRangeQuery(LinkedHashMap<SearchQueryParams, JcQueryResult> collectedResults, Long sDate, Long eDate, Set<String> shortListedArticles) {
 
-            JcNode article = new JcNode("a");
-            List<IClause> queryClauses = new ArrayList<>();
-            JcString PMID = new JcString("PMID");
-            queryClauses.add(MATCH.node(article).label("Article"));
+        JcNode article = new JcNode("a");
+        List<IClause> queryClauses = new ArrayList<>();
+        JcString PMID = new JcString("PMID");
+        queryClauses.add(MATCH.node(article).label("Article"));
 
-            if (shortListedArticles.size() > 0) {
-                queryClauses.add(WHERE.valueOf(article.property("ProcessingDate")).GT(sDate)
-                        .AND().valueOf(article.property("ProcessingDate")).LTE(eDate)
-                        .AND().valueOf(article.property("PMID")).IN(new JcCollection(new ArrayList<>(shortListedArticles))));
+        if (shortListedArticles.size() > 0) {
+            queryClauses.add(WHERE.valueOf(article.property("ProcessingDate")).GT(sDate)
+                    .AND().valueOf(article.property("ProcessingDate")).LTE(eDate)
+                    .AND().valueOf(article.property("PMID")).IN(new JcCollection(new ArrayList<>(shortListedArticles))));
 
-            } else {
-                queryClauses.add(WHERE.valueOf(article.property("ProcessingDate")).GT(sDate)
-                        .AND().valueOf(article.property("ProcessingDate")).LTE(eDate));
+        } else {
+            queryClauses.add(WHERE.valueOf(article.property("ProcessingDate")).GT(sDate)
+                    .AND().valueOf(article.property("ProcessingDate")).LTE(eDate));
 
-            }
-            queryClauses.add(RETURN.value(article.property("PMID")).AS(PMID));
-            JcQueryResult result = executeQueryClauses(queryClauses);
-            collectedResults.put(SearchQueryParams.DATERANGE, result);
+        }
+        queryClauses.add(RETURN.value(article.property("PMID")).AS(PMID));
+        JcQueryResult result = executeQueryClauses(queryClauses);
+        collectedResults.put(SearchQueryParams.DATERANGE, result);
 
 
-            return processQueryResult(result, SearchQueryParams.DATERANGE);
+        return processQueryResult(result, SearchQueryParams.DATERANGE);
 
     }
 
-
-    private Set<String> runGenesQuery(LinkedHashMap<SearchQueryParams, JcQueryResult> collectedResults, String condition, List<String> genes, Set<String> shortListedArticles) {
-
+    @Deprecated
+    private Set<String> runGenesQuery(LinkedHashMap<SearchQueryParams, JcQueryResult> collectedResults, String condition, List<String> lstGenes, Set<String> shortListedArticles) {
+        List<String> genes = lstGenes.stream().map(g -> g.toUpperCase()).collect(Collectors.toList());
         JcNode article = new JcNode("a");
         List<IClause> queryClauses = new ArrayList<>();
 
-        switch (condition){
+        switch (condition) {
             case "AND":
-                if(genes.size()>3)
-                    genes = genes.subList(0,3);
+                if (genes.size() > 3)
+                    genes = genes.subList(0, 3);
 
                 switch (genes.size()) {
 
@@ -560,6 +547,82 @@ public class GraphDBHandler {
         }
 
 
+        JcQueryResult result = executeQueryClauses(queryClauses);
+        collectedResults.put(SearchQueryParams.GENES, result);
+        return processQueryResult(result, SearchQueryParams.GENES);
+
+
+    }
+
+    /***
+     * This method is to enhance th search query with AND parameters by eliminating the limit of 3.
+     * @param collectedResults
+     * @param condition
+     * @param lstGenes
+     * @param shortListedArticles
+     * @return
+     */
+    private Set<String> runGenesQueryCompact(LinkedHashMap<SearchQueryParams, JcQueryResult> collectedResults, String condition, List<String> lstGenes, Set<String> shortListedArticles) {
+        List<String> genes = lstGenes.stream().map(g -> g.toUpperCase()).collect(Collectors.toList());
+        JcNode article = new JcNode("a");
+        List<IClause> queryClauses = new ArrayList<>();
+
+        if (genes.size() == 0) {
+            collectedResults.put(SearchQueryParams.GENES, null);
+            return processQueryResult(null, SearchQueryParams.GENES);
+        }
+
+        if (condition.equals("AND")) {
+            for (int x = 0; x < genes.size(); x++) {
+                queryClauses = new ArrayList<>();
+                JcNode gene1 = new JcNode("g1");
+                JcString PMID = new JcString("PMID");
+                queryClauses.add(MATCH.node(article).label("Article")
+                        .relation().out().type("CONTAINS")
+                        .node(gene1).label("Gene"));
+
+                if (shortListedArticles.size() > 0) {
+                    queryClauses.add(WHERE.valueOf(gene1.property("Symbol")).EQUALS(genes.get(x))
+                            .AND().valueOf(article.property("PMID")).IN(new JcCollection(new ArrayList<>(shortListedArticles))));
+
+                } else {
+                    queryClauses.add(WHERE.valueOf(gene1.property("Symbol")).EQUALS(genes.get(x)));
+
+                }
+
+                queryClauses.add(RETURN.value(article.property("PMID")).AS(PMID));
+                JcQueryResult result = executeQueryClauses(queryClauses);
+                shortListedArticles = new HashSet<>(result.resultOf(PMID));
+
+                if (shortListedArticles.size() == 0 || x == genes.size() - 1) {
+                    collectedResults.put(SearchQueryParams.GENES, result);
+                    return processQueryResult(result, SearchQueryParams.GENES);
+                }
+            }
+
+
+        }//AND
+        else {
+            JcNode gene1 = new JcNode("g1");
+            JcString PMID = new JcString("PMID");
+            queryClauses.add(MATCH.node(article).label("Article")
+                    .relation().out().type("CONTAINS")
+                    .node(gene1).label("Gene"));
+
+            if (shortListedArticles.size() > 0) {
+                queryClauses.add(WHERE.valueOf(gene1.property("Symbol")).IN(new JcCollection(new ArrayList<>(genes)))
+                        .AND().valueOf(article.property("PMID")).IN(new JcCollection(new ArrayList<>(shortListedArticles))));
+
+            } else {
+                queryClauses.add(WHERE.valueOf(gene1.property("Symbol")).IN(new JcCollection(new ArrayList<>(genes))));
+            }
+
+            queryClauses.add(RETURN.value(article.property("PMID")).AS(PMID));
+
+
+        }
+
+        //Should not come here in case of AND
         JcQueryResult result = executeQueryClauses(queryClauses);
         collectedResults.put(SearchQueryParams.GENES, result);
         return processQueryResult(result, SearchQueryParams.GENES);
