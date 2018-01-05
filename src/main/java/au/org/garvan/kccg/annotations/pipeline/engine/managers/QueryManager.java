@@ -2,6 +2,8 @@ package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
+import au.org.garvan.kccg.annotations.pipeline.engine.lexicons.GenesHandler;
+import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
 import au.org.garvan.kccg.annotations.pipeline.model.SearchQuery;
 import au.org.garvan.kccg.annotations.pipeline.model.SearchResult;
@@ -14,6 +16,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Created by ahmed on 28/11/17.
@@ -61,6 +65,36 @@ public class QueryManager {
         return rankResults(results);
 
     }
+
+    public List<String> getAutocompleteList(String infix){
+        int baseRank = 1000;
+        int resultLimit = 15;
+
+        List<String> geneSymbols =  DocumentPreprocessor.getHGNCGeneHandler().serchGenes(infix);
+        //Ranking results
+       Map<String, Integer> rankedGenes = geneSymbols.stream().collect(Collectors.toMap(Function.identity(),(a)->0));
+        int rank = baseRank;
+        for (Map.Entry<String, Integer> entry : rankedGenes.entrySet()) {
+            if (entry.getKey().indexOf(infix)==0){
+                rank = rank + infix.length();
+            }
+            else{
+                rank = entry.getValue() - entry.getKey().indexOf(infix);
+            }
+            entry.setValue(rank);
+        }
+
+        List<String> returnList = rankedGenes.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .map(m->m.getKey())
+                .collect(Collectors.toList());
+
+        if(returnList.size()>=resultLimit)
+            returnList = returnList.subList(0,resultLimit);
+
+        return returnList;
+    }
+
 
     private List<SearchResult> rankResults (List<SearchResult> inputResults){
         inputResults.sort(Comparator.comparing(SearchResult::getArticleRank).reversed());

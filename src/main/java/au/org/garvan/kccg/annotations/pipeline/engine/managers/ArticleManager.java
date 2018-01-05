@@ -2,7 +2,9 @@ package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
+import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.model.RawArticle;
+import edu.stanford.nlp.process.DocumentProcessor;
 import org.apache.tomcat.jni.Local;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
@@ -10,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import sun.print.DocumentPropertiesUI;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -28,6 +31,7 @@ public class ArticleManager {
     public void init(){
 
         slf4jLogger.info(String.format("Article Manager init() called."));
+        DocumentPreprocessor.init();
     }
 
     @Async

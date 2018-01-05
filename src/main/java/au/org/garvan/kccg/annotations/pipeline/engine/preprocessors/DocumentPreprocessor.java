@@ -48,6 +48,10 @@ public class DocumentPreprocessor {
 
     }
 
+    public static void init(){
+
+    }
+
     public static void preprocessDocument(APDocument doc) {
         doc.setCleanedText(addSpaceAfterFullStop(doc.getOriginalText()));
 
