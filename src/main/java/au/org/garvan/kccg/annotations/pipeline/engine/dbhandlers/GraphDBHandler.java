@@ -1,5 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers;
 
+import au.org.garvan.kccg.annotations.pipeline.model.PaginationRequestParams;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.LexicalEntity;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
@@ -9,8 +10,9 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Aut
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Publication;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
+import au.org.garvan.kccg.annotations.pipeline.model.RankedArticle;
+import au.org.garvan.kccg.annotations.pipeline.model.RankedArticleComparitor;
 import com.google.common.base.Strings;
-import edu.stanford.nlp.util.ArraySet;
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
@@ -19,10 +21,7 @@ import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.clause.*;
-import iot.jcypher.query.values.JcCollection;
-import iot.jcypher.query.values.JcNode;
-import iot.jcypher.query.values.JcRelation;
-import iot.jcypher.query.values.JcString;
+import iot.jcypher.query.values.*;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.Util;
 import org.slf4j.Logger;
@@ -31,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -114,7 +114,7 @@ public class GraphDBHandler {
                             .property("Initials").value(currentAuthor.getInitials())
                             .property("ForeName").value(currentAuthor.getForeName())
                             .property("LastName").value(currentAuthor.getLastName()));
-                    authorsClauses.add(CREATE.node(tempAuthor).relation().out()
+                    authorsClauses.add(MERGE.node(tempAuthor).relation().out()
                             .type("WROTE").property("Order").value(x + 1)
                             .node(nodeArticle));
 
@@ -130,7 +130,7 @@ public class GraphDBHandler {
                     .property("IsoAbbreviation").value(article.getPublication().getIsoAbbreviation())
                     .property("IssnType").value(article.getPublication().getIssnType())
                     .property("IssnNumber").value(article.getPublication().getIssnNumber());
-            IClause publicationLinkClause = CREATE.node(nodeArticle).relation().out().type("PUBLISHED")
+            IClause publicationLinkClause = MERGE.node(nodeArticle).relation().out().type("PUBLISHED")
                     .property("DatePublished")
                     .value(article.getDatePublished())
                     .node(nodePublication);
@@ -172,7 +172,7 @@ public class GraphDBHandler {
                                     .property("HGNCID").value(gene.getHGNCID())
                                     .property("Symbol").value(gene.getApprovedSymbol());
                             IClause geneLinkClause =
-                                    CREATE.node(nodeArticle).relation().out().type("CONTAINS")
+                                    MERGE.node(nodeArticle).relation().out().type("CONTAINS")
                                             .property("SentID").value(sent.getId())
                                             .property("DocOffsetBegin").value(sent.getDocOffset().getX() + token.getSentOffset().getX())
                                             .property("Field").value("Abstract")
@@ -208,7 +208,7 @@ public class GraphDBHandler {
      */
 
 
-    public Set<String> fetchArticles(Map<SearchQueryParams, Object> params) {
+    public List<RankedArticle> fetchArticles(Map<SearchQueryParams, Object> params, PaginationRequestParams qParams) {
         Set<String> shortListedArticles = new HashSet<>();
 
         //Results storage for all params, and later will be sorted out.
@@ -218,7 +218,7 @@ public class GraphDBHandler {
             Author author = (Author) params.get(SearchQueryParams.AUTHOR);
             shortListedArticles = runAuthorQuery(collectedResults, author, shortListedArticles);
             if (shortListedArticles.size() == 0)
-                return shortListedArticles;
+                return new ArrayList<>();
         }
 
 
@@ -226,26 +226,98 @@ public class GraphDBHandler {
             Publication publication = (Publication) params.get(SearchQueryParams.PUBLICATION);
             shortListedArticles = runPublicationQuery(collectedResults, publication, shortListedArticles);
             if (shortListedArticles.size() == 0)
-                return shortListedArticles;
+                return new ArrayList<>();
         }
 
         if (params.containsKey(SearchQueryParams.GENES)) {
             Pair<String, List<String>> gene = (Pair<String, List<String>>) params.get(SearchQueryParams.GENES);
             shortListedArticles = runGenesQueryCompact(collectedResults, gene.getFirst(), gene.getSecond(), shortListedArticles);
             if (shortListedArticles.size() == 0)
-                return shortListedArticles;
+                return new ArrayList<>();
         }
 
         if (params.containsKey(SearchQueryParams.DATERANGE)) {
             Pair<Long, Long> dateRange = (Pair<Long, Long>) params.get(SearchQueryParams.DATERANGE);
             shortListedArticles = runDateRangeQuery(collectedResults, dateRange.getFirst(), dateRange.getSecond(), shortListedArticles);
             if (shortListedArticles.size() == 0)
-                return shortListedArticles;
+                return new ArrayList<>();
         }
 
 
-        return shortListedArticles;
+        return paginateSearchResult(shortListedArticles, qParams);
 
+
+
+    }
+
+
+    private List<RankedArticle> paginateSearchResult(Set<String> shortListedArticles, PaginationRequestParams qParams) {
+        qParams.setTotalArticles(shortListedArticles.size());
+        JcNode article = new JcNode("a");
+        List<IClause> queryClauses = new ArrayList<>();
+        JcRelation c = new JcRelation("c");
+        JcNumber nCount = new JcNumber("nCount");
+        JcString PMID = new JcString("a.PMID");
+        //GetRelations
+        queryClauses.add(MATCH.node(article).label("Article")
+                .relation(c).out().type("CONTAINS")
+                .node());
+
+
+        queryClauses.add(WHERE.valueOf(article.property("PMID")).IN(new JcCollection(new ArrayList<>(shortListedArticles))));
+        queryClauses.add(RETURN.value(article.property("PMID")));
+        queryClauses.add(RETURN.count().value(c).AS(nCount));
+
+        JcQueryResult result = executeQueryClauses(queryClauses);
+        //Get sorted rank result. Result set will have all shortlisted articles, with updated rank from result of this query.
+        List<RankedArticle> countedArticles = getRankedArticles(shortListedArticles,  result.resultOf(PMID),result.resultOf(nCount));
+        //Update total number of pages in query params.
+        qParams.setTotalPages (countedArticles.size()% qParams.getPageSize()==0? countedArticles.size()/qParams.getPageSize(): (countedArticles.size()/qParams.getPageSize()) +1 );
+        //Get required page and return.
+        return getRequiredPage(countedArticles, qParams);
+    }
+
+    private List<RankedArticle> getRequiredPage(List<RankedArticle> countedArticles, PaginationRequestParams qParams){
+        int startIndex = qParams.getPageSize()* (qParams.getPageNo()-1);
+        int endIndex = Math.min((qParams.getPageNo()*qParams.getPageSize()), countedArticles.size());
+        if(startIndex>endIndex)
+            return new ArrayList<>();
+        List<RankedArticle> page = countedArticles.subList(startIndex,endIndex);
+
+        for (int x=0; x<page.size() ;x++)
+        {
+            page.get(x).setRank(page.size()-x);
+        }
+        return page;
+    }
+
+    private List<RankedArticle> getRankedArticles(Set<String> shortListedPMIDs, List<String> PMIDs, List<BigDecimal> counts) {
+        /*Ranking Logic:
+        // Currently Ranking is based on annotations attached with an article.
+        // However with filter queries it is possible that some of the articles do not have any annotation.
+        // So result set contains all elements.
+        */
+
+        //Create a map for all shortlisted articles with Zero Annotation Count.
+        Map<String, BigDecimal> rankingMap = shortListedPMIDs.stream().collect(Collectors.toMap(java.util.function.Function.identity(),(a)->BigDecimal.ZERO));
+
+        //Update Annotation count with provided value. Remember: Counts array keeps count of [:CONTAINS] edges for each article.
+        if(PMIDs.size()==counts.size()) {
+            for (int x = 0; x < PMIDs.size(); x++) {
+                rankingMap.put(PMIDs.get(x), counts.get(x));
+            }
+        }
+
+        // Now all counts are updated. Time to create the Ranked articles for complete result set.
+        List<RankedArticle> countedArticles = new ArrayList<>();
+        for(Map.Entry<String, BigDecimal> entry: rankingMap.entrySet()){
+            countedArticles.add(new RankedArticle(entry.getKey(), entry.getValue(), 0, null, null));
+
+        }
+        // Sort the collection with highest count at index 0.
+        Collections.sort(countedArticles, new RankedArticleComparitor());
+
+        return countedArticles;
     }
 
 
@@ -629,6 +701,10 @@ public class GraphDBHandler {
 
 
     }
+
+
+
+
 
 
 }

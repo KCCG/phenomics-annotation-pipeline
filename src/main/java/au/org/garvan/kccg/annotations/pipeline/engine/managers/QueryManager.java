@@ -1,12 +1,10 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 
+import au.org.garvan.kccg.annotations.pipeline.model.*;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
-import au.org.garvan.kccg.annotations.pipeline.engine.lexicons.GenesHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
-import au.org.garvan.kccg.annotations.pipeline.model.SearchQuery;
-import au.org.garvan.kccg.annotations.pipeline.model.SearchResult;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
@@ -15,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.concurrent.LinkedTransferQueue;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -29,56 +26,60 @@ public class QueryManager {
     @Autowired
     DatabaseManager dbManager;
 
-    public void init(){
+    public void init() {
 
         slf4jLogger.info(String.format("Query Manager init() called."));
     }
 
 
-    public List<SearchResult> processQuery(SearchQuery query){
-        slf4jLogger.info(String.format("Processing search query with id:%s and content:%s",query.getQueryId(),query.toString()));
+    public PaginatedSearchResult processQuery(SearchQuery query, Integer pageSize, Integer pageNo) {
+        slf4jLogger.info(String.format("Processing search query with id:%s and content:%s", query.getQueryId(), query.toString()));
+
+        PaginationRequestParams qParams = new PaginationRequestParams(pageSize, pageNo);
+        slf4jLogger.info(String.format("Query id:%s params are pageSize:%d, pageNo:%d", query.getQueryId(), qParams.getPageSize(), qParams.getPageNo()));
+
 
         List<SearchResult> results = new ArrayList<>();
         Map<SearchQueryParams, Object> params = new HashMap<>();
-        if (query.getAuthor()!=null)
+        if (query.getAuthor() != null)
             params.put(SearchQueryParams.AUTHOR, query.getAuthor());
-        if (query.getGene()!=null)
-            params.put(SearchQueryParams.GENES, new Pair<String,List<String>> (query.getGene().getCondition(), query.getGene().getSymbols()));
-        if (query.getDateRange()!=null)
-            params.put(SearchQueryParams.DATERANGE,  new Pair<>(query.getDateRange().getStartDate(), query.getDateRange().getEndDate()));
-         if (query.getPublication()!=null)
+        if (query.getGene() != null)
+            params.put(SearchQueryParams.GENES, new Pair<String, List<String>>(query.getGene().getCondition(), query.getGene().getSymbols()));
+        if (query.getDateRange() != null)
+            params.put(SearchQueryParams.DATERANGE, new Pair<>(query.getDateRange().getStartDate(), query.getDateRange().getEndDate()));
+        if (query.getPublication() != null)
             params.put(SearchQueryParams.PUBLICATION, query.getPublication());
 
-         if (params.size()>0)
-         {
+        if (params.size() > 0) {
+            List<RankedArticle> searchedArticles = dbManager.searchArticles(params, qParams);
+            for (RankedArticle entry : searchedArticles) {
+                results.add(constructSearchResult(entry));
+            }
 
-             Map<Article, JSONObject> searchedArticles =  dbManager.searchArticles(params);
-             for (Map.Entry<Article, JSONObject> entry : searchedArticles.entrySet()) {
-                 results.add(constructSearchResult(entry.getKey(),entry.getValue()));
-             }
+        }
 
-         }
+        PaginatedSearchResult finalResult = new PaginatedSearchResult();
+        finalResult.setArticles(results);
+        finalResult.setPagination(qParams);
 
-
-        slf4jLogger.info(String.format("Finished processing search query with id: %s. Final result count:%d",query.getQueryId(),results.size()));
-
-        return rankResults(results);
+        slf4jLogger.info(String.format("Finished processing search query with id: %s. Total Articles:%d Result set:%d",
+                query.getQueryId(), qParams.getTotalArticles(), results.size()));
+        return finalResult;
 
     }
 
-    public List<String> getAutocompleteList(String infix){
+    public List<String> getAutocompleteList(String infix) {
         int baseRank = 1000;
         int resultLimit = 15;
 
-        List<String> geneSymbols =  DocumentPreprocessor.getHGNCGeneHandler().serchGenes(infix);
+        List<String> geneSymbols = DocumentPreprocessor.getHGNCGeneHandler().serchGenes(infix);
         //Ranking results
-       Map<String, Integer> rankedGenes = geneSymbols.stream().collect(Collectors.toMap(Function.identity(),(a)->0));
+        Map<String, Integer> rankedGenes = geneSymbols.stream().collect(Collectors.toMap(Function.identity(), (a) -> 0));
         int rank = baseRank;
         for (Map.Entry<String, Integer> entry : rankedGenes.entrySet()) {
-            if (entry.getKey().indexOf(infix)==0){
+            if (entry.getKey().indexOf(infix) == 0) {
                 rank = rank + infix.length();
-            }
-            else{
+            } else {
                 rank = entry.getValue() - entry.getKey().indexOf(infix);
             }
             entry.setValue(rank);
@@ -86,30 +87,32 @@ public class QueryManager {
 
         List<String> returnList = rankedGenes.entrySet().stream()
                 .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-                .map(m->m.getKey())
+                .map(m -> m.getKey())
                 .collect(Collectors.toList());
 
-        if(returnList.size()>=resultLimit)
-            returnList = returnList.subList(0,resultLimit);
+        if (returnList.size() >= resultLimit)
+            returnList = returnList.subList(0, resultLimit);
 
         return returnList;
     }
 
 
-    private List<SearchResult> rankResults (List<SearchResult> inputResults){
+    @Deprecated
+    private List<SearchResult> rankResults(List<SearchResult> inputResults) {
         inputResults.sort(Comparator.comparing(SearchResult::getArticleRank).reversed());
         int newRank = inputResults.size();
-        for (SearchResult result: inputResults)
-        {
+        for (SearchResult result : inputResults) {
             result.setArticleRank(newRank);
-            newRank --;
+            newRank--;
         }
         return inputResults;
     }
 
 
-    private SearchResult constructSearchResult(Article article, JSONObject annotations)
-    {
+    private SearchResult constructSearchResult(RankedArticle rankedArticle) {
+        Article article = rankedArticle.getArticle();
+        JSONObject annotations = rankedArticle.getAnnotations();
+        // ^ This change is made to have one DTO throughout the hierarchy for simplicity of code.
         SearchResult searchResult = new SearchResult();
         searchResult.setPmid(article.getPubMedID());
         searchResult.setArticleAbstract(article.getArticleAbstract().getOriginalText());
@@ -119,16 +122,14 @@ public class QueryManager {
         searchResult.setAuthors(article.getAuthors());
         searchResult.setPublication(article.getPublication());
 
-        if(!annotations.isEmpty())
-        {
-            if(annotations.containsKey("annotations")) {
+        if (!annotations.isEmpty()) {
+            if (annotations.containsKey("annotations")) {
                 JSONArray genes = (JSONArray) annotations.get("annotations");
                 searchResult.fillGenes(genes);
-                searchResult.setArticleRank(genes.size());
+                searchResult.setArticleRank(rankedArticle.getRank());
             }
 
-        }
-        else{
+        } else {
 
         }
 
