@@ -89,12 +89,14 @@ public class QueryManager {
         List<String> geneSymbols = DocumentPreprocessor.getHGNCGeneHandler().serchGenes(infix);
         //Ranking results
         Map<String, Integer> rankedGenes = geneSymbols.stream().collect(Collectors.toMap(Function.identity(), (a) -> 0));
-        int rank = baseRank;
+
+
         for (Map.Entry<String, Integer> entry : rankedGenes.entrySet()) {
+            int rank = baseRank;
             if (entry.getKey().indexOf(infix) == 0) {
-                rank = rank + infix.length();
+                rank = rank*2 - (entry.getKey().length()-infix.length());
             } else {
-                rank = entry.getValue() - entry.getKey().indexOf(infix);
+                rank = rank - entry.getKey().indexOf(infix);
             }
             entry.setValue(rank);
         }
