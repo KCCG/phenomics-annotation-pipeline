@@ -96,7 +96,7 @@ public class QueryManager {
             if (entry.getKey().indexOf(infix) == 0) {
                 rank = rank*2 - (entry.getKey().length()-infix.length());
             } else {
-                rank = rank - entry.getKey().indexOf(infix);
+                rank = rank - (5*entry.getKey().indexOf(infix)) - (entry.getKey().length()-infix.length());
             }
             entry.setValue(rank);
         }
