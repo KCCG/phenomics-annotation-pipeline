@@ -8,6 +8,7 @@ import org.json.simple.JSONObject;
 
 import java.math.BigDecimal;
 import java.util.Comparator;
+import java.util.Map;
 
 /**
  * Created by ahmed on 9/1/18.
@@ -15,10 +16,12 @@ import java.util.Comparator;
 @Data
 @AllArgsConstructor
 public class RankedArticle {
-    
+
+    //Stored by GraphDBHandler
     String PMID;
-    BigDecimal count;
+    BigDecimal totalConceptHits;
     Integer rank;
+    //Filled by DBManager
     Article article;
     JSONObject annotations;
 }

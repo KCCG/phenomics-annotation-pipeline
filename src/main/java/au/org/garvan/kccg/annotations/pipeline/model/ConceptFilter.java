@@ -10,17 +10,16 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * Created by ahmed on 8/1/18.
+ * Created by ahmed on 12/1/18.
  */
-@Data
+
+
+
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
 @NoArgsConstructor
 @ApiModel
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class PaginatedSearchResult {
-
-    List<SearchResult> articles;
-    PaginationRequestParams pagination;
-    ConceptFilter filters;
-
+@Data
+public class ConceptFilter {
+    List<GeneFilter> genes;
 }

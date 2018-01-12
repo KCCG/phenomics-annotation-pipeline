@@ -3,6 +3,7 @@ package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.DynamoDBHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.GraphDBHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.S3Handler;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManagerResultSet;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
 import au.org.garvan.kccg.annotations.pipeline.model.PaginationRequestParams;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
@@ -65,8 +66,11 @@ public class DatabaseManager {
 
     }
 
-    public List<RankedArticle> searchArticles(Map<SearchQueryParams, Object> params, PaginationRequestParams qParams) {
-        List<RankedArticle> rankedArticles = graphDBHandler.fetchArticles(params, qParams);
+    public DBManagerResultSet searchArticles(Map<SearchQueryParams, Object> params, PaginationRequestParams qParams) {
+        DBManagerResultSet resultSet = graphDBHandler.fetchArticles(params, qParams);
+
+        List<RankedArticle> rankedArticles = resultSet.getRankedArticles();
+
         for (RankedArticle anArticle : rankedArticles) {
             JSONObject jsonArticle = fetchArticle(anArticle.getPMID());
             if (!jsonArticle.isEmpty()) {
@@ -74,7 +78,8 @@ public class DatabaseManager {
                 anArticle.setAnnotations(dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE));
             }
         }
-        return rankedArticles;
+        resultSet.setRankedArticles(rankedArticles);
+        return resultSet;
 
     }
 

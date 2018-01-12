@@ -32,7 +32,7 @@ public class GraphDBHandlerTest {
 
 //        testConnector = new JsonConnector();
 //        articles =  testConnector.getArticles("test1000.json", CommonParams.FILENAME);
-//        gdb = new GraphDBHandler("http://localhost:7474/","", "");
+        gdb = new GraphDBHandler("http://localhost:7474/","", "");
     }
 //
 //
@@ -50,36 +50,36 @@ public class GraphDBHandlerTest {
 //        gdb.fetchArticles(params);
 //
 //    }
-//    @Test
-//    public void fetchArticlesWithGeneThree() throws Exception {
-//        Map<SearchQueryParams,Object> params = new HashMap<>();
-//        params.put(SearchQueryParams.GENES, new Pair<>("OR" ,Arrays.asList("CD6",
-//                "T",
-//                "KANSL1",
-//                "EGFR",
-//                "SIRT1",
-//                "BRAF",
-//                "C3",
-//                "NRG1",
-//                "C2",
-//                "HTT",
-//                "ENG",
-//                "FCGR2B",
-//                "MYC",
-//                "BAK1",
-//                "TRG",
-//                "CRP",
-//                "KLF6",
-//                "CTNNB1",
-//                "ATRX",
-//                "HMGB1",
-//                "GPX3",
-//                "SRC",
-//                "IPW",
-//                "BDNF")));
-//        gdb.fetchArticles(params, new PaginationRequestParams(50,1));
-//
-//    }
+    @Test
+    public void fetchArticlesWithGeneThree() throws Exception {
+        Map<SearchQueryParams,Object> params = new HashMap<>();
+        params.put(SearchQueryParams.GENES, new Pair<>("OR" ,Arrays.asList("CD6",
+                "T",
+                "KANSL1",
+                "EGFR",
+                "SIRT1",
+                "BRAF",
+                "C3",
+                "NRG1",
+                "C2",
+                "HTT",
+                "ENG",
+                "FCGR2B",
+                "MYC",
+                "BAK1",
+                "TRG",
+                "CRP",
+                "KLF6",
+                "CTNNB1",
+                "ATRX",
+                "HMGB1",
+                "GPX3",
+                "SRC",
+                "IPW",
+                "BDNF")));
+        gdb.fetchArticles(params, new PaginationRequestParams(50,1));
+
+    }
 //
 //    @Test
 //    public void fetchArticlesWithPublication() throws Exception {

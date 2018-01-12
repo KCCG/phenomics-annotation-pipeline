@@ -1,5 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManagerResultSet;
 import au.org.garvan.kccg.annotations.pipeline.model.*;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
@@ -11,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import scala.Int;
 
 import java.util.*;
 import java.util.function.Function;
@@ -40,6 +42,9 @@ public class QueryManager {
 
 
         List<SearchResult> results = new ArrayList<>();
+        DBManagerResultSet resultSet = new DBManagerResultSet();
+
+
         Map<SearchQueryParams, Object> params = new HashMap<>();
         if (query.getAuthor() != null)
             params.put(SearchQueryParams.AUTHOR, query.getAuthor());
@@ -51,20 +56,29 @@ public class QueryManager {
             params.put(SearchQueryParams.PUBLICATION, query.getPublication());
 
         if (params.size() > 0) {
-            List<RankedArticle> searchedArticles = dbManager.searchArticles(params, qParams);
-            for (RankedArticle entry : searchedArticles) {
+            resultSet = dbManager.searchArticles(params, qParams);
+            for (RankedArticle entry : resultSet.getRankedArticles()) {
                 results.add(constructSearchResult(entry));
             }
-
         }
 
+        slf4jLogger.info(String.format("Finished processing search query with id: %s. Total Articles:%d Result set:%d",
+                query.getQueryId(), qParams.getTotalArticles(), results.size()));
+        return constructFinalResult(results , resultSet, qParams);
+
+    }
+
+    public PaginatedSearchResult constructFinalResult( List<SearchResult> results, DBManagerResultSet resultSet, PaginationRequestParams qParams ){
         PaginatedSearchResult finalResult = new PaginatedSearchResult();
         finalResult.setArticles(results);
         finalResult.setPagination(qParams);
 
-        slf4jLogger.info(String.format("Finished processing search query with id: %s. Total Articles:%d Result set:%d",
-                query.getQueryId(), qParams.getTotalArticles(), results.size()));
-        return finalResult;
+        List<GeneFilter> lstGeneFilter = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry: resultSet.getGeneCounts().entrySet()){
+            lstGeneFilter.add(new GeneFilter(entry.getKey(), entry.getValue()));
+        }
+        finalResult.setFilters(new ConceptFilter(lstGeneFilter));
+        return  finalResult;
 
     }
 
