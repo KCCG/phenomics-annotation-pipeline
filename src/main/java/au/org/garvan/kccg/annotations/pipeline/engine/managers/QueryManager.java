@@ -77,7 +77,8 @@ public class QueryManager {
         for (Map.Entry<String, Integer> entry: resultSet.getGeneCounts().entrySet()){
             lstGeneFilter.add(new GeneFilter(entry.getKey(), entry.getValue()));
         }
-        finalResult.setFilters(new ConceptFilter(lstGeneFilter));
+        List<GeneFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(GeneFilter::getCount).reversed()).collect(Collectors.toList());
+        finalResult.setFilters(new ConceptFilter(sortedLstGeneFilter));
         return  finalResult;
 
     }
