@@ -1,5 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManagerResultSet;
+import au.org.garvan.kccg.annotations.pipeline.model.PaginationRequestParams;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.LexicalEntity;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
@@ -9,8 +11,9 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Aut
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Publication;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
+import au.org.garvan.kccg.annotations.pipeline.model.RankedArticle;
+import au.org.garvan.kccg.annotations.pipeline.model.RankedArticleComparitor;
 import com.google.common.base.Strings;
-import edu.stanford.nlp.util.ArraySet;
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
@@ -19,18 +22,18 @@ import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.clause.*;
-import iot.jcypher.query.values.JcCollection;
-import iot.jcypher.query.values.JcNode;
-import iot.jcypher.query.values.JcRelation;
-import iot.jcypher.query.values.JcString;
+import iot.jcypher.query.values.*;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.Util;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -114,7 +117,7 @@ public class GraphDBHandler {
                             .property("Initials").value(currentAuthor.getInitials())
                             .property("ForeName").value(currentAuthor.getForeName())
                             .property("LastName").value(currentAuthor.getLastName()));
-                    authorsClauses.add(CREATE.node(tempAuthor).relation().out()
+                    authorsClauses.add(MERGE.node(tempAuthor).relation().out()
                             .type("WROTE").property("Order").value(x + 1)
                             .node(nodeArticle));
 
@@ -130,7 +133,7 @@ public class GraphDBHandler {
                     .property("IsoAbbreviation").value(article.getPublication().getIsoAbbreviation())
                     .property("IssnType").value(article.getPublication().getIssnType())
                     .property("IssnNumber").value(article.getPublication().getIssnNumber());
-            IClause publicationLinkClause = CREATE.node(nodeArticle).relation().out().type("PUBLISHED")
+            IClause publicationLinkClause = MERGE.node(nodeArticle).relation().out().type("PUBLISHED")
                     .property("DatePublished")
                     .value(article.getDatePublished())
                     .node(nodePublication);
@@ -172,7 +175,7 @@ public class GraphDBHandler {
                                     .property("HGNCID").value(gene.getHGNCID())
                                     .property("Symbol").value(gene.getApprovedSymbol());
                             IClause geneLinkClause =
-                                    CREATE.node(nodeArticle).relation().out().type("CONTAINS")
+                                    MERGE.node(nodeArticle).relation().out().type("CONTAINS")
                                             .property("SentID").value(sent.getId())
                                             .property("DocOffsetBegin").value(sent.getDocOffset().getX() + token.getSentOffset().getX())
                                             .property("Field").value("Abstract")
@@ -208,7 +211,7 @@ public class GraphDBHandler {
      */
 
 
-    public Set<String> fetchArticles(Map<SearchQueryParams, Object> params) {
+    public DBManagerResultSet fetchArticles(Map<SearchQueryParams, Object> params, PaginationRequestParams qParams) {
         Set<String> shortListedArticles = new HashSet<>();
 
         //Results storage for all params, and later will be sorted out.
@@ -218,7 +221,7 @@ public class GraphDBHandler {
             Author author = (Author) params.get(SearchQueryParams.AUTHOR);
             shortListedArticles = runAuthorQuery(collectedResults, author, shortListedArticles);
             if (shortListedArticles.size() == 0)
-                return shortListedArticles;
+                return new DBManagerResultSet();
         }
 
 
@@ -226,26 +229,171 @@ public class GraphDBHandler {
             Publication publication = (Publication) params.get(SearchQueryParams.PUBLICATION);
             shortListedArticles = runPublicationQuery(collectedResults, publication, shortListedArticles);
             if (shortListedArticles.size() == 0)
-                return shortListedArticles;
+                return new DBManagerResultSet();
         }
 
         if (params.containsKey(SearchQueryParams.GENES)) {
             Pair<String, List<String>> gene = (Pair<String, List<String>>) params.get(SearchQueryParams.GENES);
             shortListedArticles = runGenesQueryCompact(collectedResults, gene.getFirst(), gene.getSecond(), shortListedArticles);
             if (shortListedArticles.size() == 0)
-                return shortListedArticles;
+                return new DBManagerResultSet();
         }
 
         if (params.containsKey(SearchQueryParams.DATERANGE)) {
             Pair<Long, Long> dateRange = (Pair<Long, Long>) params.get(SearchQueryParams.DATERANGE);
             shortListedArticles = runDateRangeQuery(collectedResults, dateRange.getFirst(), dateRange.getSecond(), shortListedArticles);
             if (shortListedArticles.size() == 0)
-                return shortListedArticles;
+                return new DBManagerResultSet();
         }
 
 
-        return shortListedArticles;
+        // If it comes to this line, that means there is something to return.
+        return paginateSearchResultAlongWithFilters(shortListedArticles, qParams);
 
+    }
+
+    /***
+     * This method is added to fetch all the counts of annotations for two purposes.
+        1: Article counts to rank the articles for pagination
+        2: Fetch Gene Symbols so that filtration can be provided from backend.
+
+     * @param shortListedArticles
+     * @param qParams
+     * @return
+     */
+    private DBManagerResultSet paginateSearchResultAlongWithFilters(Set<String> shortListedArticles, PaginationRequestParams qParams) {
+
+        //Prepare Query
+        qParams.setTotalArticles(shortListedArticles.size());
+        JcNode article = new JcNode("a");
+        JcNode entity = new JcNode("e");
+
+        List<IClause> queryClauses = new ArrayList<>();
+        JcRelation c = new JcRelation("c");
+        JcNumber nCount = new JcNumber("nCount");
+        JcString PMID = new JcString("a.PMID");
+        JcString entitySymbol = new JcString("e.Symbol");
+        //GetRelations along with gene symbols
+        queryClauses.add(MATCH.node(article).label("Article")
+                .relation(c).out().type("CONTAINS")
+                .node(entity).label("Gene"));
+
+        //Where to limit it to found articles.
+        queryClauses.add(WHERE.valueOf(article.property("PMID")).IN(new JcCollection(new ArrayList<>(shortListedArticles))));
+        queryClauses.add(RETURN.value(article.property("PMID")));
+        queryClauses.add(RETURN.value(entity.property("Symbol")));
+        queryClauses.add(RETURN.count().value(c).AS(nCount));
+
+        JcQueryResult result = executeQueryClauses(queryClauses);
+        //NOTE: This result may not contain all short listed article especially if only filter queries, publication, author or date range is given.
+
+        //Get sorted rank result. Result set will have all shortlisted articles, with updated rank from result of this query.
+        List<ArticleWiseConcepts> lstConcepts = processResultForConcepts( result.resultOf(PMID),result.resultOf(entitySymbol),  result.resultOf(nCount));
+
+        // This is the inception of result set. This has been introduced to fetch all articles, as well as filters [Genes count] from graph DB.
+        DBManagerResultSet dbManagerResultSet = getRankedArticles(shortListedArticles, lstConcepts);
+        //Update total number of pages in query params.
+        qParams.setTotalPages (dbManagerResultSet.getRankedArticles().size()% qParams.getPageSize()==0? dbManagerResultSet.getRankedArticles().size()/qParams.getPageSize(): (dbManagerResultSet.getRankedArticles().size()/qParams.getPageSize()) +1 );
+        //Get required page and return and new object.
+        DBManagerResultSet finalResultSet = new DBManagerResultSet();
+        //Filter list is added
+        finalResultSet.setGeneCounts(dbManagerResultSet.getGeneCounts());
+        finalResultSet.setRankedArticles(getRequiredPage(dbManagerResultSet.getRankedArticles(), qParams));
+        return finalResultSet;
+    }
+
+    /***
+     * This method is very localized and process result from pagination method.
+     * @param PMIDs
+     * @param symbols
+     * @param counts
+     * @return
+     */
+    private List<ArticleWiseConcepts> processResultForConcepts(List<String> PMIDs, List<String> symbols, List<BigDecimal> counts) {
+        List<ArticleWiseConcepts> lst = new ArrayList<>();
+        for (int x = 0; x < PMIDs.size(); x++) {
+            lst.add( new ArticleWiseConcepts(PMIDs.get(x), symbols.get(x), counts.get(x)));
+        }
+        return lst;
+    }
+
+
+    /***
+     * This function is a sub-listing one to just get the desired page from sorted results.
+     * @param countedArticles : Assuming that this is a sorted/ranked list of articles.
+     * @param qParams
+     * @return
+     */
+    private List<RankedArticle> getRequiredPage(List<RankedArticle> countedArticles, PaginationRequestParams qParams){
+        int startIndex = qParams.getPageSize()* (qParams.getPageNo()-1);
+        int endIndex = Math.min((qParams.getPageNo()*qParams.getPageSize()), countedArticles.size());
+        if(startIndex>endIndex)
+            return new ArrayList<>();
+        List<RankedArticle> page = countedArticles.subList(startIndex,endIndex);
+
+        for (int x=0; x<page.size() ;x++)
+        {
+            page.get(x).setRank(page.size()-x);
+        }
+        return page;
+    }
+
+
+    /***
+     * This method gets short listed articles, rank them and return sorted list as a field of DBManagerResultSet
+     * @param shortListedPMIDs
+     * @param countedConcepts
+     * @return
+     */
+    private DBManagerResultSet getRankedArticles(Set<String> shortListedPMIDs, List<ArticleWiseConcepts> countedConcepts) {
+        /*Ranking Logic:
+        // Currently Ranking is based on annotations attached with an article.
+        // However with filter queries it is possible that some of the articles do not have any annotation.
+        // So result set contains all elements.
+        */
+        Map<String, BigDecimal> articleConceptCountTotal = new HashMap<>();
+        Map<String, Integer> geneArticleCount = new HashMap<>();
+
+        for (ArticleWiseConcepts articleWiseConcepts: countedConcepts){
+            if(articleConceptCountTotal.containsKey(articleWiseConcepts.getPMID())){
+                BigDecimal tCount = articleConceptCountTotal.get(articleWiseConcepts.getPMID());
+                articleConceptCountTotal.put(articleWiseConcepts.getPMID(), articleWiseConcepts.getCount().add(tCount));
+            }
+            else
+            {
+                articleConceptCountTotal.put(articleWiseConcepts.getPMID(), articleWiseConcepts.getCount());
+            }
+
+            if(geneArticleCount.containsKey(articleWiseConcepts.getSymbol())){
+                Integer tCount = geneArticleCount.get(articleWiseConcepts.getSymbol());
+                geneArticleCount.put(articleWiseConcepts.getSymbol(), tCount+1);
+            }
+            else
+            {
+                geneArticleCount.put(articleWiseConcepts.getSymbol(),1);
+            }
+        }
+        // Now all counts are updated. Time to create the Ranked articles for complete result set.
+        List<RankedArticle> countedArticles = new ArrayList<>();
+
+        for (String PMID: shortListedPMIDs)
+        {
+            BigDecimal count = BigDecimal.ZERO;
+            if(articleConceptCountTotal.containsKey(PMID)){
+                count = articleConceptCountTotal.get(PMID);
+            }
+            countedArticles.add(new RankedArticle(PMID, count , 0, null, null));
+
+
+        }
+        // Sort the collection with highest totalConceptHits at index 0.
+        Collections.sort(countedArticles, new RankedArticleComparitor());
+
+        DBManagerResultSet result = new DBManagerResultSet();
+        result.setGeneCounts(geneArticleCount);
+        result.setRankedArticles(countedArticles);
+
+        return result;
     }
 
 
@@ -629,6 +777,20 @@ public class GraphDBHandler {
 
 
     }
+
+    // A class to collect article wise concepts and counts
+    // This is used for ranking and collecting query wide filters.
+    @Data
+    @AllArgsConstructor
+    private class ArticleWiseConcepts{
+        String PMID;
+        String symbol;
+        BigDecimal count;
+    }
+
+
+
+
 
 
 }
