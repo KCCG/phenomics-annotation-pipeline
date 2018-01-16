@@ -47,7 +47,6 @@ public class APToken extends LinguisticEntity {
 
 
 
-
     public APToken(int id, String text, String POS, String lemmaText) {
         super(id, text);
         normalizedText = "";

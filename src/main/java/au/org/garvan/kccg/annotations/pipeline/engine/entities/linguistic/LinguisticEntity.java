@@ -26,7 +26,7 @@ public class LinguisticEntity {
 
     public LinguisticEntity()
     {
-
+        this.id = count.incrementAndGet();
     }
 
     public LinguisticEntity(int id, String text) {

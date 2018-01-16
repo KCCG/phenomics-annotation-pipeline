@@ -14,17 +14,17 @@ public class APParseTreeRow extends LinguisticEntity {
 
     @Getter
     @Setter
-    public int parentID; // required
+    private int parentID; // required
 
 
     @Getter
     @Setter
-    public boolean isLeafNode; // required
+    private boolean isLeafNode; // required
 
 
     @Getter
     @Setter
-    public int offsetBegin; // required
+    private int offsetBegin; // required
 
     public APParseTreeRow(
             int ID,

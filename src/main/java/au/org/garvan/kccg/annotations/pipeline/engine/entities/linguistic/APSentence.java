@@ -2,6 +2,7 @@ package au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.EntityType;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.PhraseType;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.ling.IndexedWord;
 import edu.stanford.nlp.semgraph.SemanticGraph;
@@ -68,12 +69,74 @@ public class APSentence extends LinguisticEntity {
     }
 
 
+    public APSentence(DynamoDBObject dbObject) {
+        super(Integer.parseInt(dbObject.getJsonObject().get("id").toString()), dbObject.getJsonObject().get("originalText").toString());
+        if (dbObject.getEntityType().equals(EntityType.APSentence)) {
+            JSONArray jsonTokens = (JSONArray) dbObject.getJsonObject().get("tokens");
+            jsonTokens.forEach(t -> tokens.add(new APToken(new DynamoDBObject((JSONObject) t, EntityType.APToken))));
+            docOffset.setLocation(Integer.parseInt(((JSONObject) dbObject.getJsonObject().get("docOffset")).get("x").toString()),
+                    Integer.parseInt(((JSONObject) dbObject.getJsonObject().get("docOffset")).get("y").toString()));
+
+            JSONArray jsonAPParseTreeRows = (JSONArray) dbObject.getJsonObject().get("parseTree");
+            parseTree = new ArrayList<>();
+            jsonAPParseTreeRows.forEach(p -> parseTree.add(new APParseTreeRow(new DynamoDBObject((JSONObject) p, EntityType.APParseTreeRow))));
+
+
+            JSONArray jsonAPDependencyRelations = (JSONArray) dbObject.getJsonObject().get("dependencyRelations");
+            dependencyRelations = new ArrayList<>();
+            jsonAPDependencyRelations.forEach(d -> dependencyRelations.add(new APDependencyRelation(new DynamoDBObject((JSONObject) d, EntityType.APDependencyRelation), tokens)));
+
+
+            JSONArray jsonSfLfLinks = (JSONArray) dbObject.getJsonObject().get("SfLfLink");
+            if (jsonSfLfLinks.size() > 0) {
+                SfLfLink = new HashMap<>();
+                for (Object obj : jsonSfLfLinks) {
+                    ((JSONObject) obj).keySet().forEach(k ->
+                            {
+                                APToken SFToken = tokens.stream().filter(t -> t.getId() == Integer.parseInt(k.toString())).collect(Collectors.toList()).get(0);
+                                APToken[] LFTokens = tokenArrayFromTokenIDArray((JSONArray) ((JSONObject) obj).get(k));
+                                SfLfLink.put(SFToken, LFTokens);
+                            }
+
+                    );
+
+                }
+            }
+
+
+        } else {
+
+        }
+
+    }
+
+
+    /***
+     * This function is called during the fist time hatching process.
+     * There is a possibility that whole Linguistic structure is brought back from JSON dump. In that case annotatedTree would be null.
+     */
     public void generateParseTree() {
         parseTree = new ArrayList<>();
         BuildParseTree(annotatedTree, 0, new AtomicInteger(0), parseTree);  // Initially parentID = 0 and rootID = 0
 
     }
 
+
+    // Parse Tree generation
+    // A sample parse tree visualization is given below for reference. Leaf
+    // nodes contain originalText and non-terminal nodes contain POS tags.
+    //
+    //						Root
+    //						  |
+    //						  S
+    //					    /   \
+    //					  VP     NP
+    //					 / \
+    //				   DT  VBZ
+    //				 /    /
+    //			   this  is
+    //
+    // Recursively build a parse tree with pre-order traversal (root-left-right)
 
     public void generateDependencies() {
 
@@ -98,23 +161,6 @@ public class APSentence extends LinguisticEntity {
         }
 
     }
-
-
-    // Parse Tree generation
-    // A sample parse tree visualization is given below for reference. Leaf
-    // nodes contain originalText and non-terminal nodes contain POS tags.
-    //
-    //						Root
-    //						  |
-    //						  S
-    //					    /   \
-    //					  VP     NP
-    //					 / \
-    //				   DT  VBZ
-    //				 /    /
-    //			   this  is
-    //
-    // Recursively build a parse tree with pre-order traversal (root-left-right)
 
     private void BuildParseTree(Tree node, int parentId, AtomicInteger incrementalNodeId, List<APParseTreeRow> parseTree) {
         if (node == null)
@@ -142,107 +188,140 @@ public class APSentence extends LinguisticEntity {
         return tokens.stream().sorted(Comparator.comparing(t -> t.getSentOffset().x)).collect(Collectors.toList());
     }
 
-    public APSentence(DynamoDBObject dbObject){
-        super(Integer.parseInt(dbObject.getJsonObject().get("id").toString()), dbObject.getJsonObject().get("originalText").toString());
-        if(dbObject.getEntityType().equals(EntityType.APSentence))
-        {
-            JSONArray jsonTokens = (JSONArray)dbObject.getJsonObject().get("tokens");
-            jsonTokens.forEach(t-> tokens.add(new APToken(new DynamoDBObject((JSONObject) t, EntityType.APToken))));
-            docOffset.setLocation(Integer.parseInt(((JSONObject)dbObject.getJsonObject().get("docOffset")).get("x").toString()),
-                    Integer.parseInt(((JSONObject)dbObject.getJsonObject().get("docOffset")).get("y").toString()));
-
-            JSONArray jsonAPParseTreeRows = (JSONArray)dbObject.getJsonObject().get("parseTree");
-            parseTree = new ArrayList<>();
-            jsonAPParseTreeRows.forEach(p-> parseTree.add(new APParseTreeRow(new DynamoDBObject((JSONObject)p, EntityType.APParseTreeRow))));
-
-
-            JSONArray jsonAPDependencyRelations = (JSONArray)dbObject.getJsonObject().get("dependencyRelations");
-            dependencyRelations = new ArrayList<>();
-            jsonAPDependencyRelations.forEach(d-> dependencyRelations.add(new APDependencyRelation(new DynamoDBObject((JSONObject)d, EntityType.APDependencyRelation), tokens)));
-
-
-            JSONArray jsonSfLfLinks = (JSONArray)dbObject.getJsonObject().get("SfLfLink");
-            if (jsonSfLfLinks.size()>0) {
-                SfLfLink = new HashMap<>();
-                for (Object obj : jsonSfLfLinks) {
-                    ((JSONObject) obj).keySet().forEach(k ->
-                            {
-                                APToken SFToken = tokens.stream().filter(t -> t.getId() == Integer.parseInt(k.toString())).collect(Collectors.toList()).get(0);
-                                APToken[] LFTokens = tokenArrayFromTokenIDArray((JSONArray) ((JSONObject) obj).get(k));
-                                SfLfLink.put(SFToken,LFTokens);
-                            }
-
-                    );
-
-                }
-            }
-
-
-
-        }
-        else{
-
-        }
-
-    }
-
     @Override
-    public JSONObject constructJson(){
+    public JSONObject constructJson() {
         JSONObject returnObject = super.constructJson();
 
         JSONArray jsonTokens = new JSONArray();
-        tokens.forEach(t-> jsonTokens.add(t.constructJson()));
-        returnObject.put("tokens",jsonTokens);
+        tokens.forEach(t -> jsonTokens.add(t.constructJson()));
+        returnObject.put("tokens", jsonTokens);
 
 
         JSONObject jsonPoint = new JSONObject();
-        jsonPoint.put("x",docOffset.getX());
-        jsonPoint.put("y",docOffset.getY());
-        returnObject.put("docOffset",jsonPoint);
+        jsonPoint.put("x", docOffset.getX());
+        jsonPoint.put("y", docOffset.getY());
+        returnObject.put("docOffset", jsonPoint);
 
 
         JSONArray jsonAPParseTreeRows = new JSONArray();
-        parseTree.forEach(pt-> jsonAPParseTreeRows.add(pt.constructJson()));
-        returnObject.put("parseTree",jsonAPParseTreeRows);
+        parseTree.forEach(pt -> jsonAPParseTreeRows.add(pt.constructJson()));
+        returnObject.put("parseTree", jsonAPParseTreeRows);
 
 
         JSONArray jsonAPDependencyRelations = new JSONArray();
-        dependencyRelations.forEach(dr-> jsonAPDependencyRelations.add(dr.constructJson()));
-        returnObject.put("dependencyRelations",jsonAPDependencyRelations);
+        dependencyRelations.forEach(dr -> jsonAPDependencyRelations.add(dr.constructJson()));
+        returnObject.put("dependencyRelations", jsonAPDependencyRelations);
 
 
         JSONArray jsonSfLfLinks = new JSONArray();
-        SfLfLink.forEach((key,value) -> {
+        SfLfLink.forEach((key, value) -> {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put(key.getId(), tokenIDArrayFromTokenArray(value));
             jsonSfLfLinks.add(jsonObject);
         });
-        returnObject.put("SfLfLink",jsonSfLfLinks);
+        returnObject.put("SfLfLink", jsonSfLfLinks);
         return returnObject;
     }
 
 
-
-    private JSONArray tokenIDArrayFromTokenArray(APToken[] tokens){
+    private JSONArray tokenIDArrayFromTokenArray(APToken[] tokens) {
         JSONArray jsonArray = new JSONArray();
-        for(int x = 0; x<tokens.length; x++){
-            jsonArray.add(x,tokens[x].getId());
+        for (int x = 0; x < tokens.length; x++) {
+            jsonArray.add(x, tokens[x].getId());
         }
         return jsonArray;
     }
 
-    private APToken[] tokenArrayFromTokenIDArray(JSONArray jsonArray){
+    private APToken[] tokenArrayFromTokenIDArray(JSONArray jsonArray) {
 
         APToken[] longForm = new APToken[jsonArray.size()];
         int index = 0;
-        for(Object obj:jsonArray){
-            longForm[index]= tokens.stream().filter(x-> x.getId()==Integer.parseInt (obj.toString())).collect(Collectors.toList()).get(0);
-            index ++;
+        for (Object obj : jsonArray) {
+            longForm[index] = tokens.stream().filter(x -> x.getId() == Integer.parseInt(obj.toString())).collect(Collectors.toList()).get(0);
+            index++;
         }
         return longForm;
 
     }
 
+    /***
+     * This function is written to consume parse tree nodes. It performs two operations.
+     * 1: It finds all phrases/chunks using stored list of parse tree nodes. This can be done after resurrecting document from S3.
+     * 2. When embedding is required (Information and links about embedded phrases) a true flag must be passed in second param.
+     * @param phraseType
+     * @param checkEmbedding
+     * @return
+     */
+    public List<APPhrase> getPhrases(PhraseType phraseType , boolean checkEmbedding) {
+        String phraseIdentifier;
+
+        switch (phraseType) {
+            case NOUN:
+                phraseIdentifier = "NP";
+                break;
+            case VERB:
+                phraseIdentifier = "VP";
+                break;
+            default:
+                phraseIdentifier = "S";
+
+        }
+        List<APPhrase> phrases = new ArrayList<>();
+        Stack<Integer> childStack = new Stack();
+        //Collect all rows/nodes are root of phrase subtree
+        List<APParseTreeRow> phraseNodes = parseTree.stream().
+                filter(x -> x.getOriginalText().equals(phraseIdentifier))
+                .collect(Collectors.toList());
+
+        for (APParseTreeRow NPNode : phraseNodes) {
+            childStack.push(NPNode.getId());
+            List<Integer> lstOffsets = new ArrayList<>();
+            getChildrenOffsets(childStack, lstOffsets);
+            if (lstOffsets.size() > 0) {
+                APPhrase apPhrase = new APPhrase();
+                apPhrase.setTokens(tokens.stream().filter(t -> lstOffsets.contains(t.getSentOffset().x)).collect(Collectors.toList()));
+                apPhrase.getTokens().sort(Comparator.comparing(APToken::beginPosition));
+                apPhrase.setPhraseType(phraseType);
+                phrases.add(apPhrase);
+            }
+        }
+        if(checkEmbedding)
+            inspectPhraseEmbedding(phrases);
+        return phrases;
+
+    }
+
+    /***
+     * This is a n^2 function to iterate over a list of phrases to find and mark embedded/nested ones.
+     * @param phrases
+     */
+    private void inspectPhraseEmbedding(List<APPhrase> phrases) {
+        for (APPhrase aPhrase : phrases) {
+            for (APPhrase bPhrase : phrases) {
+                if (aPhrase.getId() != bPhrase.getId() &&
+                        aPhrase.isSubSetOff(bPhrase)) {
+                    aPhrase.setEmbedded(true);
+                    aPhrase.getParentPhraseIds().add(bPhrase.getId());
+                }
+            }
+        }
+    }
+
+    private void getChildrenOffsets(Stack childStack, List<Integer> lstOffsets) {
+        if (childStack.isEmpty())
+            return;
+        Integer currentId = (Integer) childStack.pop();
+        List<APParseTreeRow> children = parseTree.stream().filter(x -> x.getParentID() == currentId).collect(Collectors.toList());
+        for (APParseTreeRow childNode : children) {
+            if (childNode.isLeafNode()) {
+                lstOffsets.add(childNode.getOffsetBegin());
+            } else {
+                childStack.push(childNode.getId());
+            }
+        }
+        getChildrenOffsets(childStack, lstOffsets);
+
+    }
 
 
 }
