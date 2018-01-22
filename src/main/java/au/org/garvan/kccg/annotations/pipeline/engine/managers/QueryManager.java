@@ -1,6 +1,9 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManagerResultSet;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.model.*;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
@@ -14,9 +17,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import scala.Int;
 
+import javax.validation.constraints.Max;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by ahmed on 28/11/17.
@@ -152,5 +157,106 @@ public class QueryManager {
 
         return searchResult;
     }
+
+
+    /***
+     * Generic list for auto-complete
+     * Currently supports genes and phenotypes
+     * Sorting is based on index of search and length of the term.
+     * @param infix
+     * @return
+     */
+    public List<RankedAutoCompleteEntity> getAutocompleteGenericList(String infix) {
+        int baseRank = 1000;
+        int resultLimit = 15;
+        List<RankedAutoCompleteEntity> returnList = new ArrayList<>();
+
+
+        //Get and sort Genes
+        List<APGene> shortlistedGenes = DocumentPreprocessor.getHGNCGeneHandler().searchGenes(infix);
+        List<APPhenotype> shortListedPhenotypes = DocumentPreprocessor.getTempPhenotypeHandler().serchPhenotype(infix);
+        //Ranking results
+        Map<Object, Integer> rankedEntities = new HashMap<>();
+        shortListedPhenotypes.stream().forEach(x-> rankedEntities.put(x, 0));
+        shortlistedGenes.stream().forEach(x-> rankedEntities.put(x, 0));
+
+        for (Map.Entry<Object, Integer> entry : rankedEntities.entrySet()) {
+            int rank = baseRank;
+
+            if(entry.getKey() instanceof APGene) {
+                String symbol = ((APGene)entry.getKey()).getApprovedSymbol();
+                if (symbol.indexOf(infix) == 0) {
+                    rank = rank * 2 - (symbol.length() - infix.length());
+                } else {
+                    rank = rank - (5 * symbol.indexOf(infix)) - (symbol.length() - infix.length());
+                }
+                entry.setValue(rank);
+            }
+            if(entry.getKey() instanceof APPhenotype){
+                List<String> symbols = Arrays.asList( ((APPhenotype)entry.getKey()).getText().toUpperCase().split(" "));
+                Integer termNumber=0;
+                for(String symbol:symbols) {
+                    rank = baseRank;
+                    if (symbol.indexOf(infix) == 0) {
+                        rank = rank * 2 - (symbol.length() - infix.length())  - symbols.size();
+                    } else {
+                        rank = rank - (5 * symbol.indexOf(infix)) - (symbol.length() - infix.length() - symbols.size());
+                    }
+                    rank = rank - 10*termNumber;
+                    if(entry.getValue()<rank)
+                        entry.setValue(rank);
+                    termNumber ++;
+                }
+            }
+        }
+
+
+        //Show equal number of items from auto-complete list.
+        Integer collectedGeneSize = Math.min(resultLimit/2, shortlistedGenes.size());
+        Integer collectedPhenotypeSize = Math.min(resultLimit-collectedGeneSize, shortListedPhenotypes.size());
+
+
+        Map<Object,Integer> topRankedPhenotypes =
+                rankedEntities.entrySet().stream().filter(x-> x.getKey() instanceof APPhenotype)
+                        .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                        .limit(collectedPhenotypeSize)
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+        Map<Object,Integer> topRankedGenes =
+                rankedEntities.entrySet().stream().filter(x-> x.getKey() instanceof APGene)
+                        .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                        .limit(collectedGeneSize)
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+
+
+
+        for(Map.Entry<Object, Integer> entry: topRankedGenes.entrySet()){
+            Object object = entry.getKey();
+            RankedAutoCompleteEntity entity = new RankedAutoCompleteEntity();
+                APGene gene = (APGene) object;
+                entity.setId(String.valueOf(gene.getHGNCID()));
+                entity.setText(gene.getApprovedSymbol());
+                entity.setType(AnnotationType.GENE.toString());
+                entity.setRank(entry.getValue());
+                returnList.add(entity);
+        }
+
+        for(Map.Entry<Object, Integer> entry: topRankedPhenotypes.entrySet()){
+            Object object = entry.getKey();
+            RankedAutoCompleteEntity entity = new RankedAutoCompleteEntity();
+                APPhenotype phenotype = (APPhenotype) object;
+                entity.setId(String.valueOf(phenotype.getId()));
+                entity.setText(phenotype.getText());
+                entity.setType(AnnotationType.PHENOTYPE.toString());
+                entity.setRank(entry.getValue());
+                returnList.add(entity);
+        }
+
+        returnList.sort(Comparator.comparing(RankedAutoCompleteEntity::getRank).reversed());
+
+        return returnList;
+    }
+
 
 }

@@ -2,6 +2,7 @@ package au.org.garvan.kccg.annotations.pipeline.web;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.managers.QueryManager;
 import au.org.garvan.kccg.annotations.pipeline.model.PaginatedSearchResult;
+import au.org.garvan.kccg.annotations.pipeline.model.RankedAutoCompleteEntity;
 import au.org.garvan.kccg.annotations.pipeline.model.SearchQuery;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -54,6 +55,21 @@ public class QueryController {
     public List<String> getAutocomplete(@PathVariable(value = "infix") @ApiParam("infix") String infix) {
 
         return engine.getAutocompleteList(infix.toUpperCase().trim());
+
+    }
+
+    @ApiOperation(value = "getAutocompleteGeneric", nickname = "getAutocompleteGeneric", notes = "")
+    @RequestMapping(value = "/query/autocomplete/beta/{infix}", method = RequestMethod.GET, produces = "application/json")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Success", responseContainer = "List"),
+            @ApiResponse(code = 401, message = "Unauthorized"),
+            @ApiResponse(code = 403, message = "Forbidden"),
+            @ApiResponse(code = 404, message = "Not Found"),
+            @ApiResponse(code = 500, message = "Failure")})
+    @CrossOrigin
+    public List<RankedAutoCompleteEntity> getAutocompleteGeneric(@PathVariable(value = "infix") @ApiParam("infix") String infix) {
+
+        return engine.getAutocompleteGenericList(infix.toUpperCase().trim());
 
     }
 

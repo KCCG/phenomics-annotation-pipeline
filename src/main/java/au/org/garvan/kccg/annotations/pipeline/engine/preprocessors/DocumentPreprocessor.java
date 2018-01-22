@@ -1,5 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.preprocessors;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.lexicons.PhenotypeHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Common;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
@@ -29,11 +30,17 @@ public class DocumentPreprocessor {
 
     @Getter
     private static  GenesHandler  HGNCGeneHandler;
+
+    @Getter
+    private static PhenotypeHandler TempPhenotypeHandler;
 //    private static NormalizationHandler LVGNormalizationHandler;
     static {
 
         HGNCGeneHandler = new GenesHandler("genes.txt");
         HGNCGeneHandler.loadGenes();
+
+        TempPhenotypeHandler = new PhenotypeHandler("hpo.txt");
+        TempPhenotypeHandler.loadPhenotypes();
 
 //        LVGNormalizationHandler = new NormalizationHandler("lvg_normalizations.txt");
 //        LVGNormalizationHandler.loadLVGNormalizedList();

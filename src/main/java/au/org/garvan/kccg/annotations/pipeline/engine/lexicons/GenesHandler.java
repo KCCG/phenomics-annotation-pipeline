@@ -83,6 +83,16 @@ public class GenesHandler extends BaseLexiconHandler {
 
 
     }
+    public List<APGene> searchGenes(String text){
+          List<APGene> collectedGenes =  geneList.entrySet().stream().
+                 filter(x->x.getKey().contains(text))
+                  .map(map->map.getValue())
+                  .collect(Collectors.toList());
+
+          return collectedGenes;
+
+
+    }
 
 
 
