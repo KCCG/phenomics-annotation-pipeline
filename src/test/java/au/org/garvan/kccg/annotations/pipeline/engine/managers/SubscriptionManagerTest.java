@@ -1,15 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 
-import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.DynamoDBHandler;
-import au.org.garvan.kccg.annotations.pipeline.model.SearchQuery;
-import au.org.garvan.kccg.annotations.pipeline.model.SubscriptionQuery;
-import org.junit.Before;
-import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.UUID;
-
-import static org.junit.Assert.*;
 
 /**
  * Created by ahmed on 14/12/17.

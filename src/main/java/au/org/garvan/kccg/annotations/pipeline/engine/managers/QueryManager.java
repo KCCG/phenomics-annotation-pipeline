@@ -4,24 +4,21 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManage
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
-import au.org.garvan.kccg.annotations.pipeline.model.*;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
+import au.org.garvan.kccg.annotations.pipeline.model.query.*;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import scala.Int;
 
-import javax.validation.constraints.Max;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Created by ahmed on 28/11/17.
@@ -73,17 +70,81 @@ public class QueryManager {
 
     }
 
+    public PaginatedSearchResultV1 processQueryV1(SearchQueryV1 query, Integer pageSize, Integer pageNo) {
+        slf4jLogger.info(String.format("Processing search query with id:%s and content:%s", query.getQueryId(), query.toString()));
+
+        PaginationRequestParams qParams = new PaginationRequestParams(pageSize, pageNo);
+        slf4jLogger.info(String.format("Query id:%s params are pageSize:%d, pageNo:%d", query.getQueryId(), qParams.getPageSize(), qParams.getPageNo()));
+
+
+        List<SearchResultV1> results = new ArrayList<>();
+        DBManagerResultSet resultSet = new DBManagerResultSet();
+
+        if(query.getSearchItems().size()>0)
+        {
+            List<APGene> requestedGenes = DocumentPreprocessor.getHGNCGeneHandler().geteGenesWithIDs(query.getGeneIDs());
+
+            Map<SearchQueryParams, Object> params = new HashMap<>();
+            if (requestedGenes.size()>0)
+                params.put(SearchQueryParams.GENES, new Pair<String, List<String>>("OR", requestedGenes.stream().map(g-> g.getApprovedSymbol()).collect(Collectors.toList())));
+
+            if (params.size() > 0) {
+                resultSet = dbManager.searchArticles(params, qParams);
+                for (RankedArticle entry : resultSet.getRankedArticles()) {
+                    results.add(constructSearchResultV1(entry));
+                }
+            }
+        }
+
+
+        slf4jLogger.info(String.format("Finished processing search query with id: %s. Total Articles:%d Result set:%d",
+                query.getQueryId(), qParams.getTotalArticles(), results.size()));
+        return constructFinalResultV1(results , resultSet, qParams , query);
+
+    }
+
+
+
+
     public PaginatedSearchResult constructFinalResult( List<SearchResult> results, DBManagerResultSet resultSet, PaginationRequestParams qParams ){
         PaginatedSearchResult finalResult = new PaginatedSearchResult();
         finalResult.setArticles(results);
         finalResult.setPagination(qParams);
 
-        List<GeneFilter> lstGeneFilter = new ArrayList<>();
-        for (Map.Entry<String, Integer> entry: resultSet.getGeneCounts().entrySet()){
-            lstGeneFilter.add(new GeneFilter(entry.getKey(), entry.getValue()));
+        List<ConceptFilter> lstGeneFilter = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : resultSet.getGeneCounts().entrySet()) {
+            String geneSymbol = entry.getKey();
+            Integer count = entry.getValue();
+            String id = String.valueOf(DocumentPreprocessor.getHGNCGeneHandler().getGene(geneSymbol).getHGNCID());
+            lstGeneFilter.add(new ConceptFilter(
+                    id, AnnotationType.GENE.toString(),
+                    geneSymbol,
+                    count, count));
         }
-        List<GeneFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(GeneFilter::getCount).reversed()).collect(Collectors.toList());
-        finalResult.setFilters(new ConceptFilter(sortedLstGeneFilter));
+        List<ConceptFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
+        finalResult.setFilters(sortedLstGeneFilter);
+        return  finalResult;
+
+    }
+
+    public PaginatedSearchResultV1 constructFinalResultV1( List<SearchResultV1> results, DBManagerResultSet resultSet, PaginationRequestParams qParams, SearchQueryV1 query ){
+        PaginatedSearchResultV1 finalResult = new PaginatedSearchResultV1();
+        finalResult.setArticles(results);
+        finalResult.setPagination(qParams);
+
+        List<ConceptFilter> lstGeneFilter = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : resultSet.getGeneCounts().entrySet()) {
+            String geneSymbol = entry.getKey();
+            Integer count = entry.getValue();
+            String id = String.valueOf(DocumentPreprocessor.getHGNCGeneHandler().getGene(geneSymbol).getHGNCID());
+            lstGeneFilter.add(new ConceptFilter(
+                    id, AnnotationType.GENE.toString(),
+                    geneSymbol,
+                    count, count));
+        }
+        List<ConceptFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
+        finalResult.setFilters(sortedLstGeneFilter);
+        finalResult.setQueryId(query.getQueryId());
         return  finalResult;
 
     }
@@ -131,9 +192,9 @@ public class QueryManager {
     }
 
 
-    private SearchResult constructSearchResult(RankedArticle rankedArticle) {
+       private SearchResult constructSearchResult(RankedArticle rankedArticle) {
         Article article = rankedArticle.getArticle();
-        JSONObject annotations = rankedArticle.getAnnotations();
+        JSONObject annotations = rankedArticle.getJsonAnnotations();
         // ^ This change is made to have one DTO throughout the hierarchy for simplicity of code.
         SearchResult searchResult = new SearchResult();
         searchResult.setPmid(article.getPubMedID());
@@ -157,6 +218,34 @@ public class QueryManager {
 
         return searchResult;
     }
+
+    private SearchResultV1 constructSearchResultV1(RankedArticle rankedArticle) {
+        Article article = rankedArticle.getArticle();
+        JSONObject annotations = rankedArticle.getJsonAnnotations();
+        // ^ This change is made to have one DTO throughout the hierarchy for simplicity of code.
+        SearchResultV1 searchResult = new SearchResultV1();
+        searchResult.setPmid(article.getPubMedID());
+        searchResult.setArticleAbstract(article.getArticleAbstract().getOriginalText());
+        searchResult.setDatePublished(article.getDatePublished().toString());
+        searchResult.setArticleTitle(article.getArticleTitle());
+        searchResult.setLanguage(article.getLanguage());
+        searchResult.setAuthors(article.getAuthors());
+        searchResult.setPublication(article.getPublication());
+
+        if (!annotations.isEmpty()) {
+            if (annotations.containsKey("annotations")) {
+                JSONArray genes = (JSONArray) annotations.get("annotations");
+                searchResult.fillGenes(genes);
+                searchResult.setArticleRank(rankedArticle.getRank());
+            }
+
+        } else {
+
+        }
+
+        return searchResult;
+    }
+
 
 
     /***

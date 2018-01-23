@@ -1,6 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.entities.database;
 
-import au.org.garvan.kccg.annotations.pipeline.model.RankedArticle;
+import au.org.garvan.kccg.annotations.pipeline.model.query.RankedArticle;
 import lombok.Data;
 
 import java.util.ArrayList;

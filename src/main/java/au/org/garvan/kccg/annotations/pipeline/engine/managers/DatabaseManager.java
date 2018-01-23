@@ -5,12 +5,13 @@ import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.GraphDBHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.S3Handler;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManagerResultSet;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
-import au.org.garvan.kccg.annotations.pipeline.model.PaginationRequestParams;
+import au.org.garvan.kccg.annotations.pipeline.model.query.PaginationRequestParams;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.EntityType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
-import au.org.garvan.kccg.annotations.pipeline.model.RankedArticle;
+import au.org.garvan.kccg.annotations.pipeline.model.query.RankedArticle;
+import au.org.garvan.kccg.annotations.pipeline.model.query.SearchResult;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.json.simple.JSONArray;
@@ -21,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by ahmed on 22/11/17.
@@ -75,7 +77,8 @@ public class DatabaseManager {
             JSONObject jsonArticle = fetchArticle(anArticle.getPMID());
             if (!jsonArticle.isEmpty()) {
                 anArticle.setArticle(new Article(new DynamoDBObject(jsonArticle, EntityType.Article), false));
-                anArticle.setAnnotations(dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE));
+                anArticle.setJsonAnnotations(dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE));
+
             }
         }
         resultSet.setRankedArticles(rankedArticles);

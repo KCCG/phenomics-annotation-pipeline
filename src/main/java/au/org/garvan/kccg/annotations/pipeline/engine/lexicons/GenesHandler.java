@@ -94,6 +94,17 @@ public class GenesHandler extends BaseLexiconHandler {
 
     }
 
+    /***
+     * For the search query, Genes are treated as generic filters.
+     * Only IDs are passed. This function will collect all genes passed as IDs in list of String.
+     * @param IDs
+     * @return
+     */
+    public List<APGene> geteGenesWithIDs(List<String> IDs)
+    {
+        return geneList.values().stream().filter( g->  IDs.contains(String.valueOf(g.getHGNCID()))).collect(Collectors.toList());
+    }
+
 
 
 

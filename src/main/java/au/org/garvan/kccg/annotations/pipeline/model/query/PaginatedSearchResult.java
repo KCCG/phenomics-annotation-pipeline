@@ -1,4 +1,4 @@
-package au.org.garvan.kccg.annotations.pipeline.model;
+package au.org.garvan.kccg.annotations.pipeline.model.query;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
@@ -21,6 +21,6 @@ public class PaginatedSearchResult {
 
     List<SearchResult> articles;
     PaginationRequestParams pagination;
-    ConceptFilter filters;
+    List<ConceptFilter> filters;
 
 }

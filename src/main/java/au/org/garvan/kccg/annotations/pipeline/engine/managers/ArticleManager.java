@@ -3,7 +3,7 @@ package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
-import au.org.garvan.kccg.annotations.pipeline.model.RawArticle;
+import au.org.garvan.kccg.annotations.pipeline.model.annotation.RawArticle;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,7 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.web;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.managers.ArticleManager;
-import au.org.garvan.kccg.annotations.pipeline.model.RawArticle;
+import au.org.garvan.kccg.annotations.pipeline.model.annotation.RawArticle;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;

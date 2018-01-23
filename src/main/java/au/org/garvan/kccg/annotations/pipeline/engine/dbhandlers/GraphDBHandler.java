@@ -1,7 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManagerResultSet;
-import au.org.garvan.kccg.annotations.pipeline.model.PaginationRequestParams;
+import au.org.garvan.kccg.annotations.pipeline.model.query.PaginationRequestParams;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.LexicalEntity;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
@@ -11,8 +11,8 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Aut
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Publication;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
-import au.org.garvan.kccg.annotations.pipeline.model.RankedArticle;
-import au.org.garvan.kccg.annotations.pipeline.model.RankedArticleComparitor;
+import au.org.garvan.kccg.annotations.pipeline.model.query.RankedArticle;
+import au.org.garvan.kccg.annotations.pipeline.model.query.RankedArticleComparitor;
 import com.google.common.base.Strings;
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;

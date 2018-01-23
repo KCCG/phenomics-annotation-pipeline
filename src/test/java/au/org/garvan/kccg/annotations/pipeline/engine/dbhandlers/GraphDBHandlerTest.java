@@ -1,7 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.connectors.BaseConnector;
-import au.org.garvan.kccg.annotations.pipeline.model.PaginationRequestParams;
+import au.org.garvan.kccg.annotations.pipeline.model.query.PaginationRequestParams;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
@@ -108,7 +108,7 @@ public class GraphDBHandlerTest {
 //        {
 //            slf4jLogger.info(String.format("Processing Article index:%d and ID:%d", index, a.getPubMedID()));
 //            a.getArticleAbstract().hatch();
-//            if(a.getAbstractEntities().containsKey("annotations"))
+//            if(a.getAbstractEntities().containsKey("jsonAnnotations"))
 //                gdb.createArticleQuery(a);
 //            index ++;
 //        }
