@@ -46,7 +46,7 @@ public class QueryController {
     @RequestMapping(value = "/query/v1.0", method = RequestMethod.POST, produces = "application/json")
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Success", response = PaginatedSearchResult.class),
+            @ApiResponse(code = 200, message = "Success", response = PaginatedSearchResultV1.class),
             @ApiResponse(code = 401, message = "Unauthorized"),
             @ApiResponse(code = 403, message = "Forbidden"),
             @ApiResponse(code = 404, message = "Not Found"),

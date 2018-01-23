@@ -133,14 +133,17 @@ public class QueryManager {
         finalResult.setPagination(qParams);
 
         List<ConceptFilter> lstGeneFilter = new ArrayList<>();
+        List<String> geneIds = query.getGeneIDs();
         for (Map.Entry<String, Integer> entry : resultSet.getGeneCounts().entrySet()) {
             String geneSymbol = entry.getKey();
             Integer count = entry.getValue();
             String id = String.valueOf(DocumentPreprocessor.getHGNCGeneHandler().getGene(geneSymbol).getHGNCID());
+            Integer rank = geneIds.contains(id)? count+1000: count;
             lstGeneFilter.add(new ConceptFilter(
                     id, AnnotationType.GENE.toString(),
                     geneSymbol,
-                    count, count));
+                    rank,
+                    count));
         }
         List<ConceptFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
         finalResult.setFilters(sortedLstGeneFilter);
