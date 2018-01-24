@@ -10,6 +10,7 @@ import io.swagger.annotations.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -59,6 +60,10 @@ public class QueryController {
 
         if(Strings.isNullOrEmpty(query.getQueryId()))
             query.setQueryId(UUID.randomUUID().toString());
+        if(query.getSearchItems()==null)
+            query.setSearchItems(new ArrayList<>());
+        if(query.getFilterItems()==null)
+            query.setFilterItems(new ArrayList<>());
         return engine.processQueryV1(query, pageSize, pageNo);
     }
 

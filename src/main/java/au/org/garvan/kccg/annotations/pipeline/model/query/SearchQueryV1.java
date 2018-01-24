@@ -17,13 +17,11 @@ import org.json.simple.JSONValue;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Created by ahmed on 28/11/17.
- */
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PUBLIC)
-@ApiModel(description = "All attributes are optional; when more than one is provided, then search result will satisfy all conditions (Operation AND)")
+@ApiModel
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SearchQueryV1 {
 

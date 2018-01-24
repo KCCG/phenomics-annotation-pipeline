@@ -76,35 +76,32 @@ public class QueryManager {
         PaginationRequestParams qParams = new PaginationRequestParams(pageSize, pageNo);
         slf4jLogger.info(String.format("Query id:%s params are pageSize:%d, pageNo:%d", query.getQueryId(), qParams.getPageSize(), qParams.getPageNo()));
 
-
         List<SearchResultV1> results = new ArrayList<>();
         DBManagerResultSet resultSet = new DBManagerResultSet();
 
-        if(query.getSearchItems().size()>0)
-        {
-            List<APGene> requestedGenes = DocumentPreprocessor.getHGNCGeneHandler().geteGenesWithIDs(query.getGeneIDs());
+        if( query.getSearchItems().size() > 0) {
 
-            Map<SearchQueryParams, Object> params = new HashMap<>();
-            if (requestedGenes.size()>0)
-                params.put(SearchQueryParams.GENES, new Pair<String, List<String>>("OR", requestedGenes.stream().map(g-> g.getApprovedSymbol()).collect(Collectors.toList())));
+            List<Pair<String, String>> searchItems =  query.getSearchItems()
+                    .stream()
+                    .map(x -> new Pair<String, String>(x.getType(), x.getId()))
+                    .collect(Collectors.toList());
 
-            if (params.size() > 0) {
-                resultSet = dbManager.searchArticles(params, qParams);
-                for (RankedArticle entry : resultSet.getRankedArticles()) {
-                    results.add(constructSearchResultV1(entry));
-                }
+            List<Pair<String, String>> filterItems = new ArrayList<>();
+            filterItems=  query.getFilterItems()
+                    .stream()
+                    .map(x -> new Pair<String, String>(x.getType(), x.getId()))
+                    .collect(Collectors.toList());
+
+            resultSet = dbManager.searchArticlesWithFilters(query.getQueryId(), searchItems, filterItems, qParams);
+            for (RankedArticle entry : resultSet.getRankedArticles()) {
+                results.add(constructSearchResultV1(entry));
             }
         }
-
-
         slf4jLogger.info(String.format("Finished processing search query with id: %s. Total Articles:%d Result set:%d",
                 query.getQueryId(), qParams.getTotalArticles(), results.size()));
         return constructFinalResultV1(results , resultSet, qParams , query);
 
     }
-
-
-
 
     public PaginatedSearchResult constructFinalResult( List<SearchResult> results, DBManagerResultSet resultSet, PaginationRequestParams qParams ){
         PaginatedSearchResult finalResult = new PaginatedSearchResult();
@@ -113,13 +110,13 @@ public class QueryManager {
 
         List<ConceptFilter> lstGeneFilter = new ArrayList<>();
         for (Map.Entry<String, Integer> entry : resultSet.getGeneCounts().entrySet()) {
-            String geneSymbol = entry.getKey();
+            String symbol = entry.getKey();
             Integer count = entry.getValue();
-            String id = String.valueOf(DocumentPreprocessor.getHGNCGeneHandler().getGene(geneSymbol).getHGNCID());
-            lstGeneFilter.add(new ConceptFilter(
-                    id, AnnotationType.GENE.toString(),
-                    geneSymbol,
-                    count, count));
+            String id  =  String.valueOf(DocumentPreprocessor.getHGNCGeneHandler().getGene(symbol).getHGNCID());
+                lstGeneFilter.add(new ConceptFilter(
+                        id, AnnotationType.GENE.toString(),
+                        symbol,
+                        count, count));
         }
         List<ConceptFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
         finalResult.setFilters(sortedLstGeneFilter);
@@ -135,15 +132,17 @@ public class QueryManager {
         List<ConceptFilter> lstGeneFilter = new ArrayList<>();
         List<String> geneIds = query.getGeneIDs();
         for (Map.Entry<String, Integer> entry : resultSet.getGeneCounts().entrySet()) {
-            String geneSymbol = entry.getKey();
+            String id = entry.getKey();
             Integer count = entry.getValue();
-            String id = String.valueOf(DocumentPreprocessor.getHGNCGeneHandler().getGene(geneSymbol).getHGNCID());
+            List<APGene> genes = DocumentPreprocessor.getHGNCGeneHandler().geteGenesWithIDs(Arrays.asList(id));
             Integer rank = geneIds.contains(id)? count+1000: count;
-            lstGeneFilter.add(new ConceptFilter(
-                    id, AnnotationType.GENE.toString(),
-                    geneSymbol,
-                    rank,
-                    count));
+            if(genes.size()>0) {
+                lstGeneFilter.add(new ConceptFilter(
+                        id, AnnotationType.GENE.toString(),
+                        genes.get(0).getApprovedSymbol(),
+                        rank,
+                        count));
+            }
         }
         List<ConceptFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
         finalResult.setFilters(sortedLstGeneFilter);

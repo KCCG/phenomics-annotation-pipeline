@@ -22,6 +22,8 @@ public class RankedArticle {
     //Stored by GraphDBHandler
     String PMID;
     BigDecimal totalConceptHits;
+    Integer totalSearchedHits;
+    Integer totalFilteredHits;
     Integer rank;
     //Filled by DBManager
     Article article;
