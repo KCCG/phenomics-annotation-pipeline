@@ -49,20 +49,25 @@ public class GraphDBOptimisedHandler {
         shortListedArticles = runEntityQueryWithIds(collectedResults,geneIds, AnnotationType.GENE);
         slf4jLogger.info(String.format("queryId:%s ShortListed articles with query. Count:%d", queryId, shortListedArticles.size()));
 
+        // This is strictly for SUBSCRIPTION query check.
+        shortListedArticles = checkAndProcessDateRange(queryId, collectedResults,filterItems, shortListedArticles);
         //Apply filters using graph DB
 
         // This flag will make sure that if filters are applied or not. The result set would be affected with this.
-        boolean filterApplied = false;
+        List<Integer> filterGeneIds = filterItems.stream()
+                .filter(g -> g.getFirst().equals(AnnotationType.GENE.toString()))
+                .map(p -> Integer.valueOf(p.getSecond()))
+                .collect(Collectors.toList());
+
         Set<String> filteredArticles = new HashSet<>();
-        if(filterItems.size()>0 && shortListedArticles.size()>0)
+        boolean filterApplied = false;
+
+        if(filterGeneIds.size()>0 && shortListedArticles.size()>0)
         {
             slf4jLogger.info(String.format("queryId:%s Filter is provided to apply.", queryId));
 
             filterApplied = true;
-            List<Integer> filterGeneIds = filterItems.stream()
-                    .filter(g -> g.getFirst().equals(AnnotationType.GENE.toString()))
-                    .map(p -> Integer.valueOf(p.getSecond()))
-                    .collect(Collectors.toList());
+
             filteredArticles = runEntityFilterWithIds(collectedResults,filterGeneIds,AnnotationType.GENE,shortListedArticles);
             slf4jLogger.info(String.format("queryId:%s Filtered articles with query. Count:%d", queryId, filteredArticles.size()));
 
@@ -86,6 +91,25 @@ public class GraphDBOptimisedHandler {
         finalResultSet.setGeneCounts(dbManagerResultSet.getGeneCounts());
         finalResultSet.setRankedArticles(GraphDBNatives.getRequiredPage(dbManagerResultSet.getRankedArticles(), qParams));
         return finalResultSet;
+
+    }
+
+    private Set<String> checkAndProcessDateRange(String queryId, LinkedHashMap<AnnotationType, JcQueryResult> collectedResults, List<Pair<String, String>> filterItems, Set<String> shortListedArticles) {
+        List<String> dateRange = filterItems.stream()
+                .filter(g -> g.getFirst().equals(SearchQueryParams.DATERANGE.toString()))
+                .map(p -> p.getSecond())
+                .collect(Collectors.toList());
+        if(dateRange.isEmpty()) {
+            return shortListedArticles;
+        }
+        else
+        {
+            slf4jLogger.info(String.format("queryId:%s Found dateRange filter. Subscription query suspected. DateRange :%s", queryId, dateRange.get(0)));
+            String [] dates = dateRange.get(0).split(":");
+            Long stDate = Long.parseLong(dates[0]);
+            Long enDate = Long.parseLong(dates[1]);
+            return runDateRangeQuery(collectedResults,stDate, enDate, shortListedArticles);
+        }
 
     }
 
@@ -161,6 +185,31 @@ public class GraphDBOptimisedHandler {
 
         //It wont come here
         return new HashSet<>();
+    }
+
+    private Set<String> runDateRangeQuery(LinkedHashMap<AnnotationType, JcQueryResult> collectedResults, Long sDate, Long eDate, Set<String> shortListedArticles) {
+
+        JcNode article = new JcNode("a");
+        List<IClause> queryClauses = new ArrayList<>();
+        JcString PMID = new JcString("PMID");
+        queryClauses.add(MATCH.node(article).label("Article"));
+
+        if (shortListedArticles.size() > 0) {
+            queryClauses.add(WHERE.valueOf(article.property("ProcessingDate")).GT(sDate)
+                    .AND().valueOf(article.property("ProcessingDate")).LTE(eDate)
+                    .AND().valueOf(article.property("PMID")).IN(new JcCollection(new ArrayList<>(shortListedArticles))));
+
+        } else {
+            queryClauses.add(WHERE.valueOf(article.property("ProcessingDate")).GT(sDate)
+                    .AND().valueOf(article.property("ProcessingDate")).LTE(eDate));
+
+        }
+        queryClauses.add(RETURN.value(article.property("PMID")).AS(PMID));
+        JcQueryResult result = GraphDBNatives.executeQueryClauses(queryClauses);
+        collectedResults.put(AnnotationType.DATERANGE, result);
+
+        return GraphDBNatives.processQueryResult(result, SearchQueryParams.DATERANGE);
+
     }
 
 

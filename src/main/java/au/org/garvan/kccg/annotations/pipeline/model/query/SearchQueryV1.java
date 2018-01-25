@@ -7,10 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
@@ -50,7 +47,7 @@ public class SearchQueryV1 {
 
 
 
-    public List<String> getGeneIDs(){
+    public List<String> findGeneIDs(){
         return searchItems.stream()
                 .filter(x -> x.getType().equals(AnnotationType.GENE.toString()))
                 .collect(Collectors.toList())

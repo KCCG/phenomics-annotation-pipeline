@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.ws.rs.QueryParam;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -66,7 +67,7 @@ public class QueryManager {
 
         slf4jLogger.info(String.format("Finished processing search query with id: %s. Total Articles:%d Result set:%d",
                 query.getQueryId(), qParams.getTotalArticles(), results.size()));
-        return constructFinalResult(results , resultSet, qParams);
+        return constructFinalResult(results, resultSet, qParams);
 
     }
 
@@ -79,15 +80,15 @@ public class QueryManager {
         List<SearchResultV1> results = new ArrayList<>();
         DBManagerResultSet resultSet = new DBManagerResultSet();
 
-        if( query.getSearchItems().size() > 0) {
+        if (query.getSearchItems().size() > 0) {
 
-            List<Pair<String, String>> searchItems =  query.getSearchItems()
+            List<Pair<String, String>> searchItems = query.getSearchItems()
                     .stream()
                     .map(x -> new Pair<String, String>(x.getType(), x.getId()))
                     .collect(Collectors.toList());
 
             List<Pair<String, String>> filterItems = new ArrayList<>();
-            filterItems=  query.getFilterItems()
+            filterItems = query.getFilterItems()
                     .stream()
                     .map(x -> new Pair<String, String>(x.getType(), x.getId()))
                     .collect(Collectors.toList());
@@ -99,11 +100,12 @@ public class QueryManager {
         }
         slf4jLogger.info(String.format("Finished processing search query with id: %s. Total Articles:%d Result set:%d",
                 query.getQueryId(), qParams.getTotalArticles(), results.size()));
-        return constructFinalResultV1(results , resultSet, qParams , query);
+        return constructFinalResultV1(results, resultSet, qParams, query);
 
     }
 
-    public PaginatedSearchResult constructFinalResult( List<SearchResult> results, DBManagerResultSet resultSet, PaginationRequestParams qParams ){
+
+    public PaginatedSearchResult constructFinalResult(List<SearchResult> results, DBManagerResultSet resultSet, PaginationRequestParams qParams) {
         PaginatedSearchResult finalResult = new PaginatedSearchResult();
         finalResult.setArticles(results);
         finalResult.setPagination(qParams);
@@ -112,31 +114,31 @@ public class QueryManager {
         for (Map.Entry<String, Integer> entry : resultSet.getGeneCounts().entrySet()) {
             String symbol = entry.getKey();
             Integer count = entry.getValue();
-            String id  =  String.valueOf(DocumentPreprocessor.getHGNCGeneHandler().getGene(symbol).getHGNCID());
-                lstGeneFilter.add(new ConceptFilter(
-                        id, AnnotationType.GENE.toString(),
-                        symbol,
-                        count, count));
+            String id = String.valueOf(DocumentPreprocessor.getHGNCGeneHandler().getGene(symbol).getHGNCID());
+            lstGeneFilter.add(new ConceptFilter(
+                    id, AnnotationType.GENE.toString(),
+                    symbol,
+                    count, count));
         }
         List<ConceptFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
         finalResult.setFilters(sortedLstGeneFilter);
-        return  finalResult;
+        return finalResult;
 
     }
 
-    public PaginatedSearchResultV1 constructFinalResultV1( List<SearchResultV1> results, DBManagerResultSet resultSet, PaginationRequestParams qParams, SearchQueryV1 query ){
+    public PaginatedSearchResultV1 constructFinalResultV1(List<SearchResultV1> results, DBManagerResultSet resultSet, PaginationRequestParams qParams, SearchQueryV1 query) {
         PaginatedSearchResultV1 finalResult = new PaginatedSearchResultV1();
         finalResult.setArticles(results);
         finalResult.setPagination(qParams);
 
         List<ConceptFilter> lstGeneFilter = new ArrayList<>();
-        List<String> geneIds = query.getGeneIDs();
+        List<String> geneIds = query.findGeneIDs();
         for (Map.Entry<String, Integer> entry : resultSet.getGeneCounts().entrySet()) {
             String id = entry.getKey();
             Integer count = entry.getValue();
             List<APGene> genes = DocumentPreprocessor.getHGNCGeneHandler().geteGenesWithIDs(Arrays.asList(id));
-            Integer rank = geneIds.contains(id)? count+1000: count;
-            if(genes.size()>0) {
+            Integer rank = geneIds.contains(id) ? count + 1000 : count;
+            if (genes.size() > 0) {
                 lstGeneFilter.add(new ConceptFilter(
                         id, AnnotationType.GENE.toString(),
                         genes.get(0).getApprovedSymbol(),
@@ -147,7 +149,7 @@ public class QueryManager {
         List<ConceptFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
         finalResult.setFilters(sortedLstGeneFilter);
         finalResult.setQueryId(query.getQueryId());
-        return  finalResult;
+        return finalResult;
 
     }
 
@@ -163,9 +165,9 @@ public class QueryManager {
         for (Map.Entry<String, Integer> entry : rankedGenes.entrySet()) {
             int rank = baseRank;
             if (entry.getKey().indexOf(infix) == 0) {
-                rank = rank*2 - (entry.getKey().length()-infix.length());
+                rank = rank * 2 - (entry.getKey().length() - infix.length());
             } else {
-                rank = rank - (5*entry.getKey().indexOf(infix)) - (entry.getKey().length()-infix.length());
+                rank = rank - (5 * entry.getKey().indexOf(infix)) - (entry.getKey().length() - infix.length());
             }
             entry.setValue(rank);
         }
@@ -182,19 +184,7 @@ public class QueryManager {
     }
 
 
-    @Deprecated
-    private List<SearchResult> rankResults(List<SearchResult> inputResults) {
-        inputResults.sort(Comparator.comparing(SearchResult::getArticleRank).reversed());
-        int newRank = inputResults.size();
-        for (SearchResult result : inputResults) {
-            result.setArticleRank(newRank);
-            newRank--;
-        }
-        return inputResults;
-    }
-
-
-       private SearchResult constructSearchResult(RankedArticle rankedArticle) {
+    private SearchResult constructSearchResult(RankedArticle rankedArticle) {
         Article article = rankedArticle.getArticle();
         JSONObject annotations = rankedArticle.getJsonAnnotations();
         // ^ This change is made to have one DTO throughout the hierarchy for simplicity of code.
@@ -249,7 +239,6 @@ public class QueryManager {
     }
 
 
-
     /***
      * Generic list for auto-complete
      * Currently supports genes and phenotypes
@@ -268,14 +257,14 @@ public class QueryManager {
         List<APPhenotype> shortListedPhenotypes = DocumentPreprocessor.getTempPhenotypeHandler().serchPhenotype(infix);
         //Ranking results
         Map<Object, Integer> rankedEntities = new HashMap<>();
-        shortListedPhenotypes.stream().forEach(x-> rankedEntities.put(x, 0));
-        shortlistedGenes.stream().forEach(x-> rankedEntities.put(x, 0));
+        shortListedPhenotypes.stream().forEach(x -> rankedEntities.put(x, 0));
+        shortlistedGenes.stream().forEach(x -> rankedEntities.put(x, 0));
 
         for (Map.Entry<Object, Integer> entry : rankedEntities.entrySet()) {
             int rank = baseRank;
 
-            if(entry.getKey() instanceof APGene) {
-                String symbol = ((APGene)entry.getKey()).getApprovedSymbol();
+            if (entry.getKey() instanceof APGene) {
+                String symbol = ((APGene) entry.getKey()).getApprovedSymbol();
                 if (symbol.indexOf(infix) == 0) {
                     rank = rank * 2 - (symbol.length() - infix.length());
                 } else {
@@ -283,65 +272,64 @@ public class QueryManager {
                 }
                 entry.setValue(rank);
             }
-            if(entry.getKey() instanceof APPhenotype){
-                List<String> symbols = Arrays.asList( ((APPhenotype)entry.getKey()).getText().toUpperCase().split(" "));
-                Integer termNumber=0;
-                for(String symbol:symbols) {
+            if (entry.getKey() instanceof APPhenotype) {
+                List<String> symbols = Arrays.asList(((APPhenotype) entry.getKey()).getText().toUpperCase().split(" "));
+                Integer termNumber = 0;
+                for (String symbol : symbols) {
                     rank = baseRank;
                     if (symbol.indexOf(infix) == 0) {
-                        rank = rank * 2 - (symbol.length() - infix.length())  - symbols.size();
+                        rank = rank * 2 - (symbol.length() - infix.length()) - symbols.size();
                     } else {
                         rank = rank - (5 * symbol.indexOf(infix)) - (symbol.length() - infix.length() - symbols.size());
                     }
-                    rank = rank - 10*termNumber;
-                    if(entry.getValue()<rank)
+                    rank = rank - 10 * termNumber;
+                    if (entry.getValue() < rank)
                         entry.setValue(rank);
-                    termNumber ++;
+                    termNumber++;
                 }
             }
         }
 
 
         //Show equal number of items from auto-complete list.
-        Integer collectedGeneSize = Math.min(resultLimit/2, shortlistedGenes.size());
-        Integer collectedPhenotypeSize = Math.min(resultLimit-collectedGeneSize, shortListedPhenotypes.size());
+        Integer collectedGeneSize = Math.min(resultLimit / 2, shortlistedGenes.size());
+        Integer collectedPhenotypeSize = Math.min(resultLimit - collectedGeneSize, shortListedPhenotypes.size());
 
 
-        Map<Object,Integer> topRankedPhenotypes =
-                rankedEntities.entrySet().stream().filter(x-> x.getKey() instanceof APPhenotype)
+        Map<Object, Integer> topRankedPhenotypes =
+                rankedEntities.entrySet().stream().filter(x -> x.getKey() instanceof APPhenotype)
                         .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                         .limit(collectedPhenotypeSize)
                         .collect(Collectors.toMap(
                                 Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
-        Map<Object,Integer> topRankedGenes =
-                rankedEntities.entrySet().stream().filter(x-> x.getKey() instanceof APGene)
+        Map<Object, Integer> topRankedGenes =
+                rankedEntities.entrySet().stream().filter(x -> x.getKey() instanceof APGene)
                         .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                         .limit(collectedGeneSize)
                         .collect(Collectors.toMap(
                                 Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
 
 
-
-        for(Map.Entry<Object, Integer> entry: topRankedGenes.entrySet()){
+        for (Map.Entry<Object, Integer> entry : topRankedGenes.entrySet()) {
             Object object = entry.getKey();
             RankedAutoCompleteEntity entity = new RankedAutoCompleteEntity();
-                APGene gene = (APGene) object;
-                entity.setId(String.valueOf(gene.getHGNCID()));
-                entity.setText(gene.getApprovedSymbol());
-                entity.setType(AnnotationType.GENE.toString());
-                entity.setRank(entry.getValue());
-                returnList.add(entity);
+            APGene gene = (APGene) object;
+            entity.setId(String.valueOf(gene.getHGNCID()));
+            entity.setText(gene.getApprovedSymbol());
+            entity.setType(AnnotationType.GENE.toString());
+            entity.setRank(entry.getValue());
+            returnList.add(entity);
         }
 
-        for(Map.Entry<Object, Integer> entry: topRankedPhenotypes.entrySet()){
+        for (Map.Entry<Object, Integer> entry : topRankedPhenotypes.entrySet()) {
             Object object = entry.getKey();
             RankedAutoCompleteEntity entity = new RankedAutoCompleteEntity();
-                APPhenotype phenotype = (APPhenotype) object;
-                entity.setId(String.valueOf(phenotype.getId()));
-                entity.setText(phenotype.getText());
-                entity.setType(AnnotationType.PHENOTYPE.toString());
-                entity.setRank(entry.getValue());
-                returnList.add(entity);
+            APPhenotype phenotype = (APPhenotype) object;
+            entity.setId(String.valueOf(phenotype.getId()));
+            entity.setText(phenotype.getText());
+            entity.setType(AnnotationType.PHENOTYPE.toString());
+            entity.setRank(entry.getValue());
+            returnList.add(entity);
         }
 
         returnList.sort(Comparator.comparing(RankedAutoCompleteEntity::getRank).reversed());
