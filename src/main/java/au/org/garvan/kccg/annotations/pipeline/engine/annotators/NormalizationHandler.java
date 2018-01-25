@@ -1,4 +1,4 @@
-package au.org.garvan.kccg.annotations.pipeline.engine.lexicons;
+package au.org.garvan.kccg.annotations.pipeline.engine.annotators;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;

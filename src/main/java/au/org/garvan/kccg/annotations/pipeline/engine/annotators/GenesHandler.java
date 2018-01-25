@@ -1,4 +1,4 @@
-package au.org.garvan.kccg.annotations.pipeline.engine.lexicons;
+package au.org.garvan.kccg.annotations.pipeline.engine.annotators;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 
