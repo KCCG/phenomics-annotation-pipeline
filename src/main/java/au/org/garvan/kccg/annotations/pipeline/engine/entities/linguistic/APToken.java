@@ -1,8 +1,10 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.util.TAConstants;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.LexicalEntity;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.EntityType;
+import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.Setter;
 import org.json.simple.JSONObject;
@@ -38,13 +40,45 @@ public class APToken extends LinguisticEntity {
     private boolean punctuation;
 
     @Setter
-    @Getter
     private String normalizedText;
 
     @Setter
     @Getter
     private List<LexicalEntity> lexicalEntityList;
 
+
+    //CR: Added for CR support
+    //Shape would be set on demand
+    private String shape = null;
+
+
+    //CR: Added for CR Support
+    @Getter
+    @Setter
+    private boolean isTail = false;
+
+    /***
+     * Lazy loading as only Concept Recognizer would need it.
+     * @return
+     */
+    public String getShape()
+    {
+        if(shape==null)
+            shape = TAConstants.shape(getOriginalText());
+        return shape;
+    }
+
+    /***
+     * CR: Support
+     * Changed to support Concept Recognizer to use lowercase
+     * @return
+     */
+    public String getNormalizedText(){
+        if (Strings.isNullOrEmpty(normalizedText)){
+            normalizedText = getOriginalText().toLowerCase();
+        }
+        return normalizedText;
+    }
 
 
     public APToken(int id, String text, String POS, String lemmaText) {

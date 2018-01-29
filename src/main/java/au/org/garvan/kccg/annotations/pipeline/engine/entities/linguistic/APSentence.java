@@ -1,5 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.util.TAConstants;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.EntityType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.PhraseType;
@@ -322,6 +323,80 @@ public class APSentence extends LinguisticEntity {
         getChildrenOffsets(childStack, lstOffsets);
 
     }
+
+
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // CR: Support Properties and methods. Can be moved later
+    ///////////////////////////////////////////////////////////////////////////////
+
+    @Getter
+    private Map<Integer, APToken> indexedTokens;
+    @Getter
+    private Map<String, List<Integer>> inverseTokenPositions;
+    @Getter
+    private Map<Integer, APToken> verbPositions;
+    @Getter
+    private Map<Integer, APToken> punctuation;
+    @Getter
+    private Map<Integer, APToken> conjunctions;
+    @Getter
+    private Map<Integer, List<Integer>> subSentences;
+    @Getter
+    private List<Integer> startBracketPositions;
+    @Getter
+    private List<Integer> endBracketPositions;
+
+    public void conceptRecognizerHatch(){
+        this.indexedTokens = new LinkedHashMap<>();
+        this.inverseTokenPositions = new LinkedHashMap<>();
+        this.verbPositions = new LinkedHashMap<>();
+        this.punctuation = new LinkedHashMap<>();
+        this.conjunctions = new LinkedHashMap<>();
+        this.subSentences = new LinkedHashMap<>();
+        this.startBracketPositions = new ArrayList<>();
+        this.endBracketPositions = new ArrayList<>();
+
+
+        tokens.sort(Comparator.comparing(t->t.getSentOffset().x));
+        for (int index = 0; index<tokens.size(); index ++){
+            conceptEntitiesHatch(index, tokens.get(index));
+        }
+
+
+
+    }
+
+    private void conceptEntitiesHatch(int index, APToken positionedToken) {
+        this.indexedTokens.put(index, positionedToken);
+        if (positionedToken.getPartOfSpeech() != null) {
+            if (positionedToken.getPartOfSpeech().startsWith(TAConstants.POS_VB)) {
+                if (!positionedToken.getPartOfSpeech().equalsIgnoreCase(TAConstants.POS_VBN)
+                        || positionedToken.getPartOfSpeech().equalsIgnoreCase(TAConstants.POS_VBG)) {
+                    verbPositions.put(index, positionedToken);
+                }
+            }
+            if (positionedToken.getPartOfSpeech().startsWith(TAConstants.POS_CC)) {
+                conjunctions.put(index, positionedToken);
+            }
+            if (positionedToken.getPartOfSpeech().equalsIgnoreCase(TAConstants.POS_LBR)) {
+                startBracketPositions.add(index);
+            }
+            if (positionedToken.getPartOfSpeech().equalsIgnoreCase(TAConstants.POS_RBR)) {
+                endBracketPositions.add(index);
+            }
+            if (positionedToken.getPartOfSpeech().length() == 1) {
+                punctuation.put(index, positionedToken);
+            }
+        }
+
+        //CR: Merged functions from TASentence. This is the making of sentence and will be done only when CR is initialized.
+        List<Integer> list = this.inverseTokenPositions.containsKey(positionedToken.getOriginalText()) ? this.inverseTokenPositions.get(positionedToken.getOriginalText()) : new ArrayList<>();
+        list.add(index);
+        this.inverseTokenPositions.put(positionedToken.getOriginalText(), list);
+    }
+
+
 
 
 }

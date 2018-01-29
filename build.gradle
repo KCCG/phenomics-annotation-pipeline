@@ -41,9 +41,14 @@ dependencies {
             "io.springfox:springfox-swagger2:2.5.0",
             "io.springfox:springfox-swagger-ui:2.5.0",
             "javax.mail:mail:1.4",
-            'com.squareup.okhttp3:okhttp:3.6.0'
+            "com.squareup.okhttp3:okhttp:3.6.0",
 
-
+            //CR
+            "org.jsoup:jsoup:1.8.3",
+            "org.mapdb:mapdb:2.0-beta8",
+            "org.apache.lucene:lucene-core:5.3.1",
+            "org.apache.lucene:lucene-suggest:5.3.1",
+            "net.sourceforge.owlapi:owlapi-distribution:4.0.2"
     )
 
 
