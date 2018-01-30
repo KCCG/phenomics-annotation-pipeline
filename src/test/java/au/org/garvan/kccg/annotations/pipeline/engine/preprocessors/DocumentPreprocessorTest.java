@@ -59,4 +59,10 @@ public class DocumentPreprocessorTest {
 
     }
 
+    @Test
+    public void preprocessPhrase() {
+        String text = "new face recognition";
+        DocumentPreprocessor.preprocessPhrase(text);
+
+    }
 }

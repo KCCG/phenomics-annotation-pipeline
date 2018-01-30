@@ -42,7 +42,7 @@ public class LongFormMarker {
     }
 
     private static List<APToken> processRules(List<APToken> potentialLongFormTokens, APToken shortToken) {
-        String shortText = Common.getTrimmedText(shortToken);
+        String shortText = Common.getPunctuationLessText(shortToken);
         List<APToken> finalLongForm;
 
         //Process R1: FirstLetter for all tokens

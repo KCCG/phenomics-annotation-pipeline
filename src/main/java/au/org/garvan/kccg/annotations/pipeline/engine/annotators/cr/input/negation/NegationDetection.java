@@ -42,8 +42,9 @@ public class NegationDetection {
 			boolean negated = false;
 			if (tailToken == null) {
 				logger.debug("Candidate [" + candidate.getStartOffset() + "::" + candidate.getEndOffset() + "] => Sentence [" + candidate.getSentence().getDocOffset().x + "::" + candidate.getSentence().getDocOffset().y + "]: " + candidate.getSentence().getOriginalText());
-				int startIndex = candidate.getStartOffset() - candidate.getSentence().getDocOffset().x;
-				int endIndex = candidate.getEndOffset() - candidate.getSentence().getDocOffset().y;
+				//CR: Token offsets are already with respect to sentence.
+				int startIndex = candidate.getStartOffset();// - candidate.getSentence().getDocOffset().x;
+				int endIndex = candidate.getEndOffset();// - candidate.getSentence().getDocOffset().x;
 				String target = sentence.substring(startIndex, endIndex);
 				logger.debug("Target [" + startIndex + "::" + endIndex + "]: " + target);
 				String context = findContext(target, sentence);

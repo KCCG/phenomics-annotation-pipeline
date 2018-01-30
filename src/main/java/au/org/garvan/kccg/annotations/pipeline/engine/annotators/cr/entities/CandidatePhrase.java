@@ -1,5 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.annotators.cr.entities;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.cr.input.process.PseudoTA;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.util.TAConstants;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APSentence;
 
@@ -201,18 +202,17 @@ public class CandidatePhrase {
     }
 
     private boolean valid(String pos, String word) {
-        //CR: Find a workaround or put it back
-
-//        if (pos.equalsIgnoreCase(TAConstants.POS_IN)) {
-//            if (!TAPipeline.taResources.getSimpleDictionary(TAConstants.DICT_POS).hasKey(word)) {
-//                return false;
-//            } else {
-//                String dictEntry = TAPipeline.taResources.getSimpleDictionary(TAConstants.DICT_POS).getValue(word);
-//                if (dictEntry.equalsIgnoreCase(TAConstants.POS_IN)) {
-//                    return false;
-//                }
-//            }
-//        }
+        //CR: Find a workaround or put it back : Done
+        if (pos.equalsIgnoreCase(TAConstants.POS_IN)) {
+            if (!PseudoTA.getCrResources().getSimpleDictionary(TAConstants.DICT_POS).hasKey(word)) {
+                return false;
+            } else {
+                String dictEntry = PseudoTA.getCrResources().getSimpleDictionary(TAConstants.DICT_POS).getValue(word);
+                if (dictEntry.equalsIgnoreCase(TAConstants.POS_IN)) {
+                    return false;
+                }
+            }
+        }
 
         return pos.startsWith(TAConstants.POS_NN) ||
                 pos.startsWith(TAConstants.POS_VB) ||

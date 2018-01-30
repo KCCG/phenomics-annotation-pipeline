@@ -10,6 +10,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.PhenotypeHandler;
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.cr.input.process.PseudoTA;
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.index.IndexGenerator;
 import org.mapdb.BTreeKeySerializer;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
@@ -104,9 +106,11 @@ public class IndexProcessor {
 		
 		for (int tokenHash : symbolSet.keySet()) {
 			String cleanToken = symbolSet.get(tokenHash);
-			String id = PhenotypeHandler.getCrResources().getSimpleDictionary(TAConstants.DICT_LEXVAR).getValue(cleanToken);
+			//CR: Check and go
+
+			String id = PseudoTA.getCrResources().getSimpleDictionary(TAConstants.DICT_LEXVAR).getValue(cleanToken);
 			if (id == null) {
-				id = PhenotypeHandler.getCrResources().getSimpleDictionary(TAConstants.DICT_ORDINALS).getValue(cleanToken);
+				id = PseudoTA.getCrResources().getSimpleDictionary(TAConstants.DICT_ORDINALS).getValue(cleanToken);
 				if (id == null) {
 					List<Integer> hashes = invertedIndex.containsKey(cleanToken) ? invertedIndex.get(cleanToken) : new ArrayList<Integer>();
 					hashes.add(tokenHash);

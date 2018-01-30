@@ -32,6 +32,6 @@ public class IndexConstants {
 
 	public final static String MAP_METADATA = "MAP_METADATA";
 
-	public final static String FOLDER_DATASOURCES = "datasources";
+	public final static String FOLDER_DATASOURCES = "datasources2";
 
 }

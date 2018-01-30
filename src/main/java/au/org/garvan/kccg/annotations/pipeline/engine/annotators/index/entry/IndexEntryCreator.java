@@ -1,8 +1,8 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.annotators.index.entry;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.cr.input.process.LabelSetProcessorThread;
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.cr.input.process.PseudoTA;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.index.datasource.config.DataSourceMetadata;
-//import au.org.garvan.kccg.annotations.pipeline.engine.annotators.ta.TAPipeline;
-//import au.org.garvan.kccg.annotations.pipeline.engine.annotators.ta.thread.TALabelSetProcessorThread;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.util.GeneralUtil;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.util.IndexConstants;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.util.TimeUtil;
@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -31,15 +32,14 @@ public class IndexEntryCreator {
 	
 	private DB labelDB;
 
-//	public IndexEntryCreator(IndexProcessor indexProcessor,
-//			TAPipeline taPipeline) {
-//		this.indexProcessor = indexProcessor;
+	public IndexEntryCreator(IndexProcessor indexProcessor) {
+		this.indexProcessor = indexProcessor;
 //		this.taPipeline = taPipeline;
-//
-//		this.labelDB = DBMaker.memoryDB().transactionDisable().make();
-//		this.labelMap = labelDB.treeMapCreate(IndexConstants.LABEL_MAP).make();
-//		this.labelProcessStatus = labelDB.treeMapCreate(IndexConstants.LABEL_STATUS_MAP).make();
-//	}
+
+		this.labelDB = DBMaker.memoryDB().transactionDisable().make();
+		this.labelMap = labelDB.treeMapCreate(IndexConstants.LABEL_MAP).make();
+		this.labelProcessStatus = labelDB.treeMapCreate(IndexConstants.LABEL_STATUS_MAP).make();
+	}
 
 	public void index(IndexEntry indexEntry) {
 		logger.debug("Generated document for [" + indexEntry.getUri() + "]");
@@ -88,41 +88,41 @@ public class IndexEntryCreator {
 		indexProcessor.setMetadata(metadata);
 	}
 
-//	public void process() {
-//		double sTime = TimeUtil.start();
-//		logger.info("Compacting  concept info...");
-//		indexProcessor.commit();
-//		logger.info("TA pipeline done [" + TimeUtil.end(sTime) + "] ...");
-//
-//		// STEP 1: Run TA
-//		sTime = TimeUtil.start();
-//		logger.info("Running TA pipeline ...");
-//		ExecutorService executor = Executors.newFixedThreadPool(1);
-//		TALabelSetProcessorThread labelSetProcThread = taPipeline.processLabels(labelMap, labelProcessStatus);
-//		executor.execute(labelSetProcThread);
-//		executor.shutdown();
-//	    while (!executor.isTerminated()) {
-//	    }
-//		logger.info("TA pipeline done [" + TimeUtil.end(sTime) + "] ...");
-//
-//
-//		// STEP 2: Build vocabulary
-//		logger.info("Building vocabulary ...");
-//		sTime = TimeUtil.start();
-//
-//		indexProcessor.createTokenSet(labelSetProcThread.getLabelSet());
-//	    indexProcessor.consolidate();
-//		logger.info("Vocabulary built [" + TimeUtil.end(sTime) + "] ...");
-//
-//		// RECREATE label to symbol map
-//
-//		logger.info("Building label map ... ");
-//		sTime = TimeUtil.start();
-//		indexProcessor.buildLabelMap(labelMap, labelSetProcThread.getLabelSet());
-//		logger.info("Label map built [" + TimeUtil.end(sTime) + "] ...");
-//
-//	    labelSetProcThread.close();
-//	}
+	public void process() {
+		double sTime = TimeUtil.start();
+		logger.info("Compacting  concept info...");
+		indexProcessor.commit();
+		logger.info("TA pipeline done [" + TimeUtil.end(sTime) + "] ...");
+
+		// STEP 1: Run TA
+		sTime = TimeUtil.start();
+		logger.info("Running TA pipeline ...");
+		ExecutorService executor = Executors.newFixedThreadPool(1);
+		LabelSetProcessorThread labelSetProcThread = new LabelSetProcessorThread(labelMap, labelProcessStatus, PseudoTA.getCrResources());
+		executor.execute(labelSetProcThread);
+		executor.shutdown();
+	    while (!executor.isTerminated()) {
+	    }
+		logger.info("TA pipeline done [" + TimeUtil.end(sTime) + "] ...");
+
+
+		// STEP 2: Build vocabulary
+		logger.info("Building vocabulary ...");
+		sTime = TimeUtil.start();
+
+		indexProcessor.createTokenSet(labelSetProcThread.getLabelSet());
+	    indexProcessor.consolidate();
+		logger.info("Vocabulary built [" + TimeUtil.end(sTime) + "] ...");
+
+		// RECREATE label to symbol map
+
+		logger.info("Building label map ... ");
+		sTime = TimeUtil.start();
+		indexProcessor.buildLabelMap(labelMap, labelSetProcThread.getLabelSet());
+		logger.info("Label map built [" + TimeUtil.end(sTime) + "] ...");
+
+	    labelSetProcThread.close();
+	}
 
 	public void close() {
 		this.labelDB.delete(IndexConstants.LABEL_MAP);

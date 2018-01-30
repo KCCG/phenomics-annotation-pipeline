@@ -37,7 +37,7 @@ public class GenericCandidateGenerator implements ICandidateGenerator {
 			ProcessedInput processedInput) {
 		this.maxThreads = maxThreads;
 		this.sentence = sentence;
-		//CR: HAtching sentence
+		//CR: Hatching sentence
 		this.sentence.conceptRecognizerHatch();
 		this.sequenceGeneratorCache = sequenceGeneratorCache;
 		this.conjunctionPatterMatcher = new ConjunctionPatternMatcher(patternProcessor);

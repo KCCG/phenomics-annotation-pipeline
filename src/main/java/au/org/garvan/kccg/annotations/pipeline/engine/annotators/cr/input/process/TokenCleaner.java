@@ -95,8 +95,8 @@ public class TokenCleaner {
         } else {
             //CR: This is a workaround, currently pos is not updated based on dictionary, will solve it when Index is included. Commenting
 
-//            pos = TAPipeline.taResources.getSimpleDictionary(TAConstants.DICT_POS).hasKey(cleanToken) ?
-//                    TAPipeline.taResources.getSimpleDictionary(TAConstants.DICT_POS).getValue(cleanToken) :
+//            pos = TAPipeline.crResources.getSimpleDictionary(TAConstants.DICT_POS).hasKey(cleanToken) ?
+//                    TAPipeline.crResources.getSimpleDictionary(TAConstants.DICT_POS).getValue(cleanToken) :
 //                    pos;
 //            tokens.add(new TAToken(token, cleanToken, pos, shape));
 
@@ -109,8 +109,8 @@ public class TokenCleaner {
         cleanToken = StringEscapeUtils.unescapeHtml4(cleanToken);
         //CR: This is a workaround, currently token is not updated based on dictionary, will solve it when Index is included. Commenting
 //        if (!containsX) {
-//            cleanToken = TAPipeline.taResources.getSimpleDictionary(TAConstants.DICT_ORDINALS).hasKey(cleanToken) ?
-//                    TAPipeline.taResources.getSimpleDictionary(TAConstants.DICT_ORDINALS).getValue(cleanToken) :
+//            cleanToken = TAPipeline.crResources.getSimpleDictionary(TAConstants.DICT_ORDINALS).hasKey(cleanToken) ?
+//                    TAPipeline.crResources.getSimpleDictionary(TAConstants.DICT_ORDINALS).getValue(cleanToken) :
 //                    cleanToken;
 //        }
         return cleanToken;

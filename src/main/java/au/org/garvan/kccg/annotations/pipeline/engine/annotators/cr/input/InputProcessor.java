@@ -65,7 +65,7 @@
 //	}
 //
 //	public TASimpleDictionary getDictionary(String dictionary) {
-//		return TAPipeline.taResources.getSimpleDictionary(dictionary);
+//		return TAPipeline.crResources.getSimpleDictionary(dictionary);
 //	}
 //
 //	public ProcessedInput process(String text) {

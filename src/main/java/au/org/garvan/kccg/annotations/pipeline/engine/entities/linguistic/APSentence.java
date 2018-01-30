@@ -324,6 +324,12 @@ public class APSentence extends LinguisticEntity {
 
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format("[%d:%d] %s", docOffset.x, docOffset.y, getOriginalText());
+    }
+
 
 
     ////////////////////////////////////////////////////////////////////////////////

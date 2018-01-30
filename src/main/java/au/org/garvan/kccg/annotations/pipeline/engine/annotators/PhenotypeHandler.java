@@ -12,6 +12,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.annotators.cr.input.genera
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.cr.input.generate.NCCandidateGenerator;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.cr.input.negation.NegationDetection;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.cr.input.patterns.InputProcessorPatternsReader;
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.cr.input.process.PseudoTA;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.cr.input.relations.FilterPhenotypes;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.cr.input.relations.RelationDetection;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.cr.input.spellcheck.CRSpellCheck;
@@ -48,11 +49,12 @@ public class PhenotypeHandler {
 
     private IndexSearch indexSearch;
     private CRSpellCheck spellCheck;
-
-    @Getter
-    private static CRResources crResources;
+//
+//    @Getter
+//    private static CRResources crResources;
 
     private Map<String, Double> stats;
+    private ProcessedInput pInput;
 
 
     public  PhenotypeHandler(String resourcesFolder, int maxThreads, boolean processNC) {
@@ -77,7 +79,8 @@ public class PhenotypeHandler {
             return false;
         }
         //CR: Hack
-        crResources = new CRResources(new Properties());
+//        crResources = new CRResources(new Properties());
+        PseudoTA.init(resourcesFolder);
         patternsReader = new InputProcessorPatternsReader(resourcesFolder + TAConstants.INPUTPROC_PATTERN_FILE);
         if (patternsReader.isValid()) {
             matrixBasedGenerator = new MatrixBasedCandidateGenerator(maxThreads, patternsReader.getGeneralPatterns());
@@ -95,7 +98,7 @@ public class PhenotypeHandler {
     }
 
     public TASimpleDictionary getDictionary(String dictionary) {
-        return crResources.getSimpleDictionary(dictionary);
+        return PseudoTA.crResources.getSimpleDictionary(dictionary);
     }
 
     public ProcessedInput processInput(List<APSentence> sentenceList) {
@@ -185,10 +188,10 @@ public class PhenotypeHandler {
         for (ConceptCandidate candidate : conceptCandidates.keySet()) {
             DS_ConceptInfo conceptInfo = conceptCandidates.get(candidate);
 
-            int startIndex = candidate.getStartOffset() - candidate.getSentence().getDocOffset().x;
-            int endIndex = candidate.getEndOffset() - candidate.getSentence().getDocOffset().y;
+            int startIndex = candidate.getStartOffset();// - candidate.getSentence().getDocOffset().x;
+            int endIndex = candidate.getEndOffset();// - candidate.getSentence().getDocOffset().x;
             String target = candidate.getSentence().getOriginalText().substring(startIndex, endIndex);
-
+//CR:Fix this
             ConceptAnnotation annotation = new ConceptAnnotation(candidate.getStartOffset(), candidate.getEndOffset(), target);
             annotation.setConcept(conceptInfo);
             annotation.setNegated(candidate.isNegated());

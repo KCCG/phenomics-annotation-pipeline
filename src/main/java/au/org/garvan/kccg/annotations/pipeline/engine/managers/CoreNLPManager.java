@@ -20,6 +20,7 @@ public final class CoreNLPManager {
     private static boolean lock = false;
     private static StanfordCoreNLP documentPipeline;
     private static StanfordCoreNLP sentencePipeline;
+    private static StanfordCoreNLP phrasePipeline;
 
 
     @Setter
@@ -37,11 +38,18 @@ public final class CoreNLPManager {
         documentPipeline = new StanfordCoreNLP(docProps);
 
 
+        Properties phraseProps = PropertiesUtils.asProperties("annotators", "tokenize,ssplit, pos, lemma");
+        phrasePipeline = new StanfordCoreNLP(phraseProps);
+
+
         Properties sentProps = PropertiesUtils.asProperties(
                 "annotators", "tokenize,ssplit,pos,lemma,parse,natlog",
                 "tokenize.language", "en");
         sentProps.setProperty("tokenize.whitespace", "true");
         sentencePipeline = new StanfordCoreNLP(sentProps);
+
+
+
         isInitialized = true;
         slf4jLogger.info(String.format("CoreNLP pipelines initialized successfully."));
 
@@ -75,6 +83,19 @@ public final class CoreNLPManager {
         sentencePipeline.annotate(annotation);
         return annotation;
 
+    }
+
+    /***
+     * This method is specifically created for concept labels. However can be used for anny phrase string.
+     * @param text
+     * @return
+     */
+    public static Annotation annotatePhraseText(String text)
+    {
+        runMonitor();
+        Annotation annotation = new Annotation(text);
+        phrasePipeline.annotate(annotation);
+        return annotation;
     }
 
 

@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.PhenotypeHandler;
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.cr.input.process.PseudoTA;
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.index.IndexGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +32,7 @@ public class LabelGenerator {
 			List<String> list = new ArrayList<String>();
 			list.add(token.toLowerCase());
 			
-			List<String> entries = PhenotypeHandler.getCrResources().getSynonym(token);
+			List<String> entries = PseudoTA.getCrResources().getSynonym(token);
 			for (String entry : entries) {
 				entry = entry.toLowerCase();
 				if (!list.contains(entry)) {

@@ -46,8 +46,8 @@ dependencies {
             //CR
             "org.jsoup:jsoup:1.8.3",
             "org.mapdb:mapdb:2.0-beta8",
-            "org.apache.lucene:lucene-core:5.3.1",
-            "org.apache.lucene:lucene-suggest:5.3.1",
+            "org.apache.lucene:lucene-core:5.4.0",
+            "org.apache.lucene:lucene-suggest:5.4.0",
             "net.sourceforge.owlapi:owlapi-distribution:4.0.2"
     )
 

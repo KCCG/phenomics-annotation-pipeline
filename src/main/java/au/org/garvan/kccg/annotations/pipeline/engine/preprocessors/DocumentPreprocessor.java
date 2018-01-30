@@ -1,6 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.preprocessors;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.lexicons.PhenotypeHandler;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APPhrase;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Common;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
@@ -17,6 +18,7 @@ import edu.stanford.nlp.util.CoreMap;
 import lombok.Getter;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -94,11 +96,11 @@ public class DocumentPreprocessor {
                 APToken tok = new APToken(id, text, token.get(CoreAnnotations.PartOfSpeechAnnotation.class).toString(), token.lemma());
                 tok.setSentOffset(new Point(token.beginPosition(), token.endPosition()));
                 tok.setPunctuation(punctuations.contains(text.charAt(text.length()-1)));
-                APGene geneCheck = HGNCGeneHandler.getGene(Common.getTrimmedText(tok));
+                APGene geneCheck = HGNCGeneHandler.getGene(Common.getPunctuationLessText(tok));
                 if(geneCheck!=null)
                     tok.getLexicalEntityList().add(geneCheck);
 
-//                String normalizedText = LVGNormalizationHandler.getNormalizedText(Common.getTrimmedText(tok));
+//                String normalizedText = LVGNormalizationHandler.getNormalizedText(Common.getPunctuationLessText(tok));
 //                if (normalizedText!=null)
 //                    tok.setNormalizedText(normalizedText);
 
@@ -116,6 +118,28 @@ public class DocumentPreprocessor {
     }
 
 
+    public static APPhrase preprocessPhrase(String text){
+        APPhrase tempPhrase = new APPhrase();
+        List<APToken> lstTokens = new ArrayList<>();
+        Annotation phraseAnnotation = CoreNLPManager.annotatePhraseText(addSpaceAfterFullStop(text));
+
+
+        List<CoreMap> localSentenceMap = phraseAnnotation.get(CoreAnnotations.SentencesAnnotation.class);
+
+        if (localSentenceMap.size()>0) {
+            CoreMap aSent = localSentenceMap.get(0);
+            int id = 1;
+            for (CoreLabel token : aSent.get(CoreAnnotations.TokensAnnotation.class)) {
+                String tokenText = token.originalText();
+                APToken tok = new APToken(id, tokenText, token.get(CoreAnnotations.PartOfSpeechAnnotation.class).toString(), token.lemma());
+                tok.setSentOffset(new Point(token.beginPosition(), token.endPosition()));
+                lstTokens.add(tok);
+            }
+        }
+        tempPhrase.setTokens(lstTokens);
+        return tempPhrase;
+
+    }
     private static String addSpaceAfterFullStop(String input){
 
         String modified;

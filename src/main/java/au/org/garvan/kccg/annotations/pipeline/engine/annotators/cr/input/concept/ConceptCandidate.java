@@ -57,7 +57,7 @@ public class ConceptCandidate {
 	}
 
 	public int getEndOffset() {
-		return tokens.get(endIndex).getSentOffset().x + tokens.get(endIndex).getSentOffset().y;
+		return tokens.get(endIndex).getSentOffset().y;
 	}
 
 	public void addToken(int index, APToken token) {

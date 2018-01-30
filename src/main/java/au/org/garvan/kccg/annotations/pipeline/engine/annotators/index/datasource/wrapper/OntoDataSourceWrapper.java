@@ -106,7 +106,7 @@ public class OntoDataSourceWrapper implements IDataSourceWrapper {
 		indexEntryCreator.setMetadata(metadata);
 
 		logger.info("Indexing done ...");
-//		indexEntryCreator.process();
+		indexEntryCreator.process();
 	}
 
 	@Override

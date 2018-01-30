@@ -25,7 +25,7 @@ public class ConceptSearchThread implements Runnable {
 	private NavigableSet<Object[]> documentSizeMap;
 	private Map<ConceptCandidate, DS_ConceptInfo> annotatedConcepts;
 	
-	public ConceptSearchThread(ConceptCandidate conceptCandidate, Map<String, String> symbols, 
+	public  ConceptSearchThread(ConceptCandidate conceptCandidate, Map<String, String> symbols,
 			Map<ConceptCandidate, DS_ConceptInfo> annotatedConcepts,
 			Map<Integer, DS_ConceptInfo> conceptInfoMap,
 			NavigableSet<Object[]> documentMap, NavigableSet<Object[]> documentSizeMap) {
