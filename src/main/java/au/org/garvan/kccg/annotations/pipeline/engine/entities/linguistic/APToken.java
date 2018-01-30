@@ -76,7 +76,7 @@ public class APToken extends LinguisticEntity {
      */
     public String getNormalizedText(){
         if (Strings.isNullOrEmpty(normalizedText)){
-            normalizedText = Common.getPunctuationTrimmedText(this);
+            normalizedText = getOriginalText().toLowerCase();
         }
         return normalizedText;
     }
@@ -103,6 +103,17 @@ public class APToken extends LinguisticEntity {
     public APToken() {
 
     }
+
+
+    @Override
+    public String toString(){ {
+            return String.format("[%d:%d] %s [%s] [%s] ", sentOffset.x, sentOffset.y, getOriginalText(), getNormalizedText(), getPartOfSpeech());
+        }
+
+    }
+
+
+
     public APToken(DynamoDBObject dbObject){
         super(Integer.parseInt(dbObject.getJsonObject().get("id").toString()), dbObject.getJsonObject().get("originalText").toString());
         if(dbObject.getEntityType().equals(EntityType.APToken))

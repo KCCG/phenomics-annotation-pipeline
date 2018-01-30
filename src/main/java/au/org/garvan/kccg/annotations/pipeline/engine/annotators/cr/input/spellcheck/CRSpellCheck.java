@@ -42,7 +42,7 @@ public class CRSpellCheck {
 			logger.info("Initializing Spell Check from: " + folder.getAbsolutePath());
 			Path dir = Paths.get(folder.getAbsolutePath());
 			spellChecker = new SpellChecker(FSDirectory.open(dir));
-			spellChecker.setAccuracy(0.8f);
+			spellChecker.setAccuracy(0.9f);
 			valid = true;
 		} catch (IOException e) {
 			logger.error("Unable to initialize Spell Check: " + e.getMessage(), e);

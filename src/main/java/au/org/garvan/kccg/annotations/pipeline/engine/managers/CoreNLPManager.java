@@ -45,7 +45,7 @@ public final class CoreNLPManager {
         Properties sentProps = PropertiesUtils.asProperties(
                 "annotators", "tokenize,ssplit,pos,lemma,parse,natlog",
                 "tokenize.language", "en");
-        sentProps.setProperty("tokenize.whitespace", "true");
+//        sentProps.setProperty("tokenize.whitespace", "true");
         sentencePipeline = new StanfordCoreNLP(sentProps);
 
 
