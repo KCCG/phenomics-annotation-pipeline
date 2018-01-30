@@ -39,7 +39,7 @@ public class ConceptCandidate {
 		String s = "";
 		for (APToken token : tokens.values()) {
 			//CR:Changed cleaned to original text : See the issues.
-			s += token.getOriginalText() + " ";
+			s += token.getNormalizedText() + " ";
 		}
 		return s.trim();
 	}
@@ -92,7 +92,7 @@ public class ConceptCandidate {
 	}
 
 	public String getId() {
-		return getStartOffset() + "::" + getEndOffset();
+		return sentence.getId()+":"+ getStartOffset() + "::" + getEndOffset();
 	}
 	
 	public ConceptAnnotation getConceptAnnotation() {

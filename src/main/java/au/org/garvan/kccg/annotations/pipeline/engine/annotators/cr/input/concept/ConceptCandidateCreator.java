@@ -46,7 +46,8 @@ public class ConceptCandidateCreator {
 			
 			if (valid) {
 				//CR: Changing clean form to original text for time being
-				this.vocabulary.put(token.getOriginalText(), token.getOriginalText());
+				//CR: got normalized text
+				this.vocabulary.put(token.getOriginalText(), token.getNormalizedText());
 				conceptCandidate.addToken(index, token);
 			}
 			/*
