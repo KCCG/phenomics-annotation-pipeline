@@ -2,7 +2,8 @@ package au.org.garvan.kccg.annotations.pipeline.engine.preprocessors;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.PhenotypeHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APPhrase;
-import au.org.garvan.kccg.annotations.pipeline.engine.managers.ArticleManager;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
+import au.org.garvan.kccg.annotations.pipeline.engine.profiles.ProcessingProfile;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Common;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
@@ -73,6 +74,8 @@ public class DocumentPreprocessor {
     }
 
     public static void preprocessDocument(APDocument doc) {
+
+        ProcessingProfile docProfile = doc.getProcessingProfile();
         doc.setCleanedText(addSpaceAfterFullStop(doc.getOriginalText()));
 
         //Using cleaned text after prepossessing is done
@@ -108,10 +111,12 @@ public class DocumentPreprocessor {
                 APToken tok = new APToken(id, text, token.get(CoreAnnotations.PartOfSpeechAnnotation.class).toString(), token.lemma());
                 tok.setSentOffset(new Point(token.beginPosition(), token.endPosition()));
                 tok.setPunctuation(punctuations.contains(text.charAt(text.length()-1)));
-                APGene geneCheck = HGNCGeneHandler.getGene(Common.getPunctuationLessText(tok));
-                if(geneCheck!=null)
-                    tok.getLexicalEntityList().add(geneCheck);
 
+                if(docProfile.getAnnotationRequests().contains(AnnotationType.GENE)) {
+                    APGene geneCheck = HGNCGeneHandler.getGene(Common.getPunctuationLessText(tok));
+                    if (geneCheck != null)
+                        tok.getLexicalEntityList().add(geneCheck);
+                }
 //                String normalizedText = LVGNormalizationHandler.getNormalizedText(Common.getPunctuationLessText(tok));
 //                if (normalizedText!=null)
 //                    tok.setNormalizedText(normalizedText);
@@ -120,11 +125,20 @@ public class DocumentPreprocessor {
                 id++;
 
             }
-            ShortFormExtractor.markShortForms(sent.getTokens());
-            LongFormMarker.markLongForms(sent);
-            sent.generateDependencies();
-            sent.generateParseTree();
 
+//            ShortFormExtractor.markShortForms(sent.getTokens());
+//            LongFormMarker.markLongForms(sent);
+
+            if(docProfile.isProcessDependencies())
+                sent.generateDependencies();
+            if(docProfile.isProcessParseTree())
+                sent.generateParseTree();
+
+        }
+        
+        if(docProfile.getAnnotationRequests().contains(AnnotationType.PHENOTYPE))
+        {
+            phenotypeHandler.processAndUpdateDocument(doc);
         }
 
     }

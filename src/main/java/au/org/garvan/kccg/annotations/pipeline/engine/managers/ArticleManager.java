@@ -2,6 +2,7 @@ package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.model.annotation.RawArticle;
 import org.json.simple.JSONObject;
@@ -86,6 +87,8 @@ public class ArticleManager {
                 rawArticle.getAuthors(),
                 rawArticle.getPublication());
 
+        article.getArticleAbstract().getProcessingProfile().getAnnotationRequests().add(AnnotationType.GENE);
+//        article.getArticleAbstract().getProcessingProfile().getAnnotationRequests().add(AnnotationType.PHENOTYPE);
 
         return article;
     }

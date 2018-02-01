@@ -2,6 +2,7 @@ package au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.util.TAConstants;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.EntityType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.PhraseType;
 import edu.stanford.nlp.ling.CoreLabel;
@@ -59,6 +60,10 @@ public class APSentence extends LinguisticEntity {
     @Getter
     @Setter
     private Map<APToken, APToken[]> SfLfLink;
+
+    @Getter
+    @Setter
+    List<Annotation> annotations = new ArrayList<>();
 
 
     public APSentence(int id, String text) {
@@ -324,6 +329,18 @@ public class APSentence extends LinguisticEntity {
 
     }
 
+    public List<APToken> getTokensInOffsetRange(int offsetBegin, int offsetEnd){
+        List<APToken> returnList= tokens.stream().filter(t-> t.getSentOffset().x>= offsetBegin && t.getSentOffset().y<=offsetEnd).collect(Collectors.toList());
+        returnList.sort(Comparator.comparing(t->t.getSentOffset().x));
+        return returnList;
+    }
+
+    public void putAnnoataion(Annotation annotation){
+        if(annotations==null){
+            annotations = new ArrayList<>();
+        }
+        annotations.add(annotation);
+    }
     @Override
     public String toString()
     {

@@ -25,8 +25,12 @@ import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.util.
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.util.IndexConstants;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.util.StatsUtil;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.util.TAConstants;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APSentence;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,15 +62,14 @@ public class PhenotypeHandler {
 
     private Map<String, Double> stats;
 
-    private Map<String,DS_ConceptInfo> hpoToPhenotypeConcept;
-    private Map<String,String> phenotypeLabelToHpo;
+    private Map<String, DS_ConceptInfo> hpoToPhenotypeConcept;
+    private Map<String, String> phenotypeLabelToHpo;
 
 
-
-    public  PhenotypeHandler() {
+    public PhenotypeHandler() {
+        //Fill configs using folder from resources.
         fillConfigs();
-
-        this.stats = new LinkedHashMap<String, Double>();
+        this.stats = new LinkedHashMap<>();
         this.valid = initComponents(resourcesPath);
 
         logger.info("Initializing Index Search for Phenotype ...");
@@ -78,19 +81,17 @@ public class PhenotypeHandler {
 
         hpoToPhenotypeConcept = new HashMap<>();
         phenotypeLabelToHpo = new HashMap<>();
-        IndexDataSource HpoDS=  indexSearch.getIndexDataSource("HPO");
-        for(DS_ConceptInfo concept: HpoDS.getConceptInfoMap().values()){
+        IndexDataSource HpoDS = indexSearch.getIndexDataSource("HPO");
+        for (DS_ConceptInfo concept : HpoDS.getConceptInfoMap().values()) {
             hpoToPhenotypeConcept.put(concept.getUri(), concept);
-            List<String> names= concept.getAlternativeLabels().stream().map(x-> x.toLowerCase()).collect(Collectors.toList());
+            List<String> names = concept.getAlternativeLabels().stream().map(x -> x.toLowerCase()).collect(Collectors.toList());
             names.add(concept.getPreferredLabel().toLowerCase());
 
-            for(String name: names){
-                if(!Strings.isNullOrEmpty(name))
+            for (String name : names) {
+                if (!Strings.isNullOrEmpty(name))
                     phenotypeLabelToHpo.put(name, concept.getUri());
             }
         }
-
-
 
 
     }
@@ -103,11 +104,10 @@ public class PhenotypeHandler {
         try {
             File folder = new ClassPathResource(path).getFile();
             logger.info(folder.getAbsolutePath());
-            resourcesPath = folder.getAbsolutePath()+"/";
+            resourcesPath = folder.getAbsolutePath() + "/";
         } catch (IOException e) {
             e.printStackTrace();
         }
-
 
 
     }
@@ -136,13 +136,13 @@ public class PhenotypeHandler {
         patternsReader.close();
     }
 
-    public TASimpleDictionary getDictionary(String dictionary) {
+    private TASimpleDictionary getDictionary(String dictionary) {
         return PseudoTA.crResources.getSimpleDictionary(dictionary);
     }
 
-    public ProcessedInput processInput(List<APSentence> sentenceList) {
+    private ProcessedInput processInput(List<APSentence> sentenceList) {
         double sTime = System.currentTimeMillis();
-        double eTime ;
+        double eTime;
         ExecutorService executor = Executors.newFixedThreadPool(maxThreads);
         ProcessedInput processedInput = new ProcessedInput();
         for (APSentence sent : sentenceList) {
@@ -157,14 +157,43 @@ public class PhenotypeHandler {
         return processedInput;
     }
 
-    public void processAndUpdateAbstract(APDocument apDocument){
+    public void processAndUpdateDocument(APDocument apDocument) {
         List<APSentence> sents = apDocument.getSentences();
         Map<DataSourceMetadata, List<ConceptAnnotation>> output = annotate(sents, true, true, true, true);
-        logger.info(output.size()+"");
+
+        for (DataSourceMetadata ds : output.keySet()) {
+            //This should be a single execution loop as we are only looking for HPO
+            if (ds.getMetadata().get(DataSourceMetadata.ACRONYM).equals("HPO")) {
+                List<ConceptAnnotation> lstConcepts = output.get(ds);
+
+                for (ConceptAnnotation conceptAnnotation : lstConcepts) {
+                    //This loop should iterate over found annotations and put them in relevant sentences.
+                    APSentence sentence = sents.stream().filter(s -> s.getDocOffset().x == conceptAnnotation.getSentOffSetBegin()).findFirst().orElse(null);
+                    if (sentence != null) {
+                        //Get tokens for annotations.
+                        List<APToken> conceptTokens = sentence.getTokensInOffsetRange(conceptAnnotation.getStartOffset(), conceptAnnotation.getEndOffset());
+                        sentence.putAnnoataion(convertConceptAnnotationToAnnotation(conceptAnnotation, conceptTokens, ds.getMetadata().get(DataSourceMetadata.ACRONYM), ds.getMetadata().get(DataSourceMetadata.VERSION)));
+                    }
+                }
+            }
+        }
+
 
     }
 
-    public Map<DataSourceMetadata, List<ConceptAnnotation>> annotate(List<APSentence> sents, boolean longestMatch, boolean spellCheck, boolean detectNegation, boolean addRelations) {
+    private Annotation convertConceptAnnotationToAnnotation(ConceptAnnotation conceptAnnotation, List<APToken> conceptTokens, String standard, String version) {
+        //Create Annotation from ConceptAnnotation
+        Annotation finalAnnotation = new Annotation();
+        finalAnnotation.setEntity(new APPhenotype(conceptAnnotation.getConcept()));
+        finalAnnotation.setTokenIDs(conceptTokens.stream().map(t -> t.getId()).collect(Collectors.toList()));
+        finalAnnotation.setTokensOffsetBegin(conceptTokens.stream().map(t -> t.getSentOffset().x).collect(Collectors.toList()));
+        finalAnnotation.setType(AnnotationType.PHENOTYPE);
+        finalAnnotation.setStandard(standard);
+        finalAnnotation.setVersion(version);
+        return finalAnnotation;
+    }
+
+    private Map<DataSourceMetadata, List<ConceptAnnotation>> annotate(List<APSentence> sents, boolean longestMatch, boolean spellCheck, boolean detectNegation, boolean addRelations) {
         ProcessedInput pInput = processInput(sents);
 
         double sTime = System.currentTimeMillis();
@@ -219,6 +248,7 @@ public class PhenotypeHandler {
             annotation.setConcept(conceptInfo);
             annotation.setNegated(candidate.isNegated());
             annotation.setLength(endIndex - startIndex);
+            annotation.setSentOffSetBegin(candidate.getSentence().getDocOffset().x);
 
             if (mapping.containsKey(candidate)) {
                 annotation.addRelation(ConceptType.DEGREE_OF_SEVERITY, mapping.get(candidate), dsCandidates.get(mapping.get(candidate)));
@@ -244,6 +274,7 @@ public class PhenotypeHandler {
             annotation.setConcept(conceptInfo);
             annotation.setNegated(candidate.isNegated());
             annotation.setLength(endIndex - startIndex);
+            annotation.setSentOffSetBegin(candidate.getSentence().getDocOffset().x);
             list.add(annotation);
         }
         return list;

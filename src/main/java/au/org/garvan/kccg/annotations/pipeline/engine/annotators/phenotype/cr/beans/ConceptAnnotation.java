@@ -4,6 +4,9 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APSentence;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -146,5 +149,12 @@ public class ConceptAnnotation implements Serializable {
 	public String toString() {
 		return "[" + Integer.toString(startOffset) + "::" + Integer.toString(endOffset) + "] = " + concept + " (" + negated + ") == " + target_relations;
 	}
+
+
+
+	//CR: Added for pipelineResultFormation:
+	@Getter
+	@Setter
+	Integer sentOffSetBegin;
 
 }
