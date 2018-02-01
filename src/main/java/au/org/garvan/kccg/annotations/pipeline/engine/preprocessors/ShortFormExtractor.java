@@ -8,7 +8,9 @@ import java.util.List;
 /**
  * Created by ahmed on 21/8/17.
  */
-
+//TODO: Update the functionality of this class with new tokenization.
+// Brackets and punctuations are separated into tokens now.
+@Deprecated
 public class ShortFormExtractor {
 
     private static final List<String> INDEX_LIST = Arrays.asList(

@@ -10,6 +10,10 @@ import java.util.stream.Collectors;
 /**
  * Created by ahmed on 12/9/17.
  */
+
+//TODO: Update the functionality of this class with new tokenization.
+    // Brackets and punctuations are separated into tokens now.
+@Deprecated
 public class LongFormMarker {
     private static final int OBSERVATION_WINDOW = 10;
 

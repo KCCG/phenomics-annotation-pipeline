@@ -33,9 +33,10 @@ public final class Common {
             if (puncs.contains(trimmedlText.charAt(0))){
                 trimmedlText = trimmedlText.substring(1,trimmedlText.length());
             }
-
-            if (puncs.contains(trimmedlText.charAt(trimmedlText.length()-1))){
-                trimmedlText = trimmedlText.substring(0,trimmedlText.length()-1);
+            if(trimmedlText.length()>0) {
+                if (puncs.contains(trimmedlText.charAt(trimmedlText.length() - 1))) {
+                    trimmedlText = trimmedlText.substring(0, trimmedlText.length() - 1);
+                }
             }
 
         }

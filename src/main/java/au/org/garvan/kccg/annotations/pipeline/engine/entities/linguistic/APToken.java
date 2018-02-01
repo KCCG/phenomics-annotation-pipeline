@@ -1,10 +1,9 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic;
 
-import au.org.garvan.kccg.annotations.pipeline.engine.annotators.util.TAConstants;
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.util.TAConstants;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.LexicalEntity;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.EntityType;
-import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Common;
 import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,7 +28,6 @@ public class APToken extends LinguisticEntity {
     private String lemma;
 
     @Setter
-    @Getter
     private Point sentOffset;
 
     @Setter
@@ -48,12 +46,12 @@ public class APToken extends LinguisticEntity {
     private List<LexicalEntity> lexicalEntityList;
 
 
-    //CR: Added for CR support
+    //CR:DONE Added for CR support
     //Shape would be set on demand
     private String shape = null;
 
 
-    //CR: Added for CR Support
+    //CR:DONE Added for CR Support
     @Getter
     @Setter
     private boolean isTail = false;
@@ -70,7 +68,7 @@ public class APToken extends LinguisticEntity {
     }
 
     /***
-     * CR: Support
+     * CR:DONE Support
      * Changed to support Concept Recognizer to use lowercase
      * @return
      */
@@ -105,9 +103,18 @@ public class APToken extends LinguisticEntity {
     }
 
 
+    public Point getSentOffset(){
+        if (sentOffset==null)
+        {
+            sentOffset = new Point(0,0);
+        }
+        return sentOffset;
+    }
+
     @Override
     public String toString(){ {
-            return String.format("[%d:%d] %s [%s] [%s] ", sentOffset.x, sentOffset.y, getOriginalText(), getNormalizedText(), getPartOfSpeech());
+
+            return String.format("[%d:%d] %s [%s] [%s] ", getSentOffset().x, getSentOffset().y, getOriginalText(), getNormalizedText(), getPartOfSpeech());
         }
 
     }

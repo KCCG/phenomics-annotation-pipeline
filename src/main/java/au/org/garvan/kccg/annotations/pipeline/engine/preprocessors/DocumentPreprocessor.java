@@ -1,7 +1,8 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.preprocessors;
 
-import au.org.garvan.kccg.annotations.pipeline.engine.lexicons.PhenotypeHandler;
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.PhenotypeHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APPhrase;
+import au.org.garvan.kccg.annotations.pipeline.engine.managers.ArticleManager;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Common;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
@@ -16,6 +17,8 @@ import edu.stanford.nlp.semgraph.SemanticGraphCoreAnnotations;
 import edu.stanford.nlp.trees.TreeCoreAnnotations;
 import edu.stanford.nlp.util.CoreMap;
 import lombok.Getter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -28,6 +31,7 @@ import java.util.regex.Pattern;
  * Created by ahmed on 1/8/17.
  */
 public class DocumentPreprocessor {
+    private static final Logger slf4jLogger = LoggerFactory.getLogger(DocumentPreprocessor.class);
 
     @Getter
     private static  GenesHandler  HGNCGeneHandler;
@@ -35,6 +39,10 @@ public class DocumentPreprocessor {
     @Getter
     private static PhenotypeHandler TempPhenotypeHandler;
 //    private static NormalizationHandler LVGNormalizationHandler;
+
+    @Getter
+    private static PhenotypeHandler phenotypeHandler;
+
     static {
 
         HGNCGeneHandler = new GenesHandler("genes.txt");
@@ -45,6 +53,10 @@ public class DocumentPreprocessor {
 
 //        LVGNormalizationHandler = new NormalizationHandler("lvg_normalizations.txt");
 //        LVGNormalizationHandler.loadLVGNormalizedList();
+
+
+        slf4jLogger.info(String.format("Phenotype Handler init() called."));
+        phenotypeHandler = new PhenotypeHandler();
 
 
         if(!CoreNLPManager.isInitialized())

@@ -1,6 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic;
 
-import au.org.garvan.kccg.annotations.pipeline.engine.annotators.util.TAConstants;
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.util.TAConstants;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.EntityType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.PhraseType;
@@ -333,7 +333,7 @@ public class APSentence extends LinguisticEntity {
 
 
     ////////////////////////////////////////////////////////////////////////////////
-    // CR: Support Properties and methods. Can be moved later
+    // CR:DONE Support Properties and methods. Can be moved later
     ///////////////////////////////////////////////////////////////////////////////
 
     @Getter
@@ -396,7 +396,7 @@ public class APSentence extends LinguisticEntity {
             }
         }
 
-        //CR: Merged functions from TASentence. This is the making of sentence and will be done only when CR is initialized.
+        //CR:DONE Merged functions from TASentence. This is the making of sentence and will be done only when CR is initialized.
         List<Integer> list = this.inverseTokenPositions.containsKey(positionedToken.getOriginalText()) ? this.inverseTokenPositions.get(positionedToken.getOriginalText()) : new ArrayList<>();
         list.add(index);
         this.inverseTokenPositions.put(positionedToken.getOriginalText(), list);

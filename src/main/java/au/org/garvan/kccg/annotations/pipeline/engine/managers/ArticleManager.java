@@ -25,10 +25,13 @@ public class ArticleManager {
     @Autowired
     DatabaseManager dbManager;
 
+
     public void init(){
 
         slf4jLogger.info(String.format("Article Manager init() called."));
         DocumentPreprocessor.init();
+
+
     }
 
     @Async
@@ -41,6 +44,7 @@ public class ArticleManager {
             try {
                 if (!isDuplicate(article)) {
                     article.getArticleAbstract().hatch();
+
                     slf4jLogger.info(String.format("Article processed successfully, ID: %d", article.getPubMedID()));
                     dbManager.persistArticle(article);
 
