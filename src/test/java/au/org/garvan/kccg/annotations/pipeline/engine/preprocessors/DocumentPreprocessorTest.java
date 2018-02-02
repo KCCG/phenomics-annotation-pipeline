@@ -3,10 +3,12 @@ package au.org.garvan.kccg.annotations.pipeline.engine.preprocessors;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.*;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.PhraseType;
+import au.org.garvan.kccg.annotations.pipeline.engine.profiles.ProcessingProfile;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -19,6 +21,8 @@ public class DocumentPreprocessorTest {
     @Before
     public void setUp() throws Exception {
         doc = new APDocument(0, "The roving eye which he had cultivated for so many years.");
+        ProcessingProfile profile = new ProcessingProfile(false,false,true,true, Arrays.asList());
+        doc.setProcessingProfile(profile);
     }
 
     @Test

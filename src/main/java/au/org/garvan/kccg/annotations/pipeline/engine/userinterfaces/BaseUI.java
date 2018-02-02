@@ -397,7 +397,7 @@ public class BaseUI extends Application {
                 List<Annotation> tokenAnnotations = sent.getAnnotations().stream().filter(m->m.getType().equals(AnnotationType.PHENOTYPE)).filter(a-> a.getTokenIDs().contains(tok.getId())).collect(Collectors.toList());
                 for(Annotation annotation:tokenAnnotations)
                 {
-                    entityList.setItems(FXCollections.observableArrayList(((APPhenotype)annotation.getEntity()).stringList()));
+                    entityList.getItems().addAll(FXCollections.observableArrayList(((APPhenotype)annotation.getEntity()).stringList()));
                 }
 
             }

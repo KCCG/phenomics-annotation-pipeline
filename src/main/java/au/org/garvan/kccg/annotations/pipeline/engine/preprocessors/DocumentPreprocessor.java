@@ -38,19 +38,15 @@ public class DocumentPreprocessor {
     private static  GenesHandler  HGNCGeneHandler;
 
     @Getter
-    private static PhenotypeHandler TempPhenotypeHandler;
-//    private static NormalizationHandler LVGNormalizationHandler;
-
-    @Getter
     private static PhenotypeHandler phenotypeHandler;
+
+    //    private static NormalizationHandler LVGNormalizationHandler;
 
     static {
 
         HGNCGeneHandler = new GenesHandler("genes.txt");
         HGNCGeneHandler.loadGenes();
 
-        TempPhenotypeHandler = new PhenotypeHandler("hpo.txt");
-        TempPhenotypeHandler.loadPhenotypes();
 
 //        LVGNormalizationHandler = new NormalizationHandler("lvg_normalizations.txt");
 //        LVGNormalizationHandler.loadLVGNormalizedList();

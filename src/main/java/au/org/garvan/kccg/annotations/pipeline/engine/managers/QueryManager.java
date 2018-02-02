@@ -3,6 +3,7 @@ package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManagerResultSet;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.APPhenotypeMapper;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
@@ -16,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.ws.rs.QueryParam;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -254,7 +254,7 @@ public class QueryManager {
 
         //Get and sort Genes
         List<APGene> shortlistedGenes = DocumentPreprocessor.getHGNCGeneHandler().searchGenes(infix);
-        List<APPhenotype> shortListedPhenotypes = DocumentPreprocessor.getTempPhenotypeHandler().serchPhenotype(infix);
+        List<APPhenotypeMapper> shortListedPhenotypes = DocumentPreprocessor.getPhenotypeHandler().searchPhenotype(infix);
         //Ranking results
         Map<Object, Integer> rankedEntities = new HashMap<>();
         shortListedPhenotypes.stream().forEach(x -> rankedEntities.put(x, 0));
@@ -272,8 +272,8 @@ public class QueryManager {
                 }
                 entry.setValue(rank);
             }
-            if (entry.getKey() instanceof APPhenotype) {
-                List<String> symbols = Arrays.asList(((APPhenotype) entry.getKey()).getText().toUpperCase().split(" "));
+            if (entry.getKey() instanceof APPhenotypeMapper) {
+                List<String> symbols = Arrays.asList(((APPhenotypeMapper) entry.getKey()).getText().toUpperCase().split(" "));
                 Integer termNumber = 0;
                 for (String symbol : symbols) {
                     rank = baseRank;
@@ -297,7 +297,7 @@ public class QueryManager {
 
 
         Map<Object, Integer> topRankedPhenotypes =
-                rankedEntities.entrySet().stream().filter(x -> x.getKey() instanceof APPhenotype)
+                rankedEntities.entrySet().stream().filter(x -> x.getKey() instanceof APPhenotypeMapper)
                         .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                         .limit(collectedPhenotypeSize)
                         .collect(Collectors.toMap(
@@ -324,7 +324,7 @@ public class QueryManager {
         for (Map.Entry<Object, Integer> entry : topRankedPhenotypes.entrySet()) {
             Object object = entry.getKey();
             RankedAutoCompleteEntity entity = new RankedAutoCompleteEntity();
-            APPhenotype phenotype = (APPhenotype) object;
+            APPhenotypeMapper phenotype = (APPhenotypeMapper) object;
             entity.setId(String.valueOf(phenotype.getId()));
             entity.setText(phenotype.getText());
             entity.setType(AnnotationType.PHENOTYPE.toString());

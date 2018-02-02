@@ -26,6 +26,8 @@ import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.util.
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.util.StatsUtil;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.util.TAConstants;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.APPhenotypeMapper;
+
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APSentence;
@@ -302,5 +304,9 @@ public class PhenotypeHandler {
 
     public boolean isValid() {
         return valid;
+    }
+
+    public List<APPhenotypeMapper> searchPhenotype(String infix){
+         return phenotypeLabelToHpo.entrySet().stream().filter(x->x.getKey().contains(infix.toLowerCase())).map(p-> new APPhenotypeMapper(p.getValue(),p.getKey())).collect(Collectors.toList());
     }
 }
