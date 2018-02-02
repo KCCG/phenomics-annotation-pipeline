@@ -239,9 +239,9 @@ public class PhenotypeHandler {
         List<ConceptAnnotation> list = new ArrayList<ConceptAnnotation>();
         for (ConceptCandidate candidate : conceptCandidates.keySet()) {
             DS_ConceptInfo conceptInfo = conceptCandidates.get(candidate);
-
-            int startIndex = candidate.getStartOffset() - candidate.getSentence().getDocOffset().x;
-            int endIndex = candidate.getEndOffset() - candidate.getSentence().getDocOffset().y;
+            //CR:DONE  Adjusted offsets as APToken offset has a sentence reference instead of document.
+            int startIndex = candidate.getStartOffset();// - candidate.getSentence().getDocOffset().x;
+            int endIndex = candidate.getEndOffset();// - candidate.getSentence().getDocOffset().y;
             String target = candidate.getSentence().getOriginalText().substring(startIndex, endIndex);
 
             ConceptAnnotation annotation = new ConceptAnnotation(candidate.getStartOffset(), candidate.getEndOffset(), target);
