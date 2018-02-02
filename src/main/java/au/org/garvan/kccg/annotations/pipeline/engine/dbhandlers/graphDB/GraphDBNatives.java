@@ -2,12 +2,16 @@ package au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.graphDB;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.ArticleWiseConcepts;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.LexicalEntity;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APSentence;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Author;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
+import au.org.garvan.kccg.annotations.pipeline.engine.utilities.constants.GraphDBConstants;
 import au.org.garvan.kccg.annotations.pipeline.model.query.PaginationRequestParams;
 import au.org.garvan.kccg.annotations.pipeline.model.query.RankedArticle;
 import iot.jcypher.database.DBAccessFactory;
@@ -22,14 +26,17 @@ import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcString;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.Util;
+import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.awt.*;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
@@ -183,8 +190,47 @@ public class GraphDBNatives {
             }
 
         }
+        Map<APSentence, List<Annotation>> phenotypeAnnotations= new LinkedHashMap<>();
+        for(APSentence sentence: article.getArticleAbstract().getSentences()){
+            if(sentence.getAnnotations().stream().filter(f->f.getType().equals(AnnotationType.PHENOTYPE)).count()>0) {
+                phenotypeAnnotations.put(sentence, sentence.getAnnotations());
+            }
+        }
+        if(phenotypeAnnotations.size()>0){
+            for (Map.Entry<APSentence,  List<Annotation>> entry : phenotypeAnnotations.entrySet()) {
+                int sentId = entry.getKey().getId();
+                Point sentDocOffset= entry.getKey().getDocOffset();
+                for (Annotation annotation : entry.getValue()){
+                    APPhenotype phenotype = (APPhenotype) annotation.getEntity();
+                    JcNode nodePhenotype = new JcNode(String.format("nodePhenotype%d_%d", sentId, annotation.getOffet().x + annotation.getOffet().y ));
+                    IClause geneClause = MERGE.node(nodePhenotype).label("Phenotype").label("Entity")
+                            .property(GraphDBConstants.ENTITY_NODE_ID).value(phenotype.getHpoID())
+                            .property(GraphDBConstants.ENTITY_NODE_TEXT).value(phenotype.getPhenotype().getPreferredLabel())
+                            .property(GraphDBConstants.ENTITY_NODE_STANDARD).value(annotation.getStandard())
+                            .property(GraphDBConstants.ENTITY_NODE_VERSION).value(annotation.getVersion());
 
-        //TODO: Find entities from Title if required
+                    IClause phenotypeLinkClause =
+                            MERGE.node(nodeArticle).relation().out().type("CONTAINS")
+                                    .property("SentID").value(sentId)
+                                    .property("DocOffsetBegin").value(sentDocOffset.x + annotation.getOffet().x)
+                                    .property("DocOffsetEnd").value(sentDocOffset.x + annotation.getOffet().y)
+                                    .property("Field").value("Abstract")
+                                    .node(nodePhenotype);
+                    queryClauses.add(geneClause);
+                    queryClauses.add(phenotypeLinkClause);
+
+
+
+                }
+            }
+
+        }
+
+
+
+
+
+            //TODO: Find entities from Title if required
     }
 
     private static IClause[] getClausesArray(List<IClause> input) {
