@@ -1,6 +1,8 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.LexicalEntity;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
@@ -20,6 +22,7 @@ import java.awt.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -213,16 +216,26 @@ public class Article {
 
     }
 
-    public JSONObject getAbstractEntities(){
-        JSONObject returnObject = new JSONObject();
-        Map<APSentence, List<APToken>> annotations = articleAbstract.getTokensWithEntities();
-        if (annotations.size()>0)
+    /***
+     * This method is written for DynamodDB persistence only
+     * 1: Genes
+     * 2: Phenotypes
+     * Are Annotations to be stored in dynamodb for time being.
+     * @return
+     */
+
+    public JSONArray getAbstractEntities(){
+        JSONArray returnArray = new JSONArray();
+
+        Map<APSentence, List<APToken>> geneAnnotations = articleAbstract.getTokensWithEntities();
+        if (geneAnnotations.size()>0)
         {
+            JSONObject returnObject = new JSONObject();
             returnObject.put("pubMedID", Integer.toString(pubMedID));
             returnObject.put("annotationType", AnnotationType.GENE.toString());
             JSONArray genes = new JSONArray();
 
-            for (Map.Entry<APSentence,  List<APToken>> entry : annotations.entrySet()) {
+            for (Map.Entry<APSentence,  List<APToken>> entry : geneAnnotations.entrySet()) {
                 int sentId = entry.getKey().getId();
                 Point sentDocOffset= entry.getKey().getDocOffset();
                 for (APToken token : entry.getValue()){
@@ -246,9 +259,42 @@ public class Article {
                 }
             }
             returnObject.put("annotations",genes);
+            returnArray.add(returnObject);
         }
 
-        return returnObject;
+        Map<APSentence, List<Annotation>> phenotypeAnnotations= new LinkedHashMap<>();
+        for(APSentence sentence: articleAbstract.getSentences()){
+            if(sentence.getAnnotations().stream().filter(f->f.getType().equals(AnnotationType.PHENOTYPE)).count()>0) {
+                phenotypeAnnotations.put(sentence, sentence.getAnnotations());
+            }
+        }
+
+        if(phenotypeAnnotations.size()>0){
+
+            JSONObject returnObject = new JSONObject();
+            returnObject.put("pubMedID", Integer.toString(pubMedID));
+            returnObject.put("annotationType", AnnotationType.PHENOTYPE.toString());
+            JSONArray phenotypes = new JSONArray();
+            for (Map.Entry<APSentence,  List<Annotation>> entry : phenotypeAnnotations.entrySet()) {
+                int sentId = entry.getKey().getId();
+                Point sentDocOffset= entry.getKey().getDocOffset();
+                for (Annotation annotation : entry.getValue()){
+
+                            JSONObject jsonObject = new JSONObject();
+                            jsonObject.put("field","articleAbstract");
+                            jsonObject.put("standard", annotation.getStandard());
+                            jsonObject.put("sentId",sentId);
+                            jsonObject.put("tokenIds", annotation.getTokenIDs());
+                            jsonObject.put("annotationId", ((APPhenotype) (annotation.getEntity())).getHpoID());
+                            jsonObject.put("globalOffset", constructGlobalOffset(sentDocOffset,annotation.getOffet()));
+                            phenotypes.add(jsonObject);
+
+                    }
+            }
+            returnObject.put("annotations",phenotypes);
+            returnArray.add(returnObject);
+        }
+        return returnArray;
 
     }
 

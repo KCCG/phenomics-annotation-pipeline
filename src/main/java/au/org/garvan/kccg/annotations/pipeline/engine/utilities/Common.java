@@ -1,6 +1,8 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.utilities;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
+import au.org.garvan.kccg.annotations.pipeline.engine.profiles.ProcessingProfile;
 import org.json.simple.JSONArray;
 
 import java.util.Arrays;
@@ -54,6 +56,14 @@ public final class Common {
     public static String emptyStringToNA(String inputStr)
     {
        return  inputStr.isEmpty() ? "N/A" : inputStr;
+
+    }
+
+    public static ProcessingProfile getStandardProfile(){
+
+        ProcessingProfile profile = new ProcessingProfile(false,false,true,true, Arrays.asList(AnnotationType.GENE, AnnotationType.PHENOTYPE));
+        return profile;
+
 
     }
 }

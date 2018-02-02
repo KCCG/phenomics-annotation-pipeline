@@ -46,15 +46,16 @@ public class DynamoDBHandler {
 
     }
 
-    public void insertItem(JSONObject jsonArticle, JSONObject jsonAnnotations) {
+    public void insertItem(JSONObject jsonArticle, JSONArray jsonAnnotations) {
 
         Table articleTable = dynamoDB.getTable(articleTableName);
         Item article = Item.fromJSON(jsonArticle.toString());
         articleTable.putItem(article);
 
-        if (jsonAnnotations.containsKey("pubMedID")) {
+        for(Object obj: jsonAnnotations){
+            JSONObject jsonObject = (JSONObject) obj;
             Table annotationTable = dynamoDB.getTable(annotationTableName);
-            Item annotations = Item.fromJSON(jsonAnnotations.toString());
+            Item annotations = Item.fromJSON(jsonObject.toString());
             annotationTable.putItem(annotations);
         }
 

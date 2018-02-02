@@ -39,12 +39,12 @@ public class APSentence extends LinguisticEntity {
 
     @Getter
     @Setter
-    private List<APParseTreeRow> parseTree;
+    private List<APParseTreeRow> parseTree = new ArrayList<>();
 
 
     @Getter
     @Setter
-    private List<APDependencyRelation> dependencyRelations;
+    private List<APDependencyRelation> dependencyRelations = new ArrayList<>();
 
 
     @Getter
@@ -59,7 +59,7 @@ public class APSentence extends LinguisticEntity {
 
     @Getter
     @Setter
-    private Map<APToken, APToken[]> SfLfLink;
+    private Map<APToken, APToken[]> SfLfLink = new HashMap<>();
 
     @Getter
     @Setter

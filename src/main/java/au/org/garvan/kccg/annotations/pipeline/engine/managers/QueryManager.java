@@ -2,7 +2,6 @@ package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManagerResultSet;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
-import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.APPhenotypeMapper;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
@@ -186,7 +185,7 @@ public class QueryManager {
 
     private SearchResult constructSearchResult(RankedArticle rankedArticle) {
         Article article = rankedArticle.getArticle();
-        JSONObject annotations = rankedArticle.getJsonAnnotations();
+        List<JSONObject> annotations = rankedArticle.getJsonAnnotations();
         // ^ This change is made to have one DTO throughout the hierarchy for simplicity of code.
         SearchResult searchResult = new SearchResult();
         searchResult.setPmid(article.getPubMedID());
@@ -197,23 +196,22 @@ public class QueryManager {
         searchResult.setAuthors(article.getAuthors());
         searchResult.setPublication(article.getPublication());
 
-        if (!annotations.isEmpty()) {
-            if (annotations.containsKey("annotations")) {
-                JSONArray genes = (JSONArray) annotations.get("annotations");
-                searchResult.fillGenes(genes);
-                searchResult.setArticleRank(rankedArticle.getRank());
+        if(annotations.size()>0) {
+            searchResult.setArticleRank(rankedArticle.getRank());
+            for (JSONObject annotation : annotations) {
+                if (annotation.get("annotationType").toString().equals(AnnotationType.GENE.toString())) {
+                    JSONArray genes = (JSONArray) annotation.get("annotations");
+                    searchResult.fillGenes(genes);
+                }
+
             }
-
-        } else {
-
         }
-
         return searchResult;
     }
 
     private SearchResultV1 constructSearchResultV1(RankedArticle rankedArticle) {
         Article article = rankedArticle.getArticle();
-        JSONObject annotations = rankedArticle.getJsonAnnotations();
+        List<JSONObject> annotations = rankedArticle.getJsonAnnotations();
         // ^ This change is made to have one DTO throughout the hierarchy for simplicity of code.
         SearchResultV1 searchResult = new SearchResultV1();
         searchResult.setPmid(article.getPubMedID());
@@ -224,16 +222,24 @@ public class QueryManager {
         searchResult.setAuthors(article.getAuthors());
         searchResult.setPublication(article.getPublication());
 
-        if (!annotations.isEmpty()) {
-            if (annotations.containsKey("annotations")) {
-                JSONArray genes = (JSONArray) annotations.get("annotations");
-                searchResult.fillGenes(genes);
-                searchResult.setArticleRank(rankedArticle.getRank());
+        if(annotations.size()>0) {
+            searchResult.setArticleRank(rankedArticle.getRank());
+            for (JSONObject annotation : annotations) {
+                if (annotation.get("annotationType").toString().equals(AnnotationType.GENE.toString())) {
+                    JSONArray genes = (JSONArray) annotation.get("annotations");
+                    searchResult.fillAnnotations(genes, AnnotationType.GENE);
+                }
+
+                if (annotation.get("annotationType").toString().equals(AnnotationType.PHENOTYPE.toString())) {
+                    JSONArray phenotypes = (JSONArray) annotation.get("annotations");
+                    searchResult.fillAnnotations(phenotypes, AnnotationType.PHENOTYPE);
+                }
+
+
+
             }
-
-        } else {
-
         }
+
 
         return searchResult;
     }

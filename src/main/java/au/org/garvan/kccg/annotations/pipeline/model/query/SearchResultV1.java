@@ -1,5 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.model.query;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Author;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Publication;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
@@ -58,39 +59,41 @@ public class SearchResultV1 {
     @JsonProperty
     Publication publication;
 
-    public void fillGenes (JSONArray jsonGenes)
+    public void fillAnnotations(JSONArray jsonGenes, AnnotationType type)
     {
-        List<OutputItemDto> geneList = new ArrayList<>();
+        List<OutputItemDto> annotationList = new ArrayList<>();
         for (Object obj:jsonGenes)
         {
             JSONObject jsonObject = (JSONObject) obj;
-            OutputItemDto tempGene;
+            OutputItemDto tempAnnotation;
             //Check if gene is already in the list then append offset, otherwise add it.
-            boolean geneExists = geneList.stream()
+            boolean annotationExists = annotationList.stream()
                     .map(OutputItemDto::getText)
                     .anyMatch(jsonObject.get("annotationId")::equals);
-            if (geneExists){
-                tempGene = geneList.stream().filter(g-> g.text.equals(jsonObject.get("annotationId"))).collect(Collectors.toList()).get(0);
-                tempGene.offsets.add(constructOffset(jsonObject.get("globalOffset").toString()));
+            if (annotationExists){
+                tempAnnotation = annotationList.stream().filter(g-> g.text.equals(jsonObject.get("annotationId"))).collect(Collectors.toList()).get(0);
+                tempAnnotation.offsets.add(constructOffset(jsonObject.get("globalOffset").toString()));
             }
             else
             {
                 String symbol = jsonObject.get("annotationId").toString();
                 String id = String.valueOf(DocumentPreprocessor.getHGNCGeneHandler().getGene(symbol).getHGNCID());
 
-                tempGene = new OutputItemDto(id,
-                        AnnotationType.GENE.toString(),
+                tempAnnotation = new OutputItemDto(id,
+                        type.toString(),
                         symbol,
                         jsonObject.get("field").toString(),
                         jsonObject.get("standard").toString(),
                         new ArrayList<>(Arrays.asList(constructOffset(jsonObject.get("globalOffset").toString()))),
                         new JSONObject()
                 );
-                geneList.add(tempGene);
+                annotationList.add(tempAnnotation);
             }
 
         }
-        annotations = geneList;
+        if(annotations==null)
+            annotations = new ArrayList<>();
+        annotations.addAll(annotationList);
 
     }
 

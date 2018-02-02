@@ -80,8 +80,17 @@ public class DatabaseManager {
             JSONObject jsonArticle = fetchArticle(anArticle.getPMID());
             if (!jsonArticle.isEmpty()) {
                 anArticle.setArticle(new Article(new DynamoDBObject(jsonArticle, EntityType.Article), false));
-                anArticle.setJsonAnnotations(dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE));
+                List<JSONObject> jsonAnnotations = new ArrayList<>();
 
+                JSONObject genes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE);
+                JSONObject phenotypes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.PHENOTYPE);
+
+                if(genes.containsKey("annotationType"))
+                    jsonAnnotations.add(genes);
+                if(phenotypes.containsKey("annotationType"))
+                    jsonAnnotations.add(phenotypes);
+
+                anArticle.setJsonAnnotations(jsonAnnotations);
             }
         }
         resultSet.setRankedArticles(rankedArticles);
@@ -99,7 +108,17 @@ public class DatabaseManager {
             JSONObject jsonArticle = fetchArticle(anArticle.getPMID());
             if (!jsonArticle.isEmpty()) {
                 anArticle.setArticle(new Article(new DynamoDBObject(jsonArticle, EntityType.Article), false));
-                anArticle.setJsonAnnotations(dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE));
+                List<JSONObject> jsonAnnotations = new ArrayList<>();
+
+                JSONObject genes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE);
+                JSONObject phenotypes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.PHENOTYPE);
+
+                if(genes.containsKey("annotationType"))
+                    jsonAnnotations.add(genes);
+                if(phenotypes.containsKey("annotationType"))
+                    jsonAnnotations.add(phenotypes);
+
+                anArticle.setJsonAnnotations(jsonAnnotations);
 
             }
         }

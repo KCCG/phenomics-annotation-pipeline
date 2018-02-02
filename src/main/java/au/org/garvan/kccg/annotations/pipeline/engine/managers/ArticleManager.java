@@ -4,6 +4,8 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocu
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
+import au.org.garvan.kccg.annotations.pipeline.engine.profiles.ProcessingProfile;
+import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Common;
 import au.org.garvan.kccg.annotations.pipeline.model.annotation.RawArticle;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
@@ -87,9 +89,7 @@ public class ArticleManager {
                 rawArticle.getAuthors(),
                 rawArticle.getPublication());
 
-        article.getArticleAbstract().getProcessingProfile().getAnnotationRequests().add(AnnotationType.GENE);
-//        article.getArticleAbstract().getProcessingProfile().getAnnotationRequests().add(AnnotationType.PHENOTYPE);
-
+        article.getArticleAbstract().setProcessingProfile(Common.getStandardProfile());
         return article;
     }
 }

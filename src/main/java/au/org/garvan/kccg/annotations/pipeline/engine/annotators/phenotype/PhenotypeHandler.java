@@ -188,7 +188,7 @@ public class PhenotypeHandler {
         Annotation finalAnnotation = new Annotation();
         finalAnnotation.setEntity(new APPhenotype(conceptAnnotation.getConcept()));
         finalAnnotation.setTokenIDs(conceptTokens.stream().map(t -> t.getId()).collect(Collectors.toList()));
-        finalAnnotation.setTokensOffsetBegin(conceptTokens.stream().map(t -> t.getSentOffset().x).collect(Collectors.toList()));
+        finalAnnotation.setTokenOffsets(conceptTokens.stream().map(t -> t.getSentOffset()).collect(Collectors.toList()));
         finalAnnotation.setType(AnnotationType.PHENOTYPE);
         finalAnnotation.setStandard(standard);
         finalAnnotation.setVersion(version);
