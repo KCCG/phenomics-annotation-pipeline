@@ -1,5 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic;
 
+import lombok.Data;
 import lombok.Getter;
 
 
@@ -12,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Created by ahmed on 7/7/17.
  */
 
+@Data
 public class LinguisticEntity {
     private static final AtomicInteger count = new AtomicInteger(0);
 

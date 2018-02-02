@@ -1,4 +1,4 @@
-package au.org.garvan.kccg.annotations.pipeline.model;
+package au.org.garvan.kccg.annotations.pipeline.model.query;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
@@ -17,10 +17,11 @@ import java.util.List;
 @NoArgsConstructor
 @ApiModel
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class PaginatedSearchResult {
+public class PaginatedSearchResultV1 {
 
-    List<SearchResult> articles;
+    List<SearchResultV1> articles;
     PaginationRequestParams pagination;
-    ConceptFilter filters;
+    List<ConceptFilter> filters;
+    String queryId;
 
 }

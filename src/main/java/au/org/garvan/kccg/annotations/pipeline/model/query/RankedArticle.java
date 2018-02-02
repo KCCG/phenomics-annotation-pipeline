@@ -1,5 +1,6 @@
-package au.org.garvan.kccg.annotations.pipeline.model;
+package au.org.garvan.kccg.annotations.pipeline.model.query;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.LexicalEntity;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,6 +9,7 @@ import org.json.simple.JSONObject;
 
 import java.math.BigDecimal;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -20,8 +22,11 @@ public class RankedArticle {
     //Stored by GraphDBHandler
     String PMID;
     BigDecimal totalConceptHits;
+    Integer totalSearchedHits;
+    Integer totalFilteredHits;
     Integer rank;
     //Filled by DBManager
     Article article;
-    JSONObject annotations;
+    JSONObject jsonAnnotations;
+
 }

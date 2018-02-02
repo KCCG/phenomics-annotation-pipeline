@@ -1,7 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
-import au.org.garvan.kccg.annotations.pipeline.model.SubscriptionQuery;
+import au.org.garvan.kccg.annotations.pipeline.model.subscription.SubscriptionQuery;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import org.json.simple.JSONArray;
@@ -40,6 +40,9 @@ public class SubscriptionManager {
 
         slf4jLogger.info(String.format("Subscription Manager init() called."));
     }
+
+
+
 
 
     public Pair<Boolean,Object> processSubscription(SubscriptionQuery subRequest)
@@ -101,7 +104,6 @@ public class SubscriptionManager {
 
         return new Pair<>(true, nextRunTime);
     }
-
 
 
 

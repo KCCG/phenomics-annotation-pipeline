@@ -1,16 +1,17 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.DynamoDBHandler;
-import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.GraphDBHandler;
+import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.graphDB.GraphDBHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.S3Handler;
+import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.graphDB.GraphDBOptimisedHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManagerResultSet;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
-import au.org.garvan.kccg.annotations.pipeline.model.PaginationRequestParams;
+import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
+import au.org.garvan.kccg.annotations.pipeline.model.query.*;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.EntityType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
-import au.org.garvan.kccg.annotations.pipeline.model.RankedArticle;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.json.simple.JSONArray;
@@ -37,6 +38,10 @@ public class DatabaseManager {
 
     @Autowired
     private GraphDBHandler graphDBHandler;
+
+    @Autowired
+    private GraphDBOptimisedHandler graphDBOptimsedHandler;
+
 
     @Autowired
     private S3Handler s3Handler;
@@ -75,7 +80,27 @@ public class DatabaseManager {
             JSONObject jsonArticle = fetchArticle(anArticle.getPMID());
             if (!jsonArticle.isEmpty()) {
                 anArticle.setArticle(new Article(new DynamoDBObject(jsonArticle, EntityType.Article), false));
-                anArticle.setAnnotations(dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE));
+                anArticle.setJsonAnnotations(dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE));
+
+            }
+        }
+        resultSet.setRankedArticles(rankedArticles);
+        return resultSet;
+
+    }
+
+
+    public DBManagerResultSet searchArticlesWithFilters(String queryId, List<Pair<String, String>> searhItems, List<Pair<String, String>> filterItems, PaginationRequestParams qParams) {
+        DBManagerResultSet resultSet = graphDBOptimsedHandler.fetchArticlesWithFilters(queryId, searhItems, filterItems, qParams);
+
+        List<RankedArticle> rankedArticles = resultSet.getRankedArticles();
+
+        for (RankedArticle anArticle : rankedArticles) {
+            JSONObject jsonArticle = fetchArticle(anArticle.getPMID());
+            if (!jsonArticle.isEmpty()) {
+                anArticle.setArticle(new Article(new DynamoDBObject(jsonArticle, EntityType.Article), false));
+                anArticle.setJsonAnnotations(dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE));
+
             }
         }
         resultSet.setRankedArticles(rankedArticles);

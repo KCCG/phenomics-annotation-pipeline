@@ -1,6 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.PhraseType;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Data
+@EqualsAndHashCode(callSuper=false)
 public class APPhrase extends LinguisticEntity {
 
     PhraseType phraseType;

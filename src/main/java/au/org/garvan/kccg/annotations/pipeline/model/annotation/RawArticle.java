@@ -1,4 +1,4 @@
-package au.org.garvan.kccg.annotations.pipeline.model;
+package au.org.garvan.kccg.annotations.pipeline.model.annotation;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Author;

@@ -12,7 +12,7 @@ public enum AnnotationType{
     SYMPTOM,
     DRUG,
     THERAPY,
-    EXPOSURE
-
+    EXPOSURE,
+    DATERANGE
 
 }

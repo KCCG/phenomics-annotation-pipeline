@@ -1,4 +1,4 @@
-package au.org.garvan.kccg.annotations.pipeline.model;
+package au.org.garvan.kccg.annotations.pipeline.model.query;
 
 import lombok.Data;
 

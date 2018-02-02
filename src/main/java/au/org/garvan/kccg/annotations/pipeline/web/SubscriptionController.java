@@ -2,8 +2,8 @@ package au.org.garvan.kccg.annotations.pipeline.web;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.managers.SubscriptionManager;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
-import au.org.garvan.kccg.annotations.pipeline.model.SubscriptionQuery;
-import au.org.garvan.kccg.annotations.pipeline.model.SubscriptionResult;
+import au.org.garvan.kccg.annotations.pipeline.model.subscription.SubscriptionQuery;
+import au.org.garvan.kccg.annotations.pipeline.model.subscription.SubscriptionResult;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;

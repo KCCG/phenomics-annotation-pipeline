@@ -1,4 +1,4 @@
-package au.org.garvan.kccg.annotations.pipeline.model;
+package au.org.garvan.kccg.annotations.pipeline.model.query;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Author;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Publication;
@@ -9,7 +9,6 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
 import org.json.simple.JSONObject;
 
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 

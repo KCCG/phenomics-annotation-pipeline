@@ -2,10 +2,14 @@ package au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.connectors.BaseConnector;
 import au.org.garvan.kccg.annotations.pipeline.engine.connectors.JsonConnector;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.CommonParams;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.EntityType;
 import org.json.simple.JSONObject;
 import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,16 +18,18 @@ import java.util.List;
 /**
  * Created by ahmed on 10/11/17.
  */
+
+//TODO: Update unit tests based on new code base.
 public class DynamoDBHandlerTest {
 
-    private final Logger slf4jLogger = LoggerFactory.getLogger(DynamoDBHandlerTest.class);
-
+//    private final Logger slf4jLogger = LoggerFactory.getLogger(DynamoDBHandlerTest.class);
+//
 //
 //    DynamoDBHandler dbHanlde = new DynamoDBHandler();
 //    private BaseConnector testConnector;
 //    private List<Article> articles;
-//
-//
+
+
 //    JSONObject jsonObject = new JSONObject();
 //    @Before
 //    public void setUp() throws Exception {
@@ -51,14 +57,13 @@ public class DynamoDBHandlerTest {
 //        dbHanlde.insertItem(testArticle.constructJson(), testArticle.getAbstractEntities());
 //
 //    }
-//
+
 //    @Test
 //    public void getItem() throws Exception {
 //        int pubMedId = 29088578;
 //        JSONObject jsonObject=  dbHanlde.getArticle(pubMedId);
 //        JSONObject jsonObject1 = dbHanlde.getAnnotations(pubMedId, AnnotationType.GENE);
 //        Article a = new Article(new DynamoDBObject(jsonObject, EntityType.Article), jsonObject1);
-//        a = a;
 //
 //    }
 //
@@ -76,7 +81,7 @@ public class DynamoDBHandlerTest {
 //
 //            testArticle.getArticleAbstract().hatch();
 //            JSONObject jsonObject=  dbHanlde.getArticle(testArticle.getPubMedID());
-//            JSONObject jsonObject1 = dbHanlde.getAnnotations(testArticle.getPubMedID(), AnnotationType.GENE);
+//            JSONObject jsonObject1 = dbHanlde.getJsonAnnotations(testArticle.getPubMedID(), AnnotationType.GENE);
 //            Article a = new Article(new DynamoDBObject(jsonObject, EntityType.Article), jsonObject1);
 //            returnedArtciles.add(a);
 //        }
