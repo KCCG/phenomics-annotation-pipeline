@@ -24,24 +24,24 @@ public class QueryController {
     @Autowired
     private QueryManager engine;
 
-    @ApiOperation(value = "searchArticles", nickname = "searchArticles", notes = "All attributes are optional; when more than one is provided, then search result will satisfy all conditions (Operation AND)")
-    @RequestMapping(value = "/query", method = RequestMethod.POST, produces = "application/json")
-
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Success", response = PaginatedSearchResult.class),
-            @ApiResponse(code = 401, message = "Unauthorized"),
-            @ApiResponse(code = 403, message = "Forbidden"),
-            @ApiResponse(code = 404, message = "Not Found"),
-            @ApiResponse(code = 500, message = "Failure")})
-    @CrossOrigin
-    public PaginatedSearchResult searchArticles(@ApiParam("query") @RequestBody SearchQuery query,
-                                                @RequestParam(value = "pageSize", required = false) @ApiParam Integer pageSize,
-                                                @RequestParam(value = "pageNo", required = false) @ApiParam Integer pageNo
-    ) {
-
-
-        return engine.processQuery(query, pageSize, pageNo);
-    }
+//    @ApiOperation(value = "searchArticles", nickname = "searchArticles", notes = "All attributes are optional; when more than one is provided, then search result will satisfy all conditions (Operation AND)")
+//    @RequestMapping(value = "/query", method = RequestMethod.POST, produces = "application/json")
+//
+//    @ApiResponses(value = {
+//            @ApiResponse(code = 200, message = "Success", response = PaginatedSearchResult.class),
+//            @ApiResponse(code = 401, message = "Unauthorized"),
+//            @ApiResponse(code = 403, message = "Forbidden"),
+//            @ApiResponse(code = 404, message = "Not Found"),
+//            @ApiResponse(code = 500, message = "Failure")})
+//    @CrossOrigin
+//    public PaginatedSearchResult searchArticles(@ApiParam("query") @RequestBody SearchQuery query,
+//                                                @RequestParam(value = "pageSize", required = false) @ApiParam Integer pageSize,
+//                                                @RequestParam(value = "pageNo", required = false) @ApiParam Integer pageNo
+//    ) {
+//
+//
+////        return engine.processQuery(query, pageSize, pageNo);
+//    }
 
     @ApiOperation(value = "searchPaginatedArticles", nickname = "searchPaginatedArticles", notes = "All attributes are optional; when more than one is provided, then search result will satisfy all conditions (Operation AND)")
     @RequestMapping(value = "/query/v1.0", method = RequestMethod.POST, produces = "application/json")

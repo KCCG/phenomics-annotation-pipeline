@@ -36,39 +36,39 @@ public class QueryManager {
     }
 
 
-    public PaginatedSearchResult processQuery(SearchQuery query, Integer pageSize, Integer pageNo) {
-        slf4jLogger.info(String.format("Processing search query with id:%s and content:%s", query.getQueryId(), query.toString()));
-
-        PaginationRequestParams qParams = new PaginationRequestParams(pageSize, pageNo);
-        slf4jLogger.info(String.format("Query id:%s params are pageSize:%d, pageNo:%d", query.getQueryId(), qParams.getPageSize(), qParams.getPageNo()));
-
-
-        List<SearchResult> results = new ArrayList<>();
-        DBManagerResultSet resultSet = new DBManagerResultSet();
-
-
-        Map<SearchQueryParams, Object> params = new HashMap<>();
-        if (query.getAuthor() != null)
-            params.put(SearchQueryParams.AUTHOR, query.getAuthor());
-        if (query.getGene() != null)
-            params.put(SearchQueryParams.GENES, new Pair<String, List<String>>(query.getGene().getCondition(), query.getGene().getSymbols()));
-        if (query.getDateRange() != null)
-            params.put(SearchQueryParams.DATERANGE, new Pair<>(query.getDateRange().getStartDate(), query.getDateRange().getEndDate()));
-        if (query.getPublication() != null)
-            params.put(SearchQueryParams.PUBLICATION, query.getPublication());
-
-        if (params.size() > 0) {
-            resultSet = dbManager.searchArticles(params, qParams);
-            for (RankedArticle entry : resultSet.getRankedArticles()) {
-                results.add(constructSearchResult(entry));
-            }
-        }
-
-        slf4jLogger.info(String.format("Finished processing search query with id: %s. Total Articles:%d Result set:%d",
-                query.getQueryId(), qParams.getTotalArticles(), results.size()));
-        return constructFinalResult(results, resultSet, qParams);
-
-    }
+//    public PaginatedSearchResult processQuery(SearchQuery query, Integer pageSize, Integer pageNo) {
+//        slf4jLogger.info(String.format("Processing search query with id:%s and content:%s", query.getQueryId(), query.toString()));
+//
+//        PaginationRequestParams qParams = new PaginationRequestParams(pageSize, pageNo);
+//        slf4jLogger.info(String.format("Query id:%s params are pageSize:%d, pageNo:%d", query.getQueryId(), qParams.getPageSize(), qParams.getPageNo()));
+//
+//
+//        List<SearchResult> results = new ArrayList<>();
+//        DBManagerResultSet resultSet = new DBManagerResultSet();
+//
+//
+//        Map<SearchQueryParams, Object> params = new HashMap<>();
+//        if (query.getAuthor() != null)
+//            params.put(SearchQueryParams.AUTHOR, query.getAuthor());
+//        if (query.getGene() != null)
+//            params.put(SearchQueryParams.GENES, new Pair<String, List<String>>(query.getGene().getCondition(), query.getGene().getSymbols()));
+//        if (query.getDateRange() != null)
+//            params.put(SearchQueryParams.DATERANGE, new Pair<>(query.getDateRange().getStartDate(), query.getDateRange().getEndDate()));
+//        if (query.getPublication() != null)
+//            params.put(SearchQueryParams.PUBLICATION, query.getPublication());
+//
+//        if (params.size() > 0) {
+//            resultSet = dbManager.searchArticles(params, qParams);
+//            for (RankedArticle entry : resultSet.getRankedArticles()) {
+//                results.add(constructSearchResult(entry));
+//            }
+//        }
+//
+//        slf4jLogger.info(String.format("Finished processing search query with id: %s. Total Articles:%d Result set:%d",
+//                query.getQueryId(), qParams.getTotalArticles(), results.size()));
+//        return constructFinalResult(results, resultSet, qParams);
+//
+//    }
 
     public PaginatedSearchResultV1 processQueryV1(SearchQueryV1 query, Integer pageSize, Integer pageNo) {
         slf4jLogger.info(String.format("Processing search query with id:%s and content:%s", query.getQueryId(), query.toString()));
@@ -94,7 +94,8 @@ public class QueryManager {
 
             resultSet = dbManager.searchArticlesWithFilters(query.getQueryId(), searchItems, filterItems, qParams);
             for (RankedArticle entry : resultSet.getRankedArticles()) {
-                results.add(constructSearchResultV1(entry));
+                if(entry.getArticle()!=null)
+                    results.add(constructSearchResultV1(entry));
             }
         }
         slf4jLogger.info(String.format("Finished processing search query with id: %s. Total Articles:%d Result set:%d",
@@ -104,47 +105,33 @@ public class QueryManager {
     }
 
 
-    public PaginatedSearchResult constructFinalResult(List<SearchResult> results, DBManagerResultSet resultSet, PaginationRequestParams qParams) {
-        PaginatedSearchResult finalResult = new PaginatedSearchResult();
-        finalResult.setArticles(results);
-        finalResult.setPagination(qParams);
-
-        List<ConceptFilter> lstGeneFilter = new ArrayList<>();
-        for (Map.Entry<String, Integer> entry : resultSet.getGeneCounts().entrySet()) {
-            String symbol = entry.getKey();
-            Integer count = entry.getValue();
-            String id = String.valueOf(DocumentPreprocessor.getHGNCGeneHandler().getGene(symbol).getHGNCID());
-            lstGeneFilter.add(new ConceptFilter(
-                    id, AnnotationType.GENE.toString(),
-                    symbol,
-                    count, count));
-        }
-        List<ConceptFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
-        finalResult.setFilters(sortedLstGeneFilter);
-        return finalResult;
-
-    }
+//    public PaginatedSearchResult constructFinalResult(List<SearchResult> results, DBManagerResultSet resultSet, PaginationRequestParams qParams) {
+//        PaginatedSearchResult finalResult = new PaginatedSearchResult();
+//        finalResult.setArticles(results);
+//        finalResult.setPagination(qParams);
+//
+//        List<ConceptFilter> lstGeneFilter = new ArrayList<>();
+//        for (Map.Entry<String, Integer> entry : resultSet.getGeneCounts().entrySet()) {
+//            String symbol = entry.getKey();
+//            Integer count = entry.getValue();
+//            String id = String.valueOf(DocumentPreprocessor.getHGNCGeneHandler().getGene(symbol).getHGNCID());
+//            lstGeneFilter.add(new ConceptFilter(
+//                    id, AnnotationType.GENE.toString(),
+//                    symbol,
+//                    count, count));
+//        }
+//        List<ConceptFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
+//        finalResult.setFilters(sortedLstGeneFilter);
+//        return finalResult;
+//
+//    }
 
     public PaginatedSearchResultV1 constructFinalResultV1(List<SearchResultV1> results, DBManagerResultSet resultSet, PaginationRequestParams qParams, SearchQueryV1 query) {
         PaginatedSearchResultV1 finalResult = new PaginatedSearchResultV1();
         finalResult.setArticles(results);
         finalResult.setPagination(qParams);
 
-        List<ConceptFilter> lstGeneFilter = new ArrayList<>();
-        List<String> geneIds = query.findGeneIDs();
-        for (Map.Entry<String, Integer> entry : resultSet.getGeneCounts().entrySet()) {
-            String id = entry.getKey();
-            Integer count = entry.getValue();
-            List<APGene> genes = DocumentPreprocessor.getHGNCGeneHandler().geteGenesWithIDs(Arrays.asList(id));
-            Integer rank = geneIds.contains(id) ? count + 1000 : count;
-            if (genes.size() > 0) {
-                lstGeneFilter.add(new ConceptFilter(
-                        id, AnnotationType.GENE.toString(),
-                        genes.get(0).getApprovedSymbol(),
-                        rank,
-                        count));
-            }
-        }
+        List<ConceptFilter> lstGeneFilter = resultSet.getConceptCounts();
         List<ConceptFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
         finalResult.setFilters(sortedLstGeneFilter);
         finalResult.setQueryId(query.getQueryId());

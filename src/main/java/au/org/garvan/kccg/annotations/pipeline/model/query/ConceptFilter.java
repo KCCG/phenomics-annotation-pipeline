@@ -34,6 +34,16 @@ public class ConceptFilter {
     Integer rank;
     @JsonProperty
     Integer articleCount;
+    @JsonProperty
+    Integer filteredArticleCount;
 
 
+
+    public void incrementArticleCount(Integer count){
+        articleCount  = articleCount+count;
+    }
+
+    public void incrementFilteredArticleCount(Integer count){
+        filteredArticleCount  = filteredArticleCount+count;
+    }
 }

@@ -309,4 +309,10 @@ public class PhenotypeHandler {
     public List<APPhenotypeMapper> searchPhenotype(String infix){
          return phenotypeLabelToHpo.entrySet().stream().filter(x->x.getKey().contains(infix.toLowerCase())).map(p-> new APPhenotypeMapper(p.getValue(),p.getKey())).collect(Collectors.toList());
     }
+    public String getPhenotypeLabelWithId(String id){
+        if(hpoToPhenotypeConcept.containsKey(id)){
+            return hpoToPhenotypeConcept.get(id).getPreferredLabel();
+        }
+        else return "";
+    }
 }

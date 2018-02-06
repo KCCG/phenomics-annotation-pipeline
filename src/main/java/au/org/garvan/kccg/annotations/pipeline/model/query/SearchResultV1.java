@@ -67,21 +67,38 @@ public class SearchResultV1 {
             JSONObject jsonObject = (JSONObject) obj;
             OutputItemDto tempAnnotation;
             //Check if gene is already in the list then append offset, otherwise add it.
+
+
+            String text="";
+            String id="";
+
+            if(type == AnnotationType.GENE) {
+                text = jsonObject.get("annotationId").toString();
+                id = String.valueOf(DocumentPreprocessor.getHGNCGeneHandler().getGene(text).getHGNCID());
+            }
+            else if(type == AnnotationType.PHENOTYPE){
+                id = jsonObject.get("annotationId").toString();
+                text = DocumentPreprocessor.getPhenotypeHandler().getPhenotypeLabelWithId(id);
+            }
+
+
             boolean annotationExists = annotationList.stream()
-                    .map(OutputItemDto::getText)
-                    .anyMatch(jsonObject.get("annotationId")::equals);
+                    .map(OutputItemDto::getId)
+                    .anyMatch(id::equals);
+
+
+
             if (annotationExists){
-                tempAnnotation = annotationList.stream().filter(g-> g.text.equals(jsonObject.get("annotationId"))).collect(Collectors.toList()).get(0);
+                final String fixId = id;
+                tempAnnotation = annotationList.stream().filter(g-> g.getId().equals(fixId)).collect(Collectors.toList()).get(0);
                 tempAnnotation.offsets.add(constructOffset(jsonObject.get("globalOffset").toString()));
             }
             else
             {
-                String symbol = jsonObject.get("annotationId").toString();
-                String id = String.valueOf(DocumentPreprocessor.getHGNCGeneHandler().getGene(symbol).getHGNCID());
 
                 tempAnnotation = new OutputItemDto(id,
                         type.toString(),
-                        symbol,
+                        text,
                         jsonObject.get("field").toString(),
                         jsonObject.get("standard").toString(),
                         new ArrayList<>(Arrays.asList(constructOffset(jsonObject.get("globalOffset").toString()))),

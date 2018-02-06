@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 @NoArgsConstructor
 @ApiModel
 @JsonIgnoreProperties(ignoreUnknown = true)
+@Deprecated
 public class SearchResult {
 
 
