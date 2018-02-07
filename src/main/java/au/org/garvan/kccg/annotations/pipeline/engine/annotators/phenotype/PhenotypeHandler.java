@@ -1,5 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.BaseLexiconHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.cr.LongestMatchSort;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.cr.LongestSameMatchSort;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.cr.beans.ConceptAnnotation;
@@ -40,10 +41,15 @@ import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+
+import static org.apache.naming.ContextBindings.getClassLoader;
 
 public class PhenotypeHandler {
     private static final Logger logger = LoggerFactory.getLogger(PhenotypeHandler.class);
@@ -102,16 +108,12 @@ public class PhenotypeHandler {
         this.maxThreads = CRConstants.MAX_THREADS_COUNT;
         this.processNC = CRConstants.PROCESS_NC;
         String path = CRConstants.RESOURCES_PATH;
-
-        try {
-            File folder = new ClassPathResource(path).getFile();
-            logger.info(folder.getAbsolutePath());
-            resourcesPath = folder.getAbsolutePath() + "/";
-        } catch (IOException e) {
-            e.printStackTrace();
+        String resourcesRoot = System.getenv("PhenotypeResources");
+        if(Strings.isNullOrEmpty(resourcesRoot)) {
+            resourcesRoot = "/var/lib/";
         }
-
-
+        resourcesPath = resourcesRoot + path;
+        logger.info(String.format("Concept Recognizer resources path: %s", resourcesPath));
     }
 
     private boolean initComponents(String resourcesFolder) {

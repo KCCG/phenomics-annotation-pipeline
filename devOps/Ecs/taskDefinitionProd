@@ -1,0 +1,68 @@
+{
+    "containerDefinitions": [
+        {
+            "dnsSearchDomains": null,
+            "logConfiguration": null,
+            "entryPoint": null,
+            "portMappings": [
+                {
+                    "hostPort": 9080,
+                    "protocol": "tcp",
+                    "containerPort": 9080
+                }
+            ],
+            "command": null,
+            "linuxParameters": null,
+            "cpu": 1024,
+            "environment": [],
+            "ulimits": null,
+            "dnsServers": null,
+            "mountPoints": [
+        {
+          "sourceVolume": "springlogs",
+          "containerPath": "/logs"
+        },
+        {
+                  "sourceVolume": "PhenotypeResources",
+                  "containerPath": "/var/lib/phenotypeCR/"
+                }
+      ],
+            "workingDirectory": null,
+            "dockerSecurityOptions": null,
+            "memory": 4096,
+            "memoryReservation": null,
+            "volumesFrom": [],
+            "image": "254144944163.dkr.ecr.ap-southeast-2.amazonaws.com/phenomics-prod:pipeline-latest",
+            "disableNetworking": null,
+            "essential": true,
+            "links": null,
+            "hostname": null,
+            "extraHosts": null,
+            "user": null,
+            "readonlyRootFilesystem": null,
+            "dockerLabels": null,
+            "privileged": null,
+            "name": "phenomics-pipeline-container"
+        }
+    ],
+    "taskRoleArn": null,
+    "family": "phenomics-pipeline-prod-task",
+    "networkMode": null,
+    "volumes": [
+    {
+      "name": "springlogs",
+      "host": {
+        "sourcePath": "/var/log/"
+      }
+
+    },
+     {
+          "name": "PhenotypeResources",
+          "host": {
+            "sourcePath": "/var/lib/phenotypeCR/"
+          }
+
+        }
+  ],
+    "placementConstraints": []
+}
