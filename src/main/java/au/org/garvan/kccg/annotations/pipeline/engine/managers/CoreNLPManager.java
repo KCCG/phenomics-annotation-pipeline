@@ -41,10 +41,16 @@ public final class CoreNLPManager {
         Properties phraseProps = PropertiesUtils.asProperties("annotators", "tokenize,ssplit, pos, lemma");
         phrasePipeline = new StanfordCoreNLP(phraseProps);
 
-
+        /*
+        Point: Changed sentence hatching. No need to process dependency relations / parsing unless required.
+         */
         Properties sentProps = PropertiesUtils.asProperties(
-                "annotators", "tokenize,ssplit,pos,lemma,parse,natlog",
+                "annotators", "tokenize,ssplit,pos,lemma",
                 "tokenize.language", "en");
+
+//        Properties sentProps = PropertiesUtils.asProperties(
+//                "annotators", "tokenize,ssplit,pos,lemma,parse,natlog",
+//                "tokenize.language", "en");
 //        sentProps.setProperty("tokenize.whitespace", "true");
         sentencePipeline = new StanfordCoreNLP(sentProps);
 
@@ -56,7 +62,7 @@ public final class CoreNLPManager {
     }
     public static void clearMemory(){
         // Just to make sure we are not polluting pipelines.
-        runMonitor();
+//        runMonitor();
         // This will lock the CoreNLP manager
         lock= true;
         documentPipeline.clearAnnotatorPool();
@@ -71,14 +77,14 @@ public final class CoreNLPManager {
 
 
     public static Annotation annotateDocText(String text){
-        runMonitor();
+//        runMonitor();
         Annotation annotation = new Annotation(text);
         documentPipeline.annotate(annotation);
         return annotation;
     }
     public static Annotation annotateSentText(String text)
     {
-        runMonitor();
+//        runMonitor();
         Annotation annotation = new Annotation(text);
         sentencePipeline.annotate(annotation);
         return annotation;
@@ -92,7 +98,7 @@ public final class CoreNLPManager {
      */
     public static Annotation annotatePhraseText(String text)
     {
-        runMonitor();
+//        runMonitor();
         Annotation annotation = new Annotation(text);
         phrasePipeline.annotate(annotation);
         return annotation;

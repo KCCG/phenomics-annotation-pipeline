@@ -176,7 +176,7 @@ public class PhenotypeHandler {
                     if (sentence != null) {
                         //Get tokens for annotations.
                         List<APToken> conceptTokens = sentence.getTokensInOffsetRange(conceptAnnotation.getStartOffset(), conceptAnnotation.getEndOffset());
-                        sentence.putAnnoataion(convertConceptAnnotationToAnnotation(conceptAnnotation, conceptTokens, ds.getMetadata().get(DataSourceMetadata.ACRONYM), ds.getMetadata().get(DataSourceMetadata.VERSION)));
+                        sentence.putAnnoataion(convertConceptAnnotationToAnnotation(conceptAnnotation, conceptTokens, conceptAnnotation.isNegated(), ds.getMetadata().get(DataSourceMetadata.ACRONYM), ds.getMetadata().get(DataSourceMetadata.VERSION)));
                     }
                 }
             }
@@ -185,7 +185,7 @@ public class PhenotypeHandler {
 
     }
 
-    private Annotation convertConceptAnnotationToAnnotation(ConceptAnnotation conceptAnnotation, List<APToken> conceptTokens, String standard, String version) {
+    private Annotation convertConceptAnnotationToAnnotation(ConceptAnnotation conceptAnnotation, List<APToken> conceptTokens, Boolean isNegated,  String standard, String version) {
         //Create Annotation from ConceptAnnotation
         Annotation finalAnnotation = new Annotation();
         finalAnnotation.setEntity(new APPhenotype(conceptAnnotation.getConcept()));
@@ -194,6 +194,7 @@ public class PhenotypeHandler {
         finalAnnotation.setType(AnnotationType.PHENOTYPE);
         finalAnnotation.setStandard(standard);
         finalAnnotation.setVersion(version);
+        finalAnnotation.setNegated(isNegated);
         return finalAnnotation;
     }
 

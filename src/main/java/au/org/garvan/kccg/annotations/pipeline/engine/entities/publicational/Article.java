@@ -287,6 +287,7 @@ public class Article {
                             jsonObject.put("tokenIds", annotation.getTokenIDs());
                             jsonObject.put("annotationId", ((APPhenotype) (annotation.getEntity())).getHpoID());
                             jsonObject.put("globalOffset", constructGlobalOffset(sentDocOffset,annotation.getOffet()));
+                            jsonObject.put("isNegated", annotation.getNegated());
                             phenotypes.add(jsonObject);
 
                     }

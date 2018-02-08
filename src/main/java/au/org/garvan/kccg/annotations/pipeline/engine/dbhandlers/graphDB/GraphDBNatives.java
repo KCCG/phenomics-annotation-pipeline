@@ -149,7 +149,7 @@ public class GraphDBNatives {
             if (result == null)
                 slf4jLogger.info(String.format("Graph DB Insertion Failed"));
             else
-                slf4jLogger.info(String.format("Graph DB Insertion done without errors for Article ID: %d", article.getPubMedID()));
+                slf4jLogger.info(String.format("Graph DB Insertion done for Article ID: %d", article.getPubMedID()));
         } catch (Exception e) {
             slf4jLogger.info(String.format("Graph DB Insertion Failed with exception: ", e.getMessage()));
         }

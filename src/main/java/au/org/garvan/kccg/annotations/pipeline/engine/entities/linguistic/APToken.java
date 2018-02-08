@@ -13,6 +13,7 @@ import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 
+
 /**
  * Created by ahmed on 7/7/17.
  */
@@ -45,11 +46,16 @@ public class APToken extends LinguisticEntity {
     @Getter
     private List<LexicalEntity> lexicalEntityList;
 
+    @Setter
+    @Getter
+    private Boolean beforeHyphen=false;
+    @Setter
+    @Getter
+    private Boolean afterHyphen=false;
 
     //CR:DONE Added for CR support
     //Shape would be set on demand
     private String shape = null;
-
 
     //CR:DONE Added for CR Support
     @Getter
@@ -134,6 +140,10 @@ public class APToken extends LinguisticEntity {
             normalizedText =  dbObject.getJsonObject().containsKey("normalizedText")? dbObject.getJsonObject().get("normalizedText").toString() : "";
             lexicalEntityList = new ArrayList<>();
 
+
+            beforeHyphen = Boolean.parseBoolean(dbObject.getJsonObject().get("beforeHyphen").toString());
+            afterHyphen = Boolean.parseBoolean(dbObject.getJsonObject().get("afterHyphen").toString());
+
         }
         else{
 
@@ -159,17 +169,13 @@ public class APToken extends LinguisticEntity {
         returnObject.put("sentOffset",jsonPoint);
         returnObject.put("shortForm", shortForm);
         returnObject.put("punctuation", punctuation);
+        returnObject.put("beforeHyphen", beforeHyphen);
+        returnObject.put("afterHyphen", afterHyphen);
 
         if(!normalizedText.isEmpty())
             returnObject.put("normalizedText", normalizedText);
 
-//        if(lexicalEntityList.size()>0)
-//        {
-//            JSONArray jsonLexicalEntityList = new JSONArray();
-//            lexicalEntityList.forEach(le-> jsonLexicalEntityList.add(le.constructJson()));
-//            returnObject.put("lexicalEntityList",jsonLexicalEntityList);
-//
-//        }
+
 
         return returnObject;
     }

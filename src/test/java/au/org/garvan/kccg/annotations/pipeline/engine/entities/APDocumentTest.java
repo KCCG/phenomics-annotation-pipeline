@@ -30,7 +30,7 @@ public class APDocumentTest {
     @Test
     public void testHatch() throws Exception {
 
-        testDoc.hatch();
+        testDoc.hatch(testDoc.getId());
         int x = testDoc.getTokens().size();
 
         for (APSentence s : testDoc.getSentences())
@@ -45,7 +45,7 @@ public class APDocumentTest {
     }   @Test
     public void testTokenization() throws Exception {
 
-        testDoc.hatch();
+        testDoc.hatch(testDoc.getId());
         int x = testDoc.getTokens().size();
 
         for (APSentence s : testDoc.getSentences())

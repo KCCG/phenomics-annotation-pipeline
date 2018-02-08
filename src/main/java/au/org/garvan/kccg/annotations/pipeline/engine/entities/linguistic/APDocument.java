@@ -82,8 +82,8 @@ public class APDocument extends LinguisticEntity {
     }
 
 
-    public void hatch() {
-        DocumentPreprocessor.preprocessDocument(this);
+    public void hatch(Integer articleID) {
+        DocumentPreprocessor.preprocessDocument(this, articleID);
     }
 
 

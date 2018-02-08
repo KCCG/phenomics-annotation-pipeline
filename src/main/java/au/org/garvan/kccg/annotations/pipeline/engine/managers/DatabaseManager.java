@@ -63,7 +63,7 @@ public class DatabaseManager {
 
             return true;
         } catch (Exception e) {
-            slf4jLogger.error(String.format("Error in persisting article with ID:%d", article.getPubMedID()));
+            slf4jLogger.error(String.format("Error in persisting article with ID:%d. \n ErrorL %s", article.getPubMedID()), e.getMessage());
             return false;
         }
 

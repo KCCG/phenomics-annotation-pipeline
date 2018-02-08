@@ -235,7 +235,7 @@ public class BaseUI extends Application {
                     currentDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.GENE);
                     currentDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.PHENOTYPE);
 
-                    currentDoc.hatch();
+                    currentDoc.hatch(currentDocIndex);
                 }
                 for (APSentence sent : currentDoc.getSentences()) {
                     list.add(new LinguisticCellContent(sent.getId(), sent.getOriginalText()));

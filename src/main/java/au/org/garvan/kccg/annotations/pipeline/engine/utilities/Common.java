@@ -12,7 +12,7 @@ import java.util.List;
  * Created by ahmed on 5/10/17.
  */
 public final class Common {
-    private static List<Character> puncs = Arrays.asList('(',')','.',';',':',',','-','_','[',']','{','}' );
+    private static List<Character> puncs = Arrays.asList('(',')','.',';',':',',','-','_','[',']','{','}',' ' );
 
     public static String getPunctuationLessText(APToken token) {
         return token.getOriginalText()
@@ -27,22 +27,29 @@ public final class Common {
                 .trim();
 
     }
-    public static String getPunctuationTrimmedText(APToken token) {
-        String trimmedlText = token.getOriginalText()
-                .trim();
-        if(trimmedlText.length()>0) {
 
-            if (puncs.contains(trimmedlText.charAt(0))){
-                trimmedlText = trimmedlText.substring(1,trimmedlText.length());
+    public static String changeHyphenToSpace(String input)
+    {
+        return input.replace("-"," ");
+    }
+    public static String getPunctuationTrimmedText(String trimmedText) {
+        Boolean found = false;
+        if(trimmedText.length()>0) {
+            if (puncs.contains(trimmedText.charAt(0))){
+                trimmedText = trimmedText.substring(1,trimmedText.length());
+                found = true;
             }
-            if(trimmedlText.length()>0) {
-                if (puncs.contains(trimmedlText.charAt(trimmedlText.length() - 1))) {
-                    trimmedlText = trimmedlText.substring(0, trimmedlText.length() - 1);
+            if(trimmedText.length()>0) {
+                if (puncs.contains(trimmedText.charAt(trimmedText.length() - 1))) {
+                    trimmedText = trimmedText.substring(0, trimmedText.length() - 1);
+                    found = true;
                 }
             }
-
         }
-        return  trimmedlText;
+        if(found)
+            return getPunctuationTrimmedText(trimmedText);
+        else
+            return  trimmedText;
 
     }
 

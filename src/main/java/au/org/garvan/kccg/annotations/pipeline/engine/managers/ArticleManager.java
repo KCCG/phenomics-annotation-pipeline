@@ -45,8 +45,11 @@ public class ArticleManager {
 
             Article article = constructArticle(input);
             try {
+                slf4jLogger.info(String.format("Processing started for article ID: %d", article.getPubMedID()));
+
                 if (!isDuplicate(article)) {
-                    article.getArticleAbstract().hatch();
+                    slf4jLogger.info(String.format("Article is identified as unique. ID: %d", article.getPubMedID()));
+                    article.getArticleAbstract().hatch(article.getPubMedID());
 
                     slf4jLogger.info(String.format("Article processed successfully, ID: %d", article.getPubMedID()));
                     dbManager.persistArticle(article);
@@ -64,8 +67,8 @@ public class ArticleManager {
 
         }//Article Loop
         slf4jLogger.info(String.format("Finished articles batch for processing. Batch Id:%s ", batchId));
-        slf4jLogger.info(String.format("Calling CoreNLP Manager to cleanup memory"));
-        CoreNLPManager.clearMemory();
+//        slf4jLogger.info(String.format("Calling CoreNLP Manager to cleanup memory"));
+//        CoreNLPManager.clearMemory();
     }
 
     private boolean isDuplicate(Article article){

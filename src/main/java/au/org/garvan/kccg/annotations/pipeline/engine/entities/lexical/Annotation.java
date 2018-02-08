@@ -17,6 +17,7 @@ public class Annotation {
     private List<Point> tokenOffsets;
     private LexicalEntity entity;
     private AnnotationType type;
+    private Boolean negated ;
     private String standard;
     private String version;
 

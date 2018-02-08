@@ -145,6 +145,8 @@ public class APSentence extends LinguisticEntity {
     // Recursively build a parse tree with pre-order traversal (root-left-right)
 
     public void generateDependencies() {
+        if(semanticGraph==null)
+            return;
 
         dependencyRelations = new ArrayList<>();
         IndexedWord root = semanticGraph.getFirstRoot();
