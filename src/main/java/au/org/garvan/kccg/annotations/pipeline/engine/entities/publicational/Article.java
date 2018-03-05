@@ -6,6 +6,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotatio
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.LexicalEntity;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
+import au.org.garvan.kccg.annotations.pipeline.engine.managers.DatabaseManager;
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
@@ -17,6 +18,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.time.LocalDate;
@@ -34,6 +37,7 @@ import java.util.stream.Collectors;
 public class Article {
 
     private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+    private final Logger slf4jLogger = LoggerFactory.getLogger(Article.class);
 
 
     @Getter
@@ -191,28 +195,36 @@ public class Article {
 
 
     public JSONObject constructJson(){
-        JSONObject returnObject = new JSONObject();
-        returnObject.put("pubMedID", Integer.toString(pubMedID));
-        returnObject.put("processingDate", processingDate);
-        returnObject.put("datePublished", datePublished.toString());
-        returnObject.put("dateCreated", dateCreated.toString());
-        returnObject.put("dateRevised", dateRevised.toString());
-        returnObject.put("articleTitle", articleTitle);
-        if(!articleAbstract.getOriginalText().isEmpty())
-            returnObject.put("articleAbstract", articleAbstract.getCleanedText());
-        returnObject.put("language", language);
-        returnObject.put("publication", publication.constructJson());
 
-        JSONArray jsonAuthors = new JSONArray();
-        for (Author a : authors) {
-            if(a.checkValidName())
-                jsonAuthors.add(a.constructJson());
+        try {
+            JSONObject returnObject = new JSONObject();
+            returnObject.put("pubMedID", Integer.toString(pubMedID));
+            returnObject.put("processingDate", processingDate);
+            returnObject.put("datePublished", datePublished.toString());
+            returnObject.put("dateCreated", dateCreated.toString());
+            returnObject.put("dateRevised", dateRevised.toString());
+            returnObject.put("articleTitle", articleTitle);
+            if (!articleAbstract.getOriginalText().isEmpty())
+                returnObject.put("articleAbstract", articleAbstract.getCleanedText());
+            returnObject.put("language", language);
+            returnObject.put("publication", publication.constructJson());
+
+            JSONArray jsonAuthors = new JSONArray();
+            for (Author a : authors) {
+                if (a.checkValidName())
+                    jsonAuthors.add(a.constructJson());
+            }
+            if (jsonAuthors.size() > 0)
+                returnObject.put("authors", jsonAuthors);
+
+
+            return returnObject;
         }
-        if(jsonAuthors.size()>0)
-            returnObject.put("authors",jsonAuthors);
-
-
-        return returnObject;
+        catch (Exception e)
+        {
+            slf4jLogger.error(String.format("Error in creating article JSON. Article ID:%d , Error: ", getPubMedID(), e.getMessage()));
+            throw e;
+        }
 
     }
 
