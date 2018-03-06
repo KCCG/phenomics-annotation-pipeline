@@ -23,6 +23,7 @@ import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.values.*;
 import javafx.beans.binding.ObjectExpression;
+import org.omg.CORBA.INTERNAL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -342,12 +343,23 @@ public class GraphDBOptimisedHandler {
         Map<String, List<String>> totalSearchedItemsInArticle = new HashMap<>();
         Map<String, List<String>> totalFilteredItemsInArticle = new HashMap<>();
 
+        Integer filterWeight = 200;
+        Integer searchWeight = 100;
+
+
         for (ArticleWiseConcepts articleWiseConcepts : countedConcepts) {
+            Integer totalEntitiesIncrement = articleWiseConcepts.getCount().intValueExact();
+            if(filterIds.contains(articleWiseConcepts.getIdentifier())){
+                totalEntitiesIncrement = totalEntitiesIncrement * filterWeight;
+            }else if(searchIds.contains(articleWiseConcepts.getIdentifier())) {
+                totalEntitiesIncrement = totalEntitiesIncrement * searchWeight;
+            }
+
             if (totalEntitiesInArticle.containsKey(articleWiseConcepts.getPMID())) {
                 BigDecimal tCount = totalEntitiesInArticle.get(articleWiseConcepts.getPMID());
-                totalEntitiesInArticle.put(articleWiseConcepts.getPMID(), articleWiseConcepts.getCount().add(tCount));
+                totalEntitiesInArticle.put(articleWiseConcepts.getPMID(), BigDecimal.valueOf(totalEntitiesIncrement).add(tCount));
             } else {
-                totalEntitiesInArticle.put(articleWiseConcepts.getPMID(), articleWiseConcepts.getCount());
+                totalEntitiesInArticle.put(articleWiseConcepts.getPMID(), BigDecimal.valueOf(totalEntitiesIncrement));
             }
 
             if (searchIds.contains(articleWiseConcepts.getIdentifier())) {

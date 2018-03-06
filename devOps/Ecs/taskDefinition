@@ -21,7 +21,11 @@
         {
           "sourceVolume": "springlogs",
           "containerPath": "/logs"
-        }
+        },
+                 {
+                           "sourceVolume": "PhenotypeResources",
+                           "containerPath": "/var/lib/phenotypeCR/"
+                         }
       ],
             "workingDirectory": null,
             "dockerSecurityOptions": null,
@@ -42,7 +46,7 @@
         }
     ],
     "taskRoleArn": null,
-    "family": "phenomics-pipeline-task",
+    "family": "phenomics-pipeline-task-v2",
     "networkMode": null,
     "volumes": [
     {
@@ -50,7 +54,14 @@
       "host": {
         "sourcePath": "/var/log/"
       }
-    }
+    },
+          {
+               "name": "PhenotypeResources",
+               "host": {
+                 "sourcePath": "/var/lib/phenotypeCR/"
+               }
+
+             }
   ],
     "placementConstraints": []
 }
