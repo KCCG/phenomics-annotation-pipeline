@@ -19,6 +19,7 @@ import java.util.UUID;
 //@AllArgsConstructor(access = AccessLevel.PUBLIC)
 @ApiModel(description = "All attributes are optional; when more than one is provided, then search result will satisfy all conditions (Operation AND)")
 @JsonIgnoreProperties(ignoreUnknown = true)
+@Deprecated
 public class SearchQuery {
 
 

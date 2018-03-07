@@ -1,8 +1,10 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.util.TAConstants;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.LexicalEntity;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.EntityType;
+import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.Setter;
 import org.json.simple.JSONObject;
@@ -10,6 +12,7 @@ import org.json.simple.JSONObject;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
+
 
 /**
  * Created by ahmed on 7/7/17.
@@ -26,7 +29,6 @@ public class APToken extends LinguisticEntity {
     private String lemma;
 
     @Setter
-    @Getter
     private Point sentOffset;
 
     @Setter
@@ -38,13 +40,50 @@ public class APToken extends LinguisticEntity {
     private boolean punctuation;
 
     @Setter
-    @Getter
     private String normalizedText;
 
     @Setter
     @Getter
     private List<LexicalEntity> lexicalEntityList;
 
+    @Setter
+    @Getter
+    private Boolean beforeHyphen=false;
+    @Setter
+    @Getter
+    private Boolean afterHyphen=false;
+
+    //CR:DONE Added for CR support
+    //Shape would be set on demand
+    private String shape = null;
+
+    //CR:DONE Added for CR Support
+    @Getter
+    @Setter
+    private boolean isTail = false;
+
+    /***
+     * Lazy loading as only Concept Recognizer would need it.
+     * @return
+     */
+    public String getShape()
+    {
+        if(shape==null)
+            shape = TAConstants.shape(getNormalizedText());
+        return shape;
+    }
+
+    /***
+     * CR:DONE Support
+     * Changed to support Concept Recognizer to use lowercase
+     * @return
+     */
+    public String getNormalizedText(){
+        if (Strings.isNullOrEmpty(normalizedText)){
+            normalizedText = getOriginalText().toLowerCase();
+        }
+        return normalizedText;
+    }
 
 
     public APToken(int id, String text, String POS, String lemmaText) {
@@ -68,6 +107,26 @@ public class APToken extends LinguisticEntity {
     public APToken() {
 
     }
+
+
+    public Point getSentOffset(){
+        if (sentOffset==null)
+        {
+            sentOffset = new Point(0,0);
+        }
+        return sentOffset;
+    }
+
+    @Override
+    public String toString(){ {
+
+            return String.format("[%d:%d] %s [%s] [%s] ", getSentOffset().x, getSentOffset().y, getOriginalText(), getNormalizedText(), getPartOfSpeech());
+        }
+
+    }
+
+
+
     public APToken(DynamoDBObject dbObject){
         super(Integer.parseInt(dbObject.getJsonObject().get("id").toString()), dbObject.getJsonObject().get("originalText").toString());
         if(dbObject.getEntityType().equals(EntityType.APToken))
@@ -80,6 +139,10 @@ public class APToken extends LinguisticEntity {
             punctuation = Boolean.parseBoolean(dbObject.getJsonObject().get("punctuation").toString());
             normalizedText =  dbObject.getJsonObject().containsKey("normalizedText")? dbObject.getJsonObject().get("normalizedText").toString() : "";
             lexicalEntityList = new ArrayList<>();
+
+
+            beforeHyphen = Boolean.parseBoolean(dbObject.getJsonObject().get("beforeHyphen").toString());
+            afterHyphen = Boolean.parseBoolean(dbObject.getJsonObject().get("afterHyphen").toString());
 
         }
         else{
@@ -106,17 +169,13 @@ public class APToken extends LinguisticEntity {
         returnObject.put("sentOffset",jsonPoint);
         returnObject.put("shortForm", shortForm);
         returnObject.put("punctuation", punctuation);
+        returnObject.put("beforeHyphen", beforeHyphen);
+        returnObject.put("afterHyphen", afterHyphen);
 
         if(!normalizedText.isEmpty())
             returnObject.put("normalizedText", normalizedText);
 
-//        if(lexicalEntityList.size()>0)
-//        {
-//            JSONArray jsonLexicalEntityList = new JSONArray();
-//            lexicalEntityList.forEach(le-> jsonLexicalEntityList.add(le.constructJson()));
-//            returnObject.put("lexicalEntityList",jsonLexicalEntityList);
-//
-//        }
+
 
         return returnObject;
     }

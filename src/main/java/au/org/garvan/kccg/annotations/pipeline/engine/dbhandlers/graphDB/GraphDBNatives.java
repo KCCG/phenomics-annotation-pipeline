@@ -2,12 +2,16 @@ package au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.graphDB;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.ArticleWiseConcepts;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.LexicalEntity;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APSentence;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Author;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
+import au.org.garvan.kccg.annotations.pipeline.engine.utilities.constants.GraphDBConstants;
 import au.org.garvan.kccg.annotations.pipeline.model.query.PaginationRequestParams;
 import au.org.garvan.kccg.annotations.pipeline.model.query.RankedArticle;
 import iot.jcypher.database.DBAccessFactory;
@@ -28,8 +32,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.awt.*;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
@@ -83,6 +89,10 @@ public class GraphDBNatives {
         System.out.println(resultString);
     }
 
+    /***
+     * Persists article and relevant annotations.
+     * @param article
+     */
     public static void createArticleQuery(Article article) {
 
         try {
@@ -90,10 +100,10 @@ public class GraphDBNatives {
 
             //Create Article node and creation clause
             JcNode nodeArticle = new JcNode("nodeArticle");
-            IClause articleClause = MERGE.node(nodeArticle).label("Article")
-                    .property("PMID").value(Integer.toString(article.getPubMedID()))
-                    .property("Language").value(article.getLanguage())
-                    .property("ProcessingDate").value(article.getProcessingDate());
+            IClause articleClause = MERGE.node(nodeArticle).label(GraphDBConstants.ARTICLE_NODE_LABEL)
+                    .property(GraphDBConstants.ARTICLE_NODE_ID).value(Integer.toString(article.getPubMedID()))
+                    .property(GraphDBConstants.ARTICLE_NODE_LANGUAGE).value(article.getLanguage())
+                    .property(GraphDBConstants.ARTICLE_NODE_PROCESSING_DATE).value(article.getProcessingDate());
 
             //Create authors nodes and their respective clauses (This includes both creation and mapping clauses)
             List<JcNode> nodeListAuthors = new ArrayList<>();
@@ -104,28 +114,25 @@ public class GraphDBNatives {
                 if (currentAuthor.checkValidName()) {
                     JcNode tempAuthor = new JcNode("nodeAuthor" + Integer.toString(x));
                     nodeListAuthors.add(tempAuthor);
-                    authorsClauses.add(MERGE.node(tempAuthor).label("Author")
-                            .property("Initials").value(currentAuthor.getInitials())
-                            .property("ForeName").value(currentAuthor.getForeName())
-                            .property("LastName").value(currentAuthor.getLastName()));
+                    authorsClauses.add(MERGE.node(tempAuthor).label(GraphDBConstants.AUTHOR_NODE_LABEL)
+                            .property(GraphDBConstants.AUTHOR_NODE_INITIALS).value(currentAuthor.getInitials())
+                            .property(GraphDBConstants.AUTHOR_NODE_FORE_NAME).value(currentAuthor.getForeName())
+                            .property(GraphDBConstants.AUTHOR_NODE_LAST_NAME).value(currentAuthor.getLastName()));
                     authorsClauses.add(MERGE.node(tempAuthor).relation().out()
-                            .type("WROTE").property("Order").value(x + 1)
+                            .type(GraphDBConstants.AUTHOR_EDGE_TYPE).property(GraphDBConstants.AUTHOR_EDGE_ORDER).value(x + 1)
                             .node(nodeArticle));
-
                 }
-
-
             }
 
             //Create publicational node and creation clause
             JcNode nodePublication = new JcNode("nodePublication");
-            IClause publicationClause = MERGE.node(nodePublication).label("Publication")
-                    .property("Title").value(article.getPublication().getTitle())
-                    .property("IsoAbbreviation").value(article.getPublication().getIsoAbbreviation())
-                    .property("IssnType").value(article.getPublication().getIssnType())
-                    .property("IssnNumber").value(article.getPublication().getIssnNumber());
-            IClause publicationLinkClause = MERGE.node(nodeArticle).relation().out().type("PUBLISHED")
-                    .property("DatePublished")
+            IClause publicationClause = MERGE.node(nodePublication).label(GraphDBConstants.PUBLICATION_NODE_LABEL)
+                    .property(GraphDBConstants.PUBLICATION_NODE_TITLE).value(article.getPublication().getTitle())
+                    .property(GraphDBConstants.PUBLICATION_NODE_ISO_ABBREVIATION).value(article.getPublication().getIsoAbbreviation())
+                    .property(GraphDBConstants.PUBLICATION_NODE_ISSN_TYPE).value(article.getPublication().getIssnType())
+                    .property(GraphDBConstants.PUBLICATION_NODE_ISSN_NUMBER).value(article.getPublication().getIssnNumber());
+            IClause publicationLinkClause = MERGE.node(nodeArticle).relation().out().type(GraphDBConstants.PUBLICATION_EDGE_TYPE)
+                    .property(GraphDBConstants.PUBLICATION_EDGE_DATE_PUBLISHED)
                     .value(article.getDatePublished())
                     .node(nodePublication);
 
@@ -142,11 +149,10 @@ public class GraphDBNatives {
             if (result == null)
                 slf4jLogger.info(String.format("Graph DB Insertion Failed"));
             else
-                slf4jLogger.info(String.format("Graph DB Insertion done without errors for Article ID: %d", article.getPubMedID()));
+                slf4jLogger.info(String.format("Graph DB Insertion done for Article ID: %d", article.getPubMedID()));
         } catch (Exception e) {
             slf4jLogger.info(String.format("Graph DB Insertion Failed with exception: ", e.getMessage()));
         }
-
 
     }
 
@@ -162,14 +168,22 @@ public class GraphDBNatives {
                         if (lex instanceof APGene) {
                             APGene gene = (APGene) lex;
                             JcNode nodeGene = new JcNode(String.format("nodeGene%d_%d", sent.getId(), token.getId()));
-                            IClause geneClause = MERGE.node(nodeGene).label("Gene").label("Entity")
-                                    .property("HGNCID").value(gene.getHGNCID())
-                                    .property("Symbol").value(gene.getApprovedSymbol());
+                            IClause geneClause = MERGE.node(nodeGene)
+                                    .label(GraphDBConstants.getEntityLael(AnnotationType.GENE))
+                                    .label(GraphDBConstants.ENTITY_NODE_LABEL)
+                                    .property(GraphDBConstants.ENTITY_NODE_ID).value( String.valueOf(gene.getHGNCID()))
+                                    .property(GraphDBConstants.ENTITY_NODE_TEXT).value(gene.getApprovedSymbol())
+                                    .property(GraphDBConstants.ENTITY_NODE_STANDARD).value("HGNC")
+                                    .property(GraphDBConstants.ENTITY_NODE_VERSION).value("2017")
+                                    .property(GraphDBConstants.ENTITY_NODE_TYPE).value("GENE");
                             IClause geneLinkClause =
-                                    MERGE.node(nodeArticle).relation().out().type("CONTAINS")
-                                            .property("SentID").value(sent.getId())
-                                            .property("DocOffsetBegin").value(sent.getDocOffset().getX() + token.getSentOffset().getX())
-                                            .property("Field").value("Abstract")
+                                    MERGE.node(nodeArticle).relation().out().type(GraphDBConstants.ENTITY_EDGE_TYPE)
+                                            .property(GraphDBConstants.ENTITY_EDGE_SENT_ID).value(sent.getId())
+                                            .property(GraphDBConstants.ENTITY_EDGE_DOC_OFFSET_BEGIN)
+                                            .value(sent.getDocOffset().getX() + token.getSentOffset().getX())
+                                            .property(GraphDBConstants.ENTITY_EDGE_DOC_OFFSET_END)
+                                            .value(sent.getDocOffset().getX() + token.getSentOffset().getY())
+                                            .property(GraphDBConstants.ENTITY_EDGE_FIELD).value("Abstract")
                                             .node(nodeGene);
                             queryClauses.add(geneClause);
                             queryClauses.add(geneLinkClause);
@@ -183,8 +197,49 @@ public class GraphDBNatives {
             }
 
         }
+        Map<APSentence, List<Annotation>> phenotypeAnnotations= new LinkedHashMap<>();
+        for(APSentence sentence: article.getArticleAbstract().getSentences()){
+            if(sentence.getAnnotations().stream().filter(f->f.getType().equals(AnnotationType.PHENOTYPE)).count()>0) {
+                phenotypeAnnotations.put(sentence, sentence.getAnnotations());
+            }
+        }
+        if(phenotypeAnnotations.size()>0){
+            for (Map.Entry<APSentence,  List<Annotation>> entry : phenotypeAnnotations.entrySet()) {
+                int sentId = entry.getKey().getId();
+                Point sentDocOffset= entry.getKey().getDocOffset();
+                for (Annotation annotation : entry.getValue()){
+                    APPhenotype phenotype = (APPhenotype) annotation.getEntity();
+                    JcNode nodePhenotype = new JcNode(String.format("nodePhenotype%d_%d", sentId, annotation.getOffet().x + annotation.getOffet().y ));
+                    IClause geneClause = MERGE.node(nodePhenotype).label(GraphDBConstants.getEntityLael(annotation.getType()))
+                            .label(GraphDBConstants.ENTITY_NODE_LABEL)
+                            .property(GraphDBConstants.ENTITY_NODE_ID).value(phenotype.getHpoID())
+                            .property(GraphDBConstants.ENTITY_NODE_TEXT).value(phenotype.getPhenotype().getPreferredLabel())
+                            .property(GraphDBConstants.ENTITY_NODE_STANDARD).value(annotation.getStandard())
+                            .property(GraphDBConstants.ENTITY_NODE_VERSION).value(annotation.getVersion())
+                            .property(GraphDBConstants.ENTITY_NODE_TYPE).value(annotation.getType().toString());
 
-        //TODO: Find entities from Title if required
+                    IClause phenotypeLinkClause =
+                            MERGE.node(nodeArticle).relation().out().type(GraphDBConstants.ENTITY_EDGE_TYPE)
+                                    .property(GraphDBConstants.ENTITY_EDGE_SENT_ID).value(sentId)
+                                    .property(GraphDBConstants.ENTITY_EDGE_DOC_OFFSET_BEGIN).value(sentDocOffset.x + annotation.getOffet().x)
+                                    .property(GraphDBConstants.ENTITY_EDGE_DOC_OFFSET_END).value(sentDocOffset.x + annotation.getOffet().y)
+                                    .property(GraphDBConstants.ENTITY_EDGE_FIELD).value("Abstract")
+                                    .node(nodePhenotype);
+                    queryClauses.add(geneClause);
+                    queryClauses.add(phenotypeLinkClause);
+
+
+
+                }
+            }
+
+        }
+
+
+
+
+
+            //TODO: Find entities from Title if required
     }
 
     private static IClause[] getClausesArray(List<IClause> input) {
@@ -256,6 +311,22 @@ public class GraphDBNatives {
     }
 
 
+    public static Set<String> processQueryResultV1(JcQueryResult result, AnnotationType qType) {
+        Set<String> idList = new HashSet<>();
+        if (result == null) {
+            slf4jLogger.info(String.format("Nothing to process as result is null."));
+        } else {
+
+            JcString PMID = new JcString("PMID");
+            idList.addAll(result.resultOf(PMID));
+            slf4jLogger.info(String.format("Successful search query for %s. ResultSet size: %d", qType.toString(), idList.size()));
+
+        }
+
+        return idList;
+    }
+
+
     /***
      * This method is very localized and process result from pagination method.
      * @param PMIDs
@@ -263,10 +334,10 @@ public class GraphDBNatives {
      * @param counts
      * @return
      */
-    public static List<ArticleWiseConcepts> processResultForConcepts(List<String> PMIDs, List<String> symbols, List<BigDecimal> counts) {
+    public static List<ArticleWiseConcepts> processResultForConcepts(List<String> PMIDs, List<String> symbols,List<String> types, List<String> texts, List<BigDecimal> counts) {
         List<ArticleWiseConcepts> lst = new ArrayList<>();
         for (int x = 0; x < PMIDs.size(); x++) {
-            lst.add( new ArticleWiseConcepts(PMIDs.get(x), String.valueOf(symbols.get(x)), counts.get(x)));
+            lst.add( new ArticleWiseConcepts(PMIDs.get(x), symbols.get(x), types.get(x), texts.get(x),counts.get(x)));
         }
         return lst;
     }

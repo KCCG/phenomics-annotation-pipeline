@@ -1,7 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.DynamoDBHandler;
-import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.graphDB.GraphDBHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.S3Handler;
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.graphDB.GraphDBOptimisedHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManagerResultSet;
@@ -11,7 +10,6 @@ import au.org.garvan.kccg.annotations.pipeline.model.query.*;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.EntityType;
-import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.json.simple.JSONArray;
@@ -36,11 +34,11 @@ public class DatabaseManager {
     @Autowired
     private DynamoDBHandler dynamoDBHandler;
 
-    @Autowired
-    private GraphDBHandler graphDBHandler;
+//    @Autowired
+//    private GraphDBHandler graphDBHandler;
 
     @Autowired
-    private GraphDBOptimisedHandler graphDBOptimsedHandler;
+    private GraphDBOptimisedHandler graphDBOptimisedHandler;
 
 
     @Autowired
@@ -58,40 +56,49 @@ public class DatabaseManager {
             s3Handler.storeAbstract(article);
             slf4jLogger.info(String.format("Persistence locked - S3. Article ID: %d", article.getPubMedID()));
 
-            graphDBHandler.createArticleQuery(article);
+            graphDBOptimisedHandler.createArticleQuery(article);
             slf4jLogger.info(String.format("Persistence locked - GraphDB. Article ID: %d", article.getPubMedID()));
 
             slf4jLogger.info(String.format("Persistence finalized. Article ID: %d", article.getPubMedID()));
 
             return true;
         } catch (Exception e) {
-            slf4jLogger.error(String.format("Error in persisting article with ID:%d", article.getPubMedID()));
+            slf4jLogger.error(String.format("Error in persisting article with ID:%d. \n ErrorL %s", article.getPubMedID()), e.getMessage());
             return false;
         }
 
     }
 
-    public DBManagerResultSet searchArticles(Map<SearchQueryParams, Object> params, PaginationRequestParams qParams) {
-        DBManagerResultSet resultSet = graphDBHandler.fetchArticles(params, qParams);
-
-        List<RankedArticle> rankedArticles = resultSet.getRankedArticles();
-
-        for (RankedArticle anArticle : rankedArticles) {
-            JSONObject jsonArticle = fetchArticle(anArticle.getPMID());
-            if (!jsonArticle.isEmpty()) {
-                anArticle.setArticle(new Article(new DynamoDBObject(jsonArticle, EntityType.Article), false));
-                anArticle.setJsonAnnotations(dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE));
-
-            }
-        }
-        resultSet.setRankedArticles(rankedArticles);
-        return resultSet;
-
-    }
+//    public DBManagerResultSet searchArticles(Map<SearchQueryParams, Object> params, PaginationRequestParams qParams) {
+//        DBManagerResultSet resultSet = graphDBHandler.fetchArticles(params, qParams);
+//
+//        List<RankedArticle> rankedArticles = resultSet.getRankedArticles();
+//
+//        for (RankedArticle anArticle : rankedArticles) {
+//            JSONObject jsonArticle = fetchArticle(anArticle.getPMID());
+//            if (!jsonArticle.isEmpty()) {
+//                anArticle.setArticle(new Article(new DynamoDBObject(jsonArticle, EntityType.Article), false));
+//                List<JSONObject> jsonAnnotations = new ArrayList<>();
+//
+//                JSONObject genes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE);
+//                JSONObject phenotypes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.PHENOTYPE);
+//
+//                if(genes.containsKey("annotationType"))
+//                    jsonAnnotations.add(genes);
+//                if(phenotypes.containsKey("annotationType"))
+//                    jsonAnnotations.add(phenotypes);
+//
+//                anArticle.setJsonAnnotations(jsonAnnotations);
+//            }
+//        }
+//        resultSet.setRankedArticles(rankedArticles);
+//        return resultSet;
+//
+//    }
 
 
     public DBManagerResultSet searchArticlesWithFilters(String queryId, List<Pair<String, String>> searhItems, List<Pair<String, String>> filterItems, PaginationRequestParams qParams) {
-        DBManagerResultSet resultSet = graphDBOptimsedHandler.fetchArticlesWithFilters(queryId, searhItems, filterItems, qParams);
+        DBManagerResultSet resultSet = graphDBOptimisedHandler.fetchArticlesWithFilters(queryId, searhItems, filterItems, qParams);
 
         List<RankedArticle> rankedArticles = resultSet.getRankedArticles();
 
@@ -99,10 +106,21 @@ public class DatabaseManager {
             JSONObject jsonArticle = fetchArticle(anArticle.getPMID());
             if (!jsonArticle.isEmpty()) {
                 anArticle.setArticle(new Article(new DynamoDBObject(jsonArticle, EntityType.Article), false));
-                anArticle.setJsonAnnotations(dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE));
+                List<JSONObject> jsonAnnotations = new ArrayList<>();
+
+                JSONObject genes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE);
+                JSONObject phenotypes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.PHENOTYPE);
+
+                if(genes.containsKey("annotationType"))
+                    jsonAnnotations.add(genes);
+                if(phenotypes.containsKey("annotationType"))
+                    jsonAnnotations.add(phenotypes);
+
+                anArticle.setJsonAnnotations(jsonAnnotations);
 
             }
         }
+
         resultSet.setRankedArticles(rankedArticles);
         return resultSet;
 

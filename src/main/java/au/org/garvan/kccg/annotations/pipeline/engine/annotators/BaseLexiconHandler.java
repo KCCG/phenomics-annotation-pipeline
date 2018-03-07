@@ -1,4 +1,4 @@
-package au.org.garvan.kccg.annotations.pipeline.engine.lexicons;
+package au.org.garvan.kccg.annotations.pipeline.engine.annotators;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -37,7 +37,7 @@ public class BaseLexiconHandler {
 //    protected void readFile(String delim) throws FileNotFoundException {
 //
 //
-//        File file = new File(getClass().getClassLoader().getResource("lexicons/" + fileName).getFile());
+//        File file = new File(getClass().getClassLoader().getResource("annotators/" + fileName).getFile());
 //
 //        Scanner scan = new Scanner(file);
 //        String headerLine = scan.nextLine();

@@ -1,14 +1,20 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.graphDB;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManagerResultSet;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
+import au.org.garvan.kccg.annotations.pipeline.engine.utilities.constants.GraphDBConstants;
+import au.org.garvan.kccg.annotations.pipeline.model.query.ConceptFilter;
 import au.org.garvan.kccg.annotations.pipeline.model.query.PaginationRequestParams;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.ArticleWiseConcepts;
 
 import au.org.garvan.kccg.annotations.pipeline.model.query.RankedArticle;
 import au.org.garvan.kccg.annotations.pipeline.model.query.RankedArticleComparitor;
+import com.github.jsonldjava.utils.Obj;
+import edu.stanford.nlp.util.ArraySet;
 import edu.stanford.nlp.util.Sets;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
@@ -16,6 +22,8 @@ import iot.jcypher.query.factories.clause.MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.values.*;
+import javafx.beans.binding.ObjectExpression;
+import org.omg.CORBA.INTERNAL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -33,65 +41,135 @@ import java.util.stream.Collectors;
 public class GraphDBOptimisedHandler {
     private static final Logger slf4jLogger = LoggerFactory.getLogger(GraphDBOptimisedHandler.class);
 
+    public void createArticleQuery(Article article) {
+        GraphDBNatives.createArticleQuery(article);
+    }
+
+
+
+    /*TODO [GRAPH]: Plan for making it generic filter search
+    1: Update main function to fetch gene and phenotype articles
+
+
+
+    */
 
     public DBManagerResultSet fetchArticlesWithFilters(String queryId, List<Pair<String, String>> searchItems, List<Pair<String, String>> filterItems, PaginationRequestParams qParams) {
-        Set<String> shortListedArticles;
+        Set<String> shortListedArticles = new HashSet<>();
         LinkedHashMap<AnnotationType, JcQueryResult> collectedResults = new LinkedHashMap<>();
 
 
-        //Get all genes IDs, The search will be applied on ID field. Search V1.0
-        List<Integer> geneIds = searchItems.stream()
-                .filter(g -> g.getFirst().equals(AnnotationType.GENE.toString()))
-                .map(p -> Integer.valueOf(p.getSecond()))
-                .collect(Collectors.toList());
+            List<String> annotationIDs = searchItems.stream()
+                    .map(id-> id.getSecond())
+                    .collect(Collectors.toList());
+            if(annotationIDs.size()>0)
+                shortListedArticles.addAll(runEntityQueryWithIds(collectedResults, annotationIDs));
 
-        //These are the short listed articles based on search items. THis operation is OR, that means article should contain at least 1 search item.
-        shortListedArticles = runEntityQueryWithIds(collectedResults,geneIds, AnnotationType.GENE);
+
         slf4jLogger.info(String.format("queryId:%s ShortListed articles with query. Count:%d", queryId, shortListedArticles.size()));
+
+        // The function is called again for all shortlisted articles to get the entity counts. THIS MUST BE DONE ON ALL ARTICLES
+        List<ArticleWiseConcepts> lstConcepts = getGlobalEntityCount(shortListedArticles);
+        slf4jLogger.info(String.format("queryId:%s Fetched concepts. Count:%d", queryId, lstConcepts.size()));
+        Map<String, ConceptFilter> returningConceptFilters = getConceptFilters(lstConcepts);
+
 
         // This is strictly for SUBSCRIPTION query check.
         shortListedArticles = checkAndProcessDateRange(queryId, collectedResults,filterItems, shortListedArticles);
         //Apply filters using graph DB
-
         // This flag will make sure that if filters are applied or not. The result set would be affected with this.
-        List<Integer> filterGeneIds = filterItems.stream()
-                .filter(g -> g.getFirst().equals(AnnotationType.GENE.toString()))
-                .map(p -> Integer.valueOf(p.getSecond()))
-                .collect(Collectors.toList());
 
-        Set<String> filteredArticles = new HashSet<>();
         boolean filterApplied = false;
+        Set<String> filteredArticles = new HashSet<>();
+        if(shortListedArticles.size() > 0) {
+                List<String> filterIds = filterItems.stream()
+                        .filter(f->  !f.getFirst().equals(AnnotationType.DATERANGE))
+                        .map(p -> p.getSecond())
+                        .collect(Collectors.toList());
 
-        if(filterGeneIds.size()>0 && shortListedArticles.size()>0)
-        {
-            slf4jLogger.info(String.format("queryId:%s Filter is provided to apply.", queryId));
+                if (filterIds.size() > 0) {
+                    slf4jLogger.info(String.format("queryId:%s Filters are provided to apply.", queryId));
+                    filterApplied = true;
+                    filteredArticles = runEntityFilterWithIds(collectedResults, filterIds, shortListedArticles);
+                    slf4jLogger.info(String.format("queryId:%s Filtered articles with query. Count:%d", queryId, filteredArticles.size()));
 
-            filterApplied = true;
+                }
+            }
 
-            filteredArticles = runEntityFilterWithIds(collectedResults,filterGeneIds,AnnotationType.GENE,shortListedArticles);
-            slf4jLogger.info(String.format("queryId:%s Filtered articles with query. Count:%d", queryId, filteredArticles.size()));
+
+        Set<String> resultantArticles;
+        List<ArticleWiseConcepts> resultantConceptsForRanking;
+        //If filters were there and applied, then use filtered articles for result array
+        if(filterApplied) {
+            resultantArticles = filteredArticles;
+            resultantConceptsForRanking = getGlobalEntityCount(filteredArticles);
+            Map<String, ConceptFilter> filteredConceptsConvertedtoFilters=getConceptFilters(resultantConceptsForRanking);
+
+            for(Map.Entry<String, ConceptFilter> entry:returningConceptFilters.entrySet()){
+                if(filteredConceptsConvertedtoFilters.containsKey(entry.getKey()))
+                {
+                    entry.getValue().setFilteredArticleCount(filteredConceptsConvertedtoFilters.get(entry.getKey()).getArticleCount());
+                }
+                else{
+                    entry.getValue().setFilteredArticleCount(0);
+                }
+            }
+
 
         }
+        else {
+            resultantArticles = shortListedArticles;
+            resultantConceptsForRanking = lstConcepts;
+        }
 
-        // The function is called again for all shortlisted articles to get the entity counts. THIS MUST BE DONE ON ALL ARTICLES
-        List<ArticleWiseConcepts> lstConcepts = getGlobalEntityCount(shortListedArticles, getEntityIdentifier(AnnotationType.GENE));
-        slf4jLogger.info(String.format("queryId:%s Fetched concepts. Count:%d", queryId, lstConcepts.size()));
-
-        // This is the inception of result set. This has been introduced to fetch all articles, as well as filters [Genes count] from graph DB.
-        DBManagerResultSet dbManagerResultSet = getRankedArticlesWithFilters(shortListedArticles, filteredArticles, searchItems, filterItems, lstConcepts, filterApplied);
-        slf4jLogger.info(String.format("queryId:%s Ranked articles. Count:%d", queryId, dbManagerResultSet.getRankedArticles().size()));
+        List<RankedArticle> rankedArticles = getRankedArticlesWithFilters(resultantArticles, searchItems, filterItems, resultantConceptsForRanking);
+        slf4jLogger.info(String.format("queryId:%s Ranked articles. Count:%d", queryId, rankedArticles.size()));
 
         //Update total number of pages in query params.
-        qParams.setTotalArticles(dbManagerResultSet.getRankedArticles().size());
-        qParams.setTotalPages (dbManagerResultSet.getRankedArticles().size()% qParams.getPageSize()==0? dbManagerResultSet.getRankedArticles().size()/qParams.getPageSize(): (dbManagerResultSet.getRankedArticles().size()/qParams.getPageSize()) +1 );
+        qParams.setTotalArticles(rankedArticles.size());
+        qParams.setTotalPages (rankedArticles.size()% qParams.getPageSize()==0? rankedArticles.size()/qParams.getPageSize(): (rankedArticles.size()/qParams.getPageSize()) +1 );
 
         //Get required page and return and new object.
         DBManagerResultSet finalResultSet = new DBManagerResultSet();
         //Filter list is added
-        finalResultSet.setGeneCounts(dbManagerResultSet.getGeneCounts());
-        finalResultSet.setRankedArticles(GraphDBNatives.getRequiredPage(dbManagerResultSet.getRankedArticles(), qParams));
+        finalResultSet.setConceptCounts(getRankedFilters(returningConceptFilters));
+        finalResultSet.setRankedArticles(GraphDBNatives.getRequiredPage(rankedArticles, qParams));
         return finalResultSet;
 
+    }
+
+    private List<ConceptFilter> getRankedFilters(Map<String, ConceptFilter> returningConceptFilters){
+        List<ConceptFilter> returnList = returningConceptFilters.values().stream().collect(Collectors.toList());
+        returnList.sort(Comparator.comparing(ConceptFilter::getArticleCount).reversed());
+        Integer maxRank = returnList.size();
+        for (int r = 0; r<returnList.size(); r++)
+        {
+            returnList.get(r).setRank(maxRank-r);
+        }
+        return returnList;
+    }
+
+    private Map<String,ConceptFilter> getConceptFilters(List<ArticleWiseConcepts> lstConcepts) {
+        Map<String,ConceptFilter> returnList = new HashMap<>();
+
+        for(ArticleWiseConcepts awc: lstConcepts){
+            ConceptFilter aConcept;
+            if(returnList.containsKey(awc.getIdentifier())) {
+                aConcept = returnList.get(awc.getIdentifier());
+                aConcept.incrementArticleCount(1);
+                aConcept.incrementFilteredArticleCount(1);
+            }
+            else{
+                aConcept = new ConceptFilter();
+                aConcept.setArticleCount(1);
+                aConcept.setFilteredArticleCount(1);
+                aConcept.setId(awc.getIdentifier());
+                aConcept.setText(awc.getText());
+                aConcept.setType(awc.getType());
+                returnList.put(awc.getIdentifier(), aConcept);
+            }
+        }
+        return returnList;
     }
 
     private Set<String> checkAndProcessDateRange(String queryId, LinkedHashMap<AnnotationType, JcQueryResult> collectedResults, List<Pair<String, String>> filterItems, Set<String> shortListedArticles) {
@@ -118,18 +196,15 @@ public class GraphDBOptimisedHandler {
      * This is a generic method for entity search with type and list of ids.
      * @param collectedResults
      * @param lstEntityIds
-     * @param type
      * @return
      */
-    private Set<String> runEntityQueryWithIds(LinkedHashMap<AnnotationType, JcQueryResult> collectedResults, List<Integer> lstEntityIds, AnnotationType type) {
+    private Set<String> runEntityQueryWithIds(LinkedHashMap<AnnotationType, JcQueryResult> collectedResults, List<String> lstEntityIds) {
         List<IClause> queryClauses = new ArrayList<>();
 
         if (lstEntityIds.size() == 0) {
-            collectedResults.put(type, null);
+            collectedResults.put(AnnotationType.ENTITY, null);
             new ArrayList<>();
         }
-        //Get node identifier for this type of entity.
-        String identifier = getEntityIdentifier(type);
 
         JcNode article = new JcNode("a");
         JcNode entity = new JcNode("e");
@@ -138,26 +213,26 @@ public class GraphDBOptimisedHandler {
                 .relation().out().type("CONTAINS")
                 .node(entity).label("Entity"));
 
-        queryClauses.add(WHERE.valueOf(entity.property(identifier)).IN(new JcCollection(new ArrayList<>(lstEntityIds))));
+        queryClauses.add(WHERE.valueOf(entity.property(GraphDBConstants.ENTITY_NODE_ID)).IN(new JcCollection(new ArrayList<>(lstEntityIds))));
         queryClauses.add(RETURN.value(article.property("PMID")).AS(PMID));
 
         //Should not come here in case of AND
         JcQueryResult result = GraphDBNatives.executeQueryClauses(queryClauses);
-        collectedResults.put(type, result);
-        return GraphDBNatives.processQueryResult(result, SearchQueryParams.GENES);
+        collectedResults.put(AnnotationType.ENTITY, result);
+        return GraphDBNatives.processQueryResultV1(result, AnnotationType.ENTITY);
 
 
     }
 
-    private Set<String> runEntityFilterWithIds(LinkedHashMap<AnnotationType, JcQueryResult> collectedResults, List<Integer> lstEntityIds, AnnotationType type , Set<String> shortListedArticles) {
+    private Set<String> runEntityFilterWithIds(LinkedHashMap<AnnotationType, JcQueryResult> collectedResults, List<String> lstEntityIds, Set<String> shortListedArticles) {
         JcNode article = new JcNode("a");
         List<IClause> queryClauses = new ArrayList<>();
 
         if (lstEntityIds.size() == 0) {
-            collectedResults.put(type, null);
-            return GraphDBNatives.processQueryResult(null, SearchQueryParams.GENES);
+            collectedResults.put(AnnotationType.ENTITY, null);
+            new ArrayList<>();
         }
-        String identifier = getEntityIdentifier(type);
+
         JcNode entity = new JcNode("e");
         JcString PMID = new JcString("PMID");
         queryClauses.add(MATCH.node(article).label("Article")
@@ -167,7 +242,7 @@ public class GraphDBOptimisedHandler {
         {
             List<IClause> tempClauses = new ArrayList(queryClauses);
 
-            tempClauses.add(WHERE.valueOf(entity.property(identifier)).EQUALS(lstEntityIds.get(i))
+            tempClauses.add(WHERE.valueOf(entity.property(GraphDBConstants.ENTITY_NODE_ID)).EQUALS(lstEntityIds.get(i))
                     .AND().valueOf(article.property("PMID")).IN(new JcCollection(new ArrayList<>(shortListedArticles))));
 
             tempClauses.add(RETURN.value(article.property("PMID")).AS(PMID));
@@ -178,8 +253,8 @@ public class GraphDBOptimisedHandler {
                 shortListedArticles = new HashSet<>(result.resultOf(PMID));
 
             if(shortListedArticles.size()==0 || i== lstEntityIds.size()-1){
-                collectedResults.put(type, result);
-                return  GraphDBNatives.processQueryResult(result, SearchQueryParams.GENES);
+                collectedResults.put(AnnotationType.ENTITY, result);
+                return  GraphDBNatives.processQueryResultV1(result, AnnotationType.ENTITY);
             }
         }
 
@@ -213,7 +288,7 @@ public class GraphDBOptimisedHandler {
     }
 
 
-    private List<ArticleWiseConcepts> getGlobalEntityCount(Set<String> shortListedArticles, String identifier){
+    private List<ArticleWiseConcepts> getGlobalEntityCount(Set<String> shortListedArticles){
         //Prepare Query
         JcNode article = new JcNode("a");
         JcNode entity = new JcNode("e");
@@ -222,7 +297,9 @@ public class GraphDBOptimisedHandler {
         JcRelation c = new JcRelation("c");
         JcNumber nCount = new JcNumber("nCount");
         JcString PMID = new JcString("a.PMID");
-        JcString entitySymbol = new JcString("e."+ identifier);
+        JcString entityID = new JcString("e."+ GraphDBConstants.ENTITY_NODE_ID);
+        JcString entityType = new JcString("e."+ GraphDBConstants.ENTITY_NODE_TYPE);
+        JcString entityText = new JcString("e."+ GraphDBConstants.ENTITY_NODE_TEXT);
         //GetRelations along with gene symbols
         queryClauses.add(MATCH.node(article).label("Article")
                 .relation(c).out().type("CONTAINS")
@@ -231,27 +308,27 @@ public class GraphDBOptimisedHandler {
         //Where to limit it to found articles.
         queryClauses.add(WHERE.valueOf(article.property("PMID")).IN(new JcCollection(new ArrayList<>(shortListedArticles))));
         queryClauses.add(RETURN.value(article.property("PMID")));
-        queryClauses.add(RETURN.value(entity.property(identifier)));
+        queryClauses.add(RETURN.value(entity.property(GraphDBConstants.ENTITY_NODE_ID)));
+        queryClauses.add(RETURN.value(entity.property(GraphDBConstants.ENTITY_NODE_TYPE)));
+        queryClauses.add(RETURN.value(entity.property(GraphDBConstants.ENTITY_NODE_TEXT)));
         queryClauses.add(RETURN.count().value(c).AS(nCount));
 
         JcQueryResult result = GraphDBNatives.executeQueryClauses(queryClauses);
         //Get sorted rank result. Result set will have all shortlisted articles, with updated rank from result of this query.
-        List<ArticleWiseConcepts> lstConcepts = GraphDBNatives.processResultForConcepts( result.resultOf(PMID),result.resultOf(entitySymbol),  result.resultOf(nCount));
+        List<ArticleWiseConcepts> lstConcepts = GraphDBNatives.processResultForConcepts( result.resultOf(PMID),result.resultOf(entityID),result.resultOf(entityType),result.resultOf(entityText), result.resultOf(nCount));
         return lstConcepts;
 
     }
     /***
      * This method gets short listed articles, rank them and return sorted list as a field of DBManagerResultSet
-     * @param shortListedPMIDs
-     * @param countedConcepts
      * @return
      */
-    private DBManagerResultSet getRankedArticlesWithFilters(Set<String> shortListedPMIDs, Set<String> filteredArticles, List<Pair<String, String>> searchItems, List<Pair<String, String>> filterItems, List<ArticleWiseConcepts> countedConcepts, Boolean filterApplied) {
-        /*Ranking Logic:
-        // Currently Ranking is based on annotations attached with an article.
-        // However with filter queries it is possible that some of the articles do not have any annotation.
-        // So result set contains all elements.
-        */
+    private List<RankedArticle> getRankedArticlesWithFilters(
+                                                            Set<String> finalArticles,
+                                                            List<Pair<String, String>> searchItems,
+                                                            List<Pair<String, String>> filterItems,
+                                                            List<ArticleWiseConcepts> countedConcepts
+                                                            ) {
 
         List<String> searchIds = searchItems.stream()
                 .map(p -> p.getSecond())
@@ -266,15 +343,23 @@ public class GraphDBOptimisedHandler {
         Map<String, List<String>> totalSearchedItemsInArticle = new HashMap<>();
         Map<String, List<String>> totalFilteredItemsInArticle = new HashMap<>();
 
-        //Entities count for filter
-        Map<String, Integer> countOfArticlesWithEntity = new HashMap<>();
+        Integer filterWeight = 200;
+        Integer searchWeight = 100;
+
 
         for (ArticleWiseConcepts articleWiseConcepts : countedConcepts) {
+            Integer totalEntitiesIncrement = articleWiseConcepts.getCount().intValueExact();
+            if(filterIds.contains(articleWiseConcepts.getIdentifier())){
+                totalEntitiesIncrement = totalEntitiesIncrement * filterWeight;
+            }else if(searchIds.contains(articleWiseConcepts.getIdentifier())) {
+                totalEntitiesIncrement = totalEntitiesIncrement * searchWeight;
+            }
+
             if (totalEntitiesInArticle.containsKey(articleWiseConcepts.getPMID())) {
                 BigDecimal tCount = totalEntitiesInArticle.get(articleWiseConcepts.getPMID());
-                totalEntitiesInArticle.put(articleWiseConcepts.getPMID(), articleWiseConcepts.getCount().add(tCount));
+                totalEntitiesInArticle.put(articleWiseConcepts.getPMID(), BigDecimal.valueOf(totalEntitiesIncrement).add(tCount));
             } else {
-                totalEntitiesInArticle.put(articleWiseConcepts.getPMID(), articleWiseConcepts.getCount());
+                totalEntitiesInArticle.put(articleWiseConcepts.getPMID(), BigDecimal.valueOf(totalEntitiesIncrement));
             }
 
             if (searchIds.contains(articleWiseConcepts.getIdentifier())) {
@@ -299,24 +384,11 @@ public class GraphDBOptimisedHandler {
                 }
             }
 
-            if (countOfArticlesWithEntity.containsKey(articleWiseConcepts.getIdentifier())) {
-                Integer tCount = countOfArticlesWithEntity.get(articleWiseConcepts.getIdentifier());
-                countOfArticlesWithEntity.put(articleWiseConcepts.getIdentifier(), tCount + 1);
-            } else {
-                countOfArticlesWithEntity.put(articleWiseConcepts.getIdentifier(), 1);
-            }
         }
         // Now all counts are updated. Time to create the Ranked articles for complete result set.
         List<RankedArticle> countedArticles = new ArrayList<>();
-        Set<String> resultantArticles;
 
-        //If filters were there and applied, then use filtered articles for result array
-        if(filterApplied)
-            resultantArticles= Sets.intersection(shortListedPMIDs, filteredArticles);
-        else
-            resultantArticles = shortListedPMIDs;
-
-        for (String PMID : resultantArticles) {
+        for (String PMID : finalArticles) {
             BigDecimal count= totalEntitiesInArticle.getOrDefault(PMID,BigDecimal.ZERO);
             Integer  sHits = totalSearchedItemsInArticle.getOrDefault(PMID, new ArrayList<>()).size();
             Integer fHits = totalFilteredItemsInArticle.getOrDefault(PMID, new ArrayList<>()).size();
@@ -324,22 +396,34 @@ public class GraphDBOptimisedHandler {
         }
         // Sort the collection with highest totalConceptHits at index 0.
         Collections.sort(countedArticles, new RankedArticleComparitor());
-        DBManagerResultSet result = new DBManagerResultSet();
-        result.setGeneCounts(countOfArticlesWithEntity);
-        result.setRankedArticles(countedArticles);
 
-        return result;
+        return countedArticles;
     }
 
-    private String getEntityIdentifier(AnnotationType type){
-        String identifier = "";
-        switch (type){
-            case GENE:
-                identifier = "HGNCID";
-                break;
-        }
-        return identifier;
-    }
+//    private String getEntityIdentifier(AnnotationType type){
+//        String identifier = "";
+//        switch (type){
+//            case GENE:
+//                identifier = "HGNCID";
+//                break;
+//            case PHENOTYPE:
+//                identifier = GraphDBConstants.ENTITY_NODE_ID;
+//        }
+//        return identifier;
+//    }
+
+//    private  List<Object> getCorrectFormatList(AnnotationType type, List<Object> ids){
+//        List<Object> returnList;
+//        switch (type){
+//            case GENE:
+//                returnList = ids.stream().map(x-> Integer.valueOf((String)x)).collect(Collectors.toList());
+//                break;
+//            default:
+//                returnList = ids;
+//                break;
+//        }
+//        return returnList;
+//    }
 
 
 

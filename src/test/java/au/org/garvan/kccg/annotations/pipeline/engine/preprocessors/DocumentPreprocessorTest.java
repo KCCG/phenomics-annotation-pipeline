@@ -1,62 +1,104 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.preprocessors;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.connectors.BaseConnector;
+import au.org.garvan.kccg.annotations.pipeline.engine.connectors.JsonConnector;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.*;
-import au.org.garvan.kccg.annotations.pipeline.engine.enums.PhraseType;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.CommonParams;
+import au.org.garvan.kccg.annotations.pipeline.engine.profiles.ProcessingProfile;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by ahmed on 1/8/17.
  */
 public class DocumentPreprocessorTest {
 
-    APDocument doc ;
+    APDocument doc;
+    private BaseConnector testConnector;
+    private List<Article> articles;
+
 
     @Before
     public void setUp() throws Exception {
         doc = new APDocument(0, "The roving eye which he had cultivated for so many years.");
+        ProcessingProfile profile = new ProcessingProfile(false,false,true,true, Arrays.asList());
+        doc.setProcessingProfile(profile);
+
     }
 
     @Test
     public void preprocessDocument() throws Exception {
 
-        DocumentPreprocessor.preprocessDocument(doc);
+        DocumentPreprocessor.preprocessDocument(doc, doc.getId());
         List<APSentence> apSentenceLIst = doc.getSentences();
         Assert.assertEquals(1, apSentenceLIst.size());
 
-        for (APSentence sent : apSentenceLIst){
-
-            List<APPhrase> vphrases= sent.getPhrases(PhraseType.VERB, true);
-            List<APPhrase> phrases= sent.getPhrases(PhraseType.NOUN, false);
-            Assert.assertEquals(2, vphrases.size());
-            Assert.assertEquals(3, phrases.size());
-
-        }
 
     }
 
     @Test
-    public void testPhrasesForLongerSentences(){
-        APDocument testDoc = new APDocument("This article describes a 3D microfluidic paper-based analytical device that can be used to conduct an enzyme-linked immunosorbent assay (ELISA). The device comprises two parts: a sliding strip (which contains the active sensing area) and a structure surrounding the sliding strip (which holds stored reagents-buffers, antibodies, and enzymatic substrate-and distributes fluid). Running an ELISA involves adding sample (e.g. blood) and water, moving the sliding strip at scheduled times, and analyzing the resulting color in the sensing area visually or using a flatbed scanner. We demonstrate that this device can be used to detect C-reactive protein (CRP)-a biomarker for neonatal sepsis, pelvic inflammatory disease, and inflammatory bowel diseases-at a concentration range of 1-100ng/mL in 1000-fold diluted blood (1-100µg/mL in undiluted blood). The accuracy of the device (as characterized by the area under the receiver operator characteristics curve) is 89% and 83% for cut-offs of 10ng/mL (for neonatal sepsis and pelvic inflammatory disease) and 30ng/mL (for inflammatory bowel diseases) CRP in 1000-fold diluted blood respectively. In resource-limited settings, the device can be used as a part of a kit (containing the device, a fixed-volume capillary, a pre-filled tube, a syringe, and a dropper); this kit would cost ~ $0.50 when produced in large scale (>100,000 devices/week). This kit has the technical characteristics to be employed as a pre-screening tool, when combined with other data such as patient history and clinical signs.");
-        DocumentPreprocessor.preprocessDocument(testDoc);
-        List<APSentence> apSentenceLIst = testDoc.getSentences();
-
-        for(APSentence sent: testDoc.getSentences())
-        {
-            System.out.println(String.format("%d:%s" , sent.getId() ,sent.getOriginalText()));
-            List<APPhrase> phrases= sent.getPhrases(PhraseType.NOUN, true);
-            for(APPhrase apPhrase:phrases){
-                System.out.println(apPhrase.toString());
-            }
-
-        }
-
-
+    public void preprocessDocumentAsPerProfile() throws Exception {
+        APDocument testDoc = new APDocument("Stable zwitterionic spirocyclic Meisenheimer compounds were synthesized using a one-step reaction between picric acid and diisopropyl (ZW1) or dicyclohexyl (ZW3) carbodiimide. A solution of these compounds displays intense orange fluorescence upon UV or visible light excitation, which can be quenched or \"turned-off\" by adding a mole equivalent amount of F(-) or CN(-) ions in acetonitrile. Fluorescence is not quenched in the presence of other ions such as Cl(-), Br(-), I(-), NO₂(-), NO₃(-), or H₂PO₄(-). These compounds can therefore be utilized as practical colorimetric and fluorescent probes for monitoring the presence of F(-) or CN(-) anions.");
+        testDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.PHENOTYPE);
+        testDoc.hatch(testDoc.getId());
+        Assert.assertEquals(4,testDoc.getSentences().size());
 
 
     }
 
+//    @Test
+//    public void testPhrasesForLongerSentences(){
+//        APDocument testDoc = new APDocument("A report is given on the recent discovery of outstanding immunological properties in BA 1 [N-(2-cyanoethylene)-urea] having a (low) molecular mass M = 111.104. Experiments in 214 DS carcinosarcoma bearing Wistar rats have shown that BA 1, at a dosage of only about 12 percent LD50 (150 mg kg) and negligible lethality (1.7 percent), results in a recovery rate of 40 percent without hyperglycemia and, in one test, of 80 percent with hyperglycemia. Under otherwise unchanged conditions the reference substance ifosfamide (IF) -- a further development of cyclophosphamide -- applied without hyperglycemia in its most efficient dosage of 47 percent LD50 (150 mg kg) brought about a recovery rate of 25 percent at a lethality of 18 percent. (Contrary to BA 1, 250-min hyperglycemia caused no further improvement of the recovery rate.) However this comparison is characterized by the fact that both substances exhibit two quite different (complementary) mechanisms of action. Leucocyte counts made after application of the said cancerostatics and dosages have shown a pronounced stimulation with BA 1 and with ifosfamide, the known suppression in the post-therapeutic interval usually found with standard cancerostatics. In combination with the cited plaque test for BA 1, blood pictures then allow conclusions on the immunity status. Since IF can be taken as one of the most efficient cancerostatics--there is no other chemotherapeutic known up to now that has a more significant effect on the DS carcinosarcoma in rats -- these findings are of special importance. Finally, the total amount of leucocytes and lymphocytes as well as their time behaviour was determined from the blood picture of tumour-free rats after i.v. application of BA 1. The thus obtained numerical values clearly show that further research work on the prophylactic use of this substance seems to be necessary and very promising.\n");
+//        DocumentPreprocessor.preprocessDocument(testDoc);
+//        List<APSentence> apSentenceLIst = testDoc.getSentences();
+//
+//        for(APSentence sent: testDoc.getSentences())
+//        {
+//            System.out.println(String.format("%d:%s" , sent.getId() ,sent.getOriginalText()));
+//            List<APPhrase> phrases= sent.getPhrases(PhraseType.NOUN, true);
+//            for(APPhrase apPhrase:phrases){
+//                System.out.println(apPhrase.toString());
+//            }
+//
+//        }
+//
+
+
+//    }
+
+    @Test
+    public void preprocessPhrase() {
+        String text = "new face recognition";
+        DocumentPreprocessor.preprocessPhrase(text);
+
+    }
+
+    @Test
+    public void cleanText() {
+        doc = new APDocument(0, "A report is given on the recent discovery of outstanding immunological properties in BA 1 [N-(2-cyanoethylene)-urea] having a (low) molecular mass M = 111.104. Experiments in 214 DS carcinosarcoma bearing Wistar rats have shown that BA 1, at a dosage of only about 12 percent LD50 (150 mg kg) and negligible lethality (1.7 percent), results in a recovery rate of 40 percent without hyperglycemia and, in one test, of 80 percent with hyperglycemia. Under otherwise unchanged conditions the reference substance ifosfamide (IF) -- a further development of cyclophosphamide -- applied without hyperglycemia in its most efficient dosage of 47 percent LD50 (150 mg kg) brought about a recovery rate of 25 percent at a lethality of 18 percent. (Contrary to BA 1, 250-min hyperglycemia caused no further improvement of the recovery rate.) However this comparison is characterized by the fact that both substances exhibit two quite different (complementary) mechanisms of action. Leucocyte counts made after application of the said cancerostatics and dosages have shown a pronounced stimulation with BA 1 and with ifosfamide, the known suppression in the post-therapeutic interval usually found with standard cancerostatics. In combination with the cited plaque test for BA 1, blood pictures then allow conclusions on the immunity status. Since IF can be taken as one of the most efficient cancerostatics--there is no other chemotherapeutic known up to now that has a more significant effect on the DS carcinosarcoma in rats -- these findings are of special importance. Finally, the total amount of leucocytes and lymphocytes as well as their time behaviour was determined from the blood picture of tumour-free rats after i.v. application of BA 1. The thus obtained numerical values clearly show that further research work on the prophylactic use of this substance seems to be necessary and very promising.");
+
+        DocumentPreprocessor.cleanDocumentManual(doc);
+        String x = doc.getCleanedText();
+    }
+
+
+//
+//    @Test
+//    public void testBatchCleaning(){
+//        testConnector = new JsonConnector();
+//        articles =  testConnector.getArticles("test1000.json", CommonParams.FILENAME);
+//        List<APDocument> docs = articles.stream().map(a->a.getArticleAbstract()).collect(Collectors.toList()).subList(0,100);
+//        ProcessingProfile profile = new ProcessingProfile(false,false,true,true, Arrays.asList(AnnotationType.GENE, AnnotationType.PHENOTYPE));
+//        for (APDocument doc : docs){
+//            doc.setProcessingProfile(profile);
+//            doc.hatch(doc.getId());
+//        }
+//    }
 }

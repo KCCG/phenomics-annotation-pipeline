@@ -6,7 +6,10 @@ package au.org.garvan.kccg.annotations.pipeline.engine.userinterfaces;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.connectors.SolrConnector;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.CommonParams;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APSentence;
@@ -228,8 +231,12 @@ public class BaseUI extends Application {
             List<LinguisticCellContent> list = new ArrayList<>();
             if (currentDoc != null) {
 
-                if (currentDoc.getSentences().size() == 0)
-                    currentDoc.hatch();
+                if (currentDoc.getSentences().size() == 0) {
+                    currentDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.GENE);
+                    currentDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.PHENOTYPE);
+
+                    currentDoc.hatch(currentDocIndex);
+                }
                 for (APSentence sent : currentDoc.getSentences()) {
                     list.add(new LinguisticCellContent(sent.getId(), sent.getOriginalText()));
                 }
@@ -268,8 +275,15 @@ public class BaseUI extends Application {
 
 
         //Flatten map structure to collect IDs of long forms; This is not meant to link anything but just for highlighting
-        List<Integer> longFormTokenIndices = activeSent.getSfLfLink().values().stream().filter(x -> x.length > 0).flatMap(Arrays::stream).map(x -> x.getId()).collect(Collectors.toList());
 
+        List<Integer> longFormTokenIndices = activeSent.getSfLfLink()==null? new ArrayList<>():activeSent.getSfLfLink().values().stream().filter(x -> x.length > 0).flatMap(Arrays::stream).map(x -> x.getId()).collect(Collectors.toList());
+
+        List<Annotation> sentAnnotations = activeSent.getAnnotations();
+//        boolean hasAnnotations = sentAnnotations.size()>0;
+        List<Integer> phenotypeTokens = new ArrayList<>();
+        if(sentAnnotations.size()>0) {
+            sentAnnotations.stream().forEach(a-> phenotypeTokens.addAll(a.getTokenIDs()));
+        }
         activeSent.getTokens().stream().forEach(tok ->
                 {
                     Button btnToken = new Button();
@@ -287,9 +301,15 @@ public class BaseUI extends Application {
                     }
 
                     if (!tok.getLexicalEntityList().isEmpty()) {
-                        buttonStyle = buttonStyle + "-fx-text-fill: #800080;";
+                        buttonStyle = buttonStyle + "-fx-text-fill: #0000ff;";
 
                     }
+
+                    if (phenotypeTokens.contains(tok.getId())) {
+                        buttonStyle = buttonStyle + "-fx-text-fill: #ff9900;";
+
+                    }
+
 
                     if (!tok.getNormalizedText().isEmpty()) {
                         buttonStyle = buttonStyle + "-fx-underline: true;";
@@ -366,9 +386,23 @@ public class BaseUI extends Application {
 
         GPSentences.getChildren().remove(DEPENDENCIES_INDEX);
 
-        if (!tok.getLexicalEntityList().isEmpty()) {
+        if (!tok.getLexicalEntityList().isEmpty() || !sent.getAnnotations().isEmpty()) {
             ListView<String> entityList = new ListView<String>();
-            entityList.setItems(FXCollections.observableArrayList(((APGene) tok.getLexicalEntityList().get(0)).stringList()));
+
+            if(!tok.getLexicalEntityList().isEmpty()){
+                entityList.setItems(FXCollections.observableArrayList(((APGene) tok.getLexicalEntityList().get(0)).stringList()));
+            }
+
+            if(!sent.getAnnotations().isEmpty()){
+                List<Annotation> tokenAnnotations = sent.getAnnotations().stream().filter(m->m.getType().equals(AnnotationType.PHENOTYPE)).filter(a-> a.getTokenIDs().contains(tok.getId())).collect(Collectors.toList());
+                for(Annotation annotation:tokenAnnotations)
+                {
+                    entityList.getItems().addAll(FXCollections.observableArrayList(((APPhenotype)annotation.getEntity()).stringList()));
+                }
+
+            }
+
+
             HBox depLexHolder = new HBox();
             dependencyList.setPrefWidth(450);
             entityList.setPrefWidth(450);

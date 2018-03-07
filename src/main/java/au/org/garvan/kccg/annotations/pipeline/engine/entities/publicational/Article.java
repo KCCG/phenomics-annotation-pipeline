@@ -1,9 +1,12 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.LexicalEntity;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
+import au.org.garvan.kccg.annotations.pipeline.engine.managers.DatabaseManager;
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
@@ -15,11 +18,14 @@ import lombok.Getter;
 import lombok.Setter;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,6 +37,7 @@ import java.util.stream.Collectors;
 public class Article {
 
     private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+    private final Logger slf4jLogger = LoggerFactory.getLogger(Article.class);
 
 
     @Getter
@@ -188,41 +195,59 @@ public class Article {
 
 
     public JSONObject constructJson(){
-        JSONObject returnObject = new JSONObject();
-        returnObject.put("pubMedID", Integer.toString(pubMedID));
-        returnObject.put("processingDate", processingDate);
-        returnObject.put("datePublished", datePublished.toString());
-        returnObject.put("dateCreated", dateCreated.toString());
-        returnObject.put("dateRevised", dateRevised.toString());
-        returnObject.put("articleTitle", articleTitle);
-        if(!articleAbstract.getOriginalText().isEmpty())
-            returnObject.put("articleAbstract", articleAbstract.getCleanedText());
-        returnObject.put("language", language);
-        returnObject.put("publication", publication.constructJson());
 
-        JSONArray jsonAuthors = new JSONArray();
-        for (Author a : authors) {
-            if(a.checkValidName())
-                jsonAuthors.add(a.constructJson());
+        try {
+            JSONObject returnObject = new JSONObject();
+            returnObject.put("pubMedID", Integer.toString(pubMedID));
+            returnObject.put("processingDate", processingDate);
+            returnObject.put("datePublished", datePublished.toString());
+            returnObject.put("dateCreated", dateCreated.toString());
+            returnObject.put("dateRevised", dateRevised.toString());
+            returnObject.put("articleTitle", articleTitle);
+            if (!articleAbstract.getOriginalText().isEmpty())
+                returnObject.put("articleAbstract", articleAbstract.getCleanedText());
+            returnObject.put("language", language);
+            returnObject.put("publication", publication.constructJson());
+
+            JSONArray jsonAuthors = new JSONArray();
+            for (Author a : authors) {
+                if (a.checkValidName())
+                    jsonAuthors.add(a.constructJson());
+            }
+            if (jsonAuthors.size() > 0)
+                returnObject.put("authors", jsonAuthors);
+
+
+            return returnObject;
         }
-        if(jsonAuthors.size()>0)
-            returnObject.put("authors",jsonAuthors);
-
-
-        return returnObject;
+        catch (Exception e)
+        {
+            slf4jLogger.error(String.format("Error in creating article JSON. Article ID:%d , Error: ", getPubMedID(), e.getMessage()));
+            throw e;
+        }
 
     }
 
-    public JSONObject getAbstractEntities(){
-        JSONObject returnObject = new JSONObject();
-        Map<APSentence, List<APToken>> annotations = articleAbstract.getTokensWithEntities();
-        if (annotations.size()>0)
+    /***
+     * This method is written for DynamodDB persistence only
+     * 1: Genes
+     * 2: Phenotypes
+     * Are Annotations to be stored in dynamodb for time being.
+     * @return
+     */
+
+    public JSONArray getAbstractEntities(){
+        JSONArray returnArray = new JSONArray();
+
+        Map<APSentence, List<APToken>> geneAnnotations = articleAbstract.getTokensWithEntities();
+        if (geneAnnotations.size()>0)
         {
+            JSONObject returnObject = new JSONObject();
             returnObject.put("pubMedID", Integer.toString(pubMedID));
             returnObject.put("annotationType", AnnotationType.GENE.toString());
             JSONArray genes = new JSONArray();
 
-            for (Map.Entry<APSentence,  List<APToken>> entry : annotations.entrySet()) {
+            for (Map.Entry<APSentence,  List<APToken>> entry : geneAnnotations.entrySet()) {
                 int sentId = entry.getKey().getId();
                 Point sentDocOffset= entry.getKey().getDocOffset();
                 for (APToken token : entry.getValue()){
@@ -246,9 +271,43 @@ public class Article {
                 }
             }
             returnObject.put("annotations",genes);
+            returnArray.add(returnObject);
         }
 
-        return returnObject;
+        Map<APSentence, List<Annotation>> phenotypeAnnotations= new LinkedHashMap<>();
+        for(APSentence sentence: articleAbstract.getSentences()){
+            if(sentence.getAnnotations().stream().filter(f->f.getType().equals(AnnotationType.PHENOTYPE)).count()>0) {
+                phenotypeAnnotations.put(sentence, sentence.getAnnotations());
+            }
+        }
+
+        if(phenotypeAnnotations.size()>0){
+
+            JSONObject returnObject = new JSONObject();
+            returnObject.put("pubMedID", Integer.toString(pubMedID));
+            returnObject.put("annotationType", AnnotationType.PHENOTYPE.toString());
+            JSONArray phenotypes = new JSONArray();
+            for (Map.Entry<APSentence,  List<Annotation>> entry : phenotypeAnnotations.entrySet()) {
+                int sentId = entry.getKey().getId();
+                Point sentDocOffset= entry.getKey().getDocOffset();
+                for (Annotation annotation : entry.getValue()){
+
+                            JSONObject jsonObject = new JSONObject();
+                            jsonObject.put("field","articleAbstract");
+                            jsonObject.put("standard", annotation.getStandard());
+                            jsonObject.put("sentId",sentId);
+                            jsonObject.put("tokenIds", annotation.getTokenIDs());
+                            jsonObject.put("annotationId", ((APPhenotype) (annotation.getEntity())).getHpoID());
+                            jsonObject.put("globalOffset", constructGlobalOffset(sentDocOffset,annotation.getOffet()));
+                            jsonObject.put("isNegated", annotation.getNegated());
+                            phenotypes.add(jsonObject);
+
+                    }
+            }
+            returnObject.put("annotations",phenotypes);
+            returnArray.add(returnObject);
+        }
+        return returnArray;
 
     }
 

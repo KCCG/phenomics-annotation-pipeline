@@ -3,6 +3,7 @@ package au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.EntityType;
+import au.org.garvan.kccg.annotations.pipeline.engine.profiles.ProcessingProfile;
 import lombok.Getter;
 import lombok.Setter;
 import org.json.simple.JSONArray;
@@ -27,14 +28,21 @@ public class APDocument extends LinguisticEntity {
     @Setter
     private String cleanedText;
 
+    @Getter
+    @Setter
+    private ProcessingProfile processingProfile;
+
 
     public APDocument(int id, String text) {
         super(id, text);
+        processingProfile = new ProcessingProfile();
     }
 
 
     public APDocument(String text) {
         super(text);
+        processingProfile = new ProcessingProfile();
+
     }
 
     public APDocument(DynamoDBObject dbObject){
@@ -74,8 +82,8 @@ public class APDocument extends LinguisticEntity {
     }
 
 
-    public void hatch() {
-        DocumentPreprocessor.preprocessDocument(this);
+    public void hatch(Integer articleID) {
+        DocumentPreprocessor.preprocessDocument(this, articleID);
     }
 
 

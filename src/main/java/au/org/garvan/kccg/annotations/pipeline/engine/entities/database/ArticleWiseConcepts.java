@@ -12,5 +12,8 @@ import java.math.BigDecimal;
 public class ArticleWiseConcepts{
     String PMID;
     String identifier;
+    String type;
+    String text;
     BigDecimal count;
+
 }

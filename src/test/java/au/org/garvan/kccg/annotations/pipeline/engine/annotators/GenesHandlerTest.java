@@ -1,6 +1,5 @@
-package au.org.garvan.kccg.annotations.pipeline.engine.lexicons;
+package au.org.garvan.kccg.annotations.pipeline.engine.annotators;
 
-import au.org.garvan.kccg.annotations.pipeline.engine.lexicons.GenesHandler;
 import org.junit.Before;
 import org.junit.Test;
 

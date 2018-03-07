@@ -10,6 +10,10 @@ import java.util.stream.Collectors;
 /**
  * Created by ahmed on 12/9/17.
  */
+
+//TODO: Update the functionality of this class with new tokenization.
+    // Brackets and punctuations are separated into tokens now.
+@Deprecated
 public class LongFormMarker {
     private static final int OBSERVATION_WINDOW = 10;
 
@@ -42,7 +46,7 @@ public class LongFormMarker {
     }
 
     private static List<APToken> processRules(List<APToken> potentialLongFormTokens, APToken shortToken) {
-        String shortText = Common.getTrimmedText(shortToken);
+        String shortText = Common.getPunctuationLessText(shortToken);
         List<APToken> finalLongForm;
 
         //Process R1: FirstLetter for all tokens

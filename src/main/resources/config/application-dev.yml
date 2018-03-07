@@ -1,0 +1,29 @@
+spring:
+  dbhandlers:
+    S3:
+      abstractbucket: phenomics-article-abstracts-dev
+    dynamodb:
+      articletablename: phenomics-articles-dev
+      annotationtablename: phenomics-annotations-dev
+      subscriptiontablename: phenomics-subscriptions-dev
+    graphdb:
+#    TODO: Change this to dns record.
+      endpoint: http://52.64.25.182:7474/
+      graphprinting: false
+      username: neo4j
+      password: neodev
+
+  subscriptionservice:
+    subscriptiontime: 2
+
+logging:
+  path: ./logs/
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %p | source= %c{1.} | %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %p | stackName=phenomics | appName=annotation-pipepline | source= %c{1.} | %msg%n"
+  level:
+    root: WARN
+    au.org.garvan.kccg.annotations.pipeline: INFO
+
+server:
+    port: 9080

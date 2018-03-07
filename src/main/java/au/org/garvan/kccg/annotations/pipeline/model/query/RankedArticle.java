@@ -27,6 +27,6 @@ public class RankedArticle {
     Integer rank;
     //Filled by DBManager
     Article article;
-    JSONObject jsonAnnotations;
+    List<JSONObject> jsonAnnotations;
 
 }

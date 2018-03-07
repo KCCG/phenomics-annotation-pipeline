@@ -1,6 +1,8 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.util.TAConstants;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.EntityType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.PhraseType;
 import edu.stanford.nlp.ling.CoreLabel;
@@ -37,12 +39,12 @@ public class APSentence extends LinguisticEntity {
 
     @Getter
     @Setter
-    private List<APParseTreeRow> parseTree;
+    private List<APParseTreeRow> parseTree = new ArrayList<>();
 
 
     @Getter
     @Setter
-    private List<APDependencyRelation> dependencyRelations;
+    private List<APDependencyRelation> dependencyRelations = new ArrayList<>();
 
 
     @Getter
@@ -57,7 +59,11 @@ public class APSentence extends LinguisticEntity {
 
     @Getter
     @Setter
-    private Map<APToken, APToken[]> SfLfLink;
+    private Map<APToken, APToken[]> SfLfLink = new HashMap<>();
+
+    @Getter
+    @Setter
+    List<Annotation> annotations = new ArrayList<>();
 
 
     public APSentence(int id, String text) {
@@ -139,6 +145,8 @@ public class APSentence extends LinguisticEntity {
     // Recursively build a parse tree with pre-order traversal (root-left-right)
 
     public void generateDependencies() {
+        if(semanticGraph==null)
+            return;
 
         dependencyRelations = new ArrayList<>();
         IndexedWord root = semanticGraph.getFirstRoot();
@@ -322,6 +330,98 @@ public class APSentence extends LinguisticEntity {
         getChildrenOffsets(childStack, lstOffsets);
 
     }
+
+    public List<APToken> getTokensInOffsetRange(int offsetBegin, int offsetEnd){
+        List<APToken> returnList= tokens.stream().filter(t-> t.getSentOffset().x>= offsetBegin && t.getSentOffset().y<=offsetEnd).collect(Collectors.toList());
+        returnList.sort(Comparator.comparing(t->t.getSentOffset().x));
+        return returnList;
+    }
+
+    public void putAnnoataion(Annotation annotation){
+        if(annotations==null){
+            annotations = new ArrayList<>();
+        }
+        annotations.add(annotation);
+    }
+    @Override
+    public String toString()
+    {
+        return String.format("[%d:%d] %s", docOffset.x, docOffset.y, getOriginalText());
+    }
+
+
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // CR:DONE Support Properties and methods. Can be moved later
+    ///////////////////////////////////////////////////////////////////////////////
+
+    @Getter
+    private Map<Integer, APToken> indexedTokens;
+    @Getter
+    private Map<String, List<Integer>> inverseTokenPositions;
+    @Getter
+    private Map<Integer, APToken> verbPositions;
+    @Getter
+    private Map<Integer, APToken> punctuation;
+    @Getter
+    private Map<Integer, APToken> conjunctions;
+    @Getter
+    private Map<Integer, List<Integer>> subSentences;
+    @Getter
+    private List<Integer> startBracketPositions;
+    @Getter
+    private List<Integer> endBracketPositions;
+
+    public void conceptRecognizerHatch(){
+        this.indexedTokens = new LinkedHashMap<>();
+        this.inverseTokenPositions = new LinkedHashMap<>();
+        this.verbPositions = new LinkedHashMap<>();
+        this.punctuation = new LinkedHashMap<>();
+        this.conjunctions = new LinkedHashMap<>();
+        this.subSentences = new LinkedHashMap<>();
+        this.startBracketPositions = new ArrayList<>();
+        this.endBracketPositions = new ArrayList<>();
+
+
+        tokens.sort(Comparator.comparing(t->t.getSentOffset().x));
+        for (int index = 0; index<tokens.size(); index ++){
+            conceptEntitiesHatch(index, tokens.get(index));
+        }
+
+
+
+    }
+
+    private void conceptEntitiesHatch(int index, APToken positionedToken) {
+        this.indexedTokens.put(index, positionedToken);
+        if (positionedToken.getPartOfSpeech() != null) {
+            if (positionedToken.getPartOfSpeech().startsWith(TAConstants.POS_VB)) {
+                if (!positionedToken.getPartOfSpeech().equalsIgnoreCase(TAConstants.POS_VBN)
+                        || positionedToken.getPartOfSpeech().equalsIgnoreCase(TAConstants.POS_VBG)) {
+                    verbPositions.put(index, positionedToken);
+                }
+            }
+            if (positionedToken.getPartOfSpeech().startsWith(TAConstants.POS_CC)) {
+                conjunctions.put(index, positionedToken);
+            }
+            if (positionedToken.getPartOfSpeech().equalsIgnoreCase(TAConstants.POS_LBR)) {
+                startBracketPositions.add(index);
+            }
+            if (positionedToken.getPartOfSpeech().equalsIgnoreCase(TAConstants.POS_RBR)) {
+                endBracketPositions.add(index);
+            }
+            if (positionedToken.getPartOfSpeech().length() == 1) {
+                punctuation.put(index, positionedToken);
+            }
+        }
+
+        //CR:DONE Merged functions from TASentence. This is the making of sentence and will be done only when CR is initialized.
+        List<Integer> list = this.inverseTokenPositions.containsKey(positionedToken.getOriginalText()) ? this.inverseTokenPositions.get(positionedToken.getOriginalText()) : new ArrayList<>();
+        list.add(index);
+        this.inverseTokenPositions.put(positionedToken.getOriginalText(), list);
+    }
+
+
 
 
 }
