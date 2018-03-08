@@ -78,6 +78,10 @@ public class Article {
 
     @Getter
     @Setter
+    private List<MeshHeading> meshHeadingList;
+
+    @Getter
+    @Setter
     private Publication publication;
 
 
@@ -218,11 +222,18 @@ public class Article {
                 returnObject.put("authors", jsonAuthors);
 
 
+            JSONArray jsonMeshHeadings = new JSONArray();
+            for (MeshHeading m : meshHeadingList) {
+                jsonMeshHeadings.add(m.constructJson());
+            }
+            if (jsonMeshHeadings.size() > 0)
+                returnObject.put("meshHeadingList", jsonMeshHeadings);
+
             return returnObject;
         }
         catch (Exception e)
         {
-            slf4jLogger.error(String.format("Error in creating article JSON. Article ID:%d , Error: ", getPubMedID(), e.getMessage()));
+            slf4jLogger.error(String.format("Error in creating article JSON. Article ID:%d , Error: ", getPubMedID(), e.toString()));
             throw e;
         }
 

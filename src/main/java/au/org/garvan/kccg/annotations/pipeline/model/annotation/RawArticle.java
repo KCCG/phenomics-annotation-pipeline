@@ -2,6 +2,7 @@ package au.org.garvan.kccg.annotations.pipeline.model.annotation;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Author;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.MeshHeading;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Publication;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -50,10 +51,21 @@ public class RawArticle {
     @JsonProperty(required = false)
     private List<Author> authors;
 
+
+    @JsonProperty(required = false)
+    private List<MeshHeading> meshHeadingList;
+
+
     @JsonProperty(required = true)
     private Publication publication;
 
 
+    public List<MeshHeading> getMeshHeadingList(){
+        if(this.meshHeadingList==null)
+            return new ArrayList<>();
+        else
+            return meshHeadingList;
+    }
 
     public List<Author> getAuthors(){
         if(this.authors ==null)

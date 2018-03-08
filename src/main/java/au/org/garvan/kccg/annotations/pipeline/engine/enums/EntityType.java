@@ -14,7 +14,8 @@ public enum EntityType {
     LinguisticEntity,
     Article,
     Author,
-    Publication
+    Publication,
+    MeshHeading
 
 }
 

@@ -9,6 +9,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APSent
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Author;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.MeshHeading;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.constants.GraphDBConstants;
@@ -124,6 +125,28 @@ public class GraphDBNatives {
                 }
             }
 
+
+            //Create mesh heading  nodes and their respective clauses (This includes both creation and mapping clauses)
+            List<JcNode> nodeListMeshHeadings = new ArrayList<>();
+            List<IClause> meshHeadingClauses = new ArrayList<>();
+
+            for (int x = 0; x < article.getMeshHeadingList().size(); x++) {
+                MeshHeading currentMeshHeading = article.getMeshHeadingList().get(x);
+                if (currentMeshHeading.isValid()) {
+                    JcNode tempMeshHeading = new JcNode("nodeMeshHeading" + Integer.toString(x));
+                    nodeListMeshHeadings.add(tempMeshHeading);
+                    meshHeadingClauses.add(MERGE.node(tempMeshHeading).label(GraphDBConstants.MESH_HEADING_NODE_LABEL)
+                            .property(GraphDBConstants.MESH_HEADING_NODE_ID).value(currentMeshHeading. getUI())
+                            .property(GraphDBConstants.MESH_HEADING_TEXT).value(currentMeshHeading.getText()));
+
+                    meshHeadingClauses.add(MERGE.node(nodeArticle).relation().out()
+                            .type(GraphDBConstants.MESH_HEADING_EDGE_TYPE)
+                            .node(tempMeshHeading));
+                }
+            }
+
+
+
             //Create publicational node and creation clause
             JcNode nodePublication = new JcNode("nodePublication");
             IClause publicationClause = MERGE.node(nodePublication).label(GraphDBConstants.PUBLICATION_NODE_LABEL)
@@ -139,6 +162,7 @@ public class GraphDBNatives {
             queryClauses.add(articleClause);
 
             queryClauses.addAll(authorsClauses);
+            queryClauses.addAll(meshHeadingClauses);
             queryClauses.add(publicationClause);
             queryClauses.add(publicationLinkClause);
 
