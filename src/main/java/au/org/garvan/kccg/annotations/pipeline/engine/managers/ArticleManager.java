@@ -90,6 +90,7 @@ public class ArticleManager {
                 new APDocument(rawArticle.getArticleAbstract()),
                 rawArticle.getLanguage(),
                 rawArticle.getAuthors(),
+                rawArticle.getMeshHeadingList(),
                 rawArticle.getPublication());
 
         article.getArticleAbstract().setProcessingProfile(Common.getStandardProfile());

@@ -17,6 +17,12 @@ public class GraphDBConstants {
     public static final String AUTHOR_EDGE_ORDER = "Order";
 
 
+    public static final String MESH_HEADING_NODE_LABEL = "MeshHeading";
+    public static final String MESH_HEADING_NODE_ID = "UI";
+    public static final String MESH_HEADING_TEXT = "Text";
+    public static final String MESH_HEADING_EDGE_TYPE = "MESHED";
+
+
     public static final String PUBLICATION_NODE_LABEL = "Publication";
     public static final String PUBLICATION_NODE_TITLE = "Title";
     public static final String PUBLICATION_NODE_ISO_ABBREVIATION = "IsoAbbreviation";
@@ -41,7 +47,7 @@ public class GraphDBConstants {
 
 
 
-    public static String getEntityLael(AnnotationType type) {
+    public static String getEntityLabel(AnnotationType type) {
         switch (type) {
             case GENE:
                 return "Gene";
