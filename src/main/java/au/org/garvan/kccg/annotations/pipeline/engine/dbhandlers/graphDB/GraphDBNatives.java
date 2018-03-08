@@ -8,7 +8,6 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.LexicalEn
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APSentence;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
-import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Author;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.MeshHeading;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
@@ -106,24 +105,24 @@ public class GraphDBNatives {
                     .property(GraphDBConstants.ARTICLE_NODE_LANGUAGE).value(article.getLanguage())
                     .property(GraphDBConstants.ARTICLE_NODE_PROCESSING_DATE).value(article.getProcessingDate());
 
-            //Create authors nodes and their respective clauses (This includes both creation and mapping clauses)
-            List<JcNode> nodeListAuthors = new ArrayList<>();
-            List<IClause> authorsClauses = new ArrayList<>();
-
-            for (int x = 0; x < article.getAuthors().size(); x++) {
-                Author currentAuthor = article.getAuthors().get(x);
-                if (currentAuthor.checkValidName()) {
-                    JcNode tempAuthor = new JcNode("nodeAuthor" + Integer.toString(x));
-                    nodeListAuthors.add(tempAuthor);
-                    authorsClauses.add(MERGE.node(tempAuthor).label(GraphDBConstants.AUTHOR_NODE_LABEL)
-                            .property(GraphDBConstants.AUTHOR_NODE_INITIALS).value(currentAuthor.getInitials())
-                            .property(GraphDBConstants.AUTHOR_NODE_FORE_NAME).value(currentAuthor.getForeName())
-                            .property(GraphDBConstants.AUTHOR_NODE_LAST_NAME).value(currentAuthor.getLastName()));
-                    authorsClauses.add(MERGE.node(tempAuthor).relation().out()
-                            .type(GraphDBConstants.AUTHOR_EDGE_TYPE).property(GraphDBConstants.AUTHOR_EDGE_ORDER).value(x + 1)
-                            .node(nodeArticle));
-                }
-            }
+//            //Create authors nodes and their respective clauses (This includes both creation and mapping clauses)
+//            List<JcNode> nodeListAuthors = new ArrayList<>();
+//            List<IClause> authorsClauses = new ArrayList<>();
+//
+//            for (int x = 0; x < article.getAuthors().size(); x++) {
+//                Author currentAuthor = article.getAuthors().get(x);
+//                if (currentAuthor.checkValidName()) {
+//                    JcNode tempAuthor = new JcNode("nodeAuthor" + Integer.toString(x));
+//                    nodeListAuthors.add(tempAuthor);
+//                    authorsClauses.add(MERGE.node(tempAuthor).label(GraphDBConstants.AUTHOR_NODE_LABEL)
+//                            .property(GraphDBConstants.AUTHOR_NODE_INITIALS).value(currentAuthor.getInitials())
+//                            .property(GraphDBConstants.AUTHOR_NODE_FORE_NAME).value(currentAuthor.getForeName())
+//                            .property(GraphDBConstants.AUTHOR_NODE_LAST_NAME).value(currentAuthor.getLastName()));
+//                    authorsClauses.add(MERGE.node(tempAuthor).relation().out()
+//                            .type(GraphDBConstants.AUTHOR_EDGE_TYPE).property(GraphDBConstants.AUTHOR_EDGE_ORDER).value(x + 1)
+//                            .node(nodeArticle));
+//                }
+//            }
 
 
             //Create mesh heading  nodes and their respective clauses (This includes both creation and mapping clauses)
@@ -161,7 +160,7 @@ public class GraphDBNatives {
 
             queryClauses.add(articleClause);
 
-            queryClauses.addAll(authorsClauses);
+//            queryClauses.addAll(authorsClauses);
             queryClauses.addAll(meshHeadingClauses);
             queryClauses.add(publicationClause);
             queryClauses.add(publicationLinkClause);
@@ -193,7 +192,7 @@ public class GraphDBNatives {
                             APGene gene = (APGene) lex;
                             JcNode nodeGene = new JcNode(String.format("nodeGene%d_%d", sent.getId(), token.getId()));
                             IClause geneClause = MERGE.node(nodeGene)
-                                    .label(GraphDBConstants.getEntityLael(AnnotationType.GENE))
+                                    .label(GraphDBConstants.getEntityLabel(AnnotationType.GENE))
                                     .label(GraphDBConstants.ENTITY_NODE_LABEL)
                                     .property(GraphDBConstants.ENTITY_NODE_ID).value( String.valueOf(gene.getHGNCID()))
                                     .property(GraphDBConstants.ENTITY_NODE_TEXT).value(gene.getApprovedSymbol())
@@ -234,7 +233,7 @@ public class GraphDBNatives {
                 for (Annotation annotation : entry.getValue()){
                     APPhenotype phenotype = (APPhenotype) annotation.getEntity();
                     JcNode nodePhenotype = new JcNode(String.format("nodePhenotype%d_%d", sentId, annotation.getOffet().x + annotation.getOffet().y ));
-                    IClause geneClause = MERGE.node(nodePhenotype).label(GraphDBConstants.getEntityLael(annotation.getType()))
+                    IClause geneClause = MERGE.node(nodePhenotype).label(GraphDBConstants.getEntityLabel(annotation.getType()))
                             .label(GraphDBConstants.ENTITY_NODE_LABEL)
                             .property(GraphDBConstants.ENTITY_NODE_ID).value(phenotype.getHpoID())
                             .property(GraphDBConstants.ENTITY_NODE_TEXT).value(phenotype.getPhenotype().getPreferredLabel())

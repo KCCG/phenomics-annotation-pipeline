@@ -47,7 +47,7 @@ public class GraphDBConstants {
 
 
 
-    public static String getEntityLael(AnnotationType type) {
+    public static String getEntityLabel(AnnotationType type) {
         switch (type) {
             case GENE:
                 return "Gene";
