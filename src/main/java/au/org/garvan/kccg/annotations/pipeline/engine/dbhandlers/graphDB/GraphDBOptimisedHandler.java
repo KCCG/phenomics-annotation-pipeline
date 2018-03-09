@@ -83,7 +83,7 @@ public class GraphDBOptimisedHandler {
         Set<String> filteredArticles = new HashSet<>();
         if(shortListedArticles.size() > 0) {
                 List<String> filterIds = filterItems.stream()
-                        .filter(f->  !f.getFirst().equals(AnnotationType.DATERANGE))
+                        .filter(f->  !f.getFirst().equals(SearchQueryParams.DATERANGE.toString()))
                         .map(p -> p.getSecond())
                         .collect(Collectors.toList());
 
