@@ -11,7 +11,8 @@ spring:
       graphprinting: false
       username:
       password:
-
+  lambdaconnector:
+      workerfunctionname: pubmed-ingestion-worker-lambda
   subscriptionservice:
     subscriptiontime: 2
 

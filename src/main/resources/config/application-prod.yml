@@ -11,6 +11,8 @@ spring:
       graphprinting: false
       username: neo4j
       password: Neo4j@1Prod
+  lambdaconnector:
+    workerfunctionname: pubmed-ingestion-worker-lambda
 
   subscriptionservice:
     subscriptiontime: 2

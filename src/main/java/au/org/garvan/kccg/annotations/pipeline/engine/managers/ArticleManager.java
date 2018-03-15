@@ -1,11 +1,13 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.connectors.lambda.WorkerLambdaConnector;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.engine.profiles.ProcessingProfile;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Common;
+import au.org.garvan.kccg.annotations.pipeline.engine.utilities.EngineEnvironment;
 import au.org.garvan.kccg.annotations.pipeline.model.annotation.RawArticle;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
@@ -56,9 +58,7 @@ public class ArticleManager {
 
                 } else {
                     slf4jLogger.info(String.format("Article is identified as duplicate. Processing is aborted. ID: %d", article.getPubMedID()));
-
                 }
-
             }
             catch (Exception e){
                 slf4jLogger.error(String.format("Error in processing article with ID: %d", article.getPubMedID()));
@@ -67,8 +67,11 @@ public class ArticleManager {
 
         }//Article Loop
         slf4jLogger.info(String.format("Finished articles batch for processing. Batch Id:%s ", batchId));
-//        slf4jLogger.info(String.format("Calling CoreNLP Manager to cleanup memory"));
-//        CoreNLPManager.clearMemory();
+
+        if(EngineEnvironment.getSelfIngestionEnabled()){
+            slf4jLogger.info(String.format("Self Ingestion is Enabled. Invoking Lambda. "));
+            WorkerLambdaConnector.invokeWorkerLambda(EngineEnvironment.getWorkerID(), false);
+        }
     }
 
     private boolean isDuplicate(Article article){
