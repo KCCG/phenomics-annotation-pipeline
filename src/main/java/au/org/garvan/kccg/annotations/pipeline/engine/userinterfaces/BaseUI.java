@@ -8,6 +8,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.connectors.SolrConnector;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Disease.APDisease;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.CommonParams;
@@ -40,6 +41,9 @@ public class BaseUI extends Application {
     private final int TOKENS_INDEX = 1;
     private final int PARSE_TREE_INDEX = 2;
     private final int DEPENDENCIES_INDEX = 3;
+
+    private final int ANNOTATION_INDEX = 2;
+
     private APDocument currentDoc = null;
     private GridPane root;
     private GridPane GPSentences;
@@ -80,7 +84,7 @@ public class BaseUI extends Application {
         });
 
         Label lblDate = new Label("Date:");
-        TextField txtDate = new TextField("01/10/2017");
+        TextField txtDate = new TextField("21/03/2018");
         txtDate.setId("txtDate");
 
         Label lblTotalDocs = new Label("Total Articles:");
@@ -232,8 +236,11 @@ public class BaseUI extends Application {
             if (currentDoc != null) {
 
                 if (currentDoc.getSentences().size() == 0) {
+//                    currentDoc.getProcessingProfile().setProcessDependencies(true);
+//                    currentDoc.getProcessingProfile().setProcessDependencies(true);
                     currentDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.GENE);
                     currentDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.PHENOTYPE);
+                    currentDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.DISEASE);
 
                     currentDoc.hatch(currentDocIndex);
                 }
@@ -281,8 +288,13 @@ public class BaseUI extends Application {
         List<Annotation> sentAnnotations = activeSent.getAnnotations();
 //        boolean hasAnnotations = sentAnnotations.size()>0;
         List<Integer> phenotypeTokens = new ArrayList<>();
+        List<Integer> diseaseTokens = new ArrayList<>();
+
         if(sentAnnotations.size()>0) {
-            sentAnnotations.stream().forEach(a-> phenotypeTokens.addAll(a.getTokenIDs()));
+            sentAnnotations.stream().filter(a->a.getType()==AnnotationType.PHENOTYPE).forEach(a-> phenotypeTokens.addAll(a.getTokenIDs()));
+        }
+        if(sentAnnotations.size()>0) {
+            sentAnnotations.stream().filter(a->a.getType()==AnnotationType.DISEASE).forEach(a-> diseaseTokens.addAll(a.getTokenIDs()));
         }
         activeSent.getTokens().stream().forEach(tok ->
                 {
@@ -292,42 +304,49 @@ public class BaseUI extends Application {
                     btnToken.setText(tok.getOriginalText());
 
                     String buttonStyle = "";
+//
+//                    if (tok.isShortForm()) {
+//                        buttonStyle = buttonStyle + "-fx-base: #b6e7c9;";
 
-                    if (tok.isShortForm()) {
-                        buttonStyle = buttonStyle + "-fx-base: #b6e7c9;";
+//                    } else
 
-                    } else if (longFormTokenIndices.contains(tok.getId())) {
-                        buttonStyle = buttonStyle + "-fx-base: #e6d7f2;";
-                    }
 
                     if (!tok.getLexicalEntityList().isEmpty()) {
-                        buttonStyle = buttonStyle + "-fx-text-fill: #0000ff;";
-
-                    }
-
-                    if (phenotypeTokens.contains(tok.getId())) {
-                        buttonStyle = buttonStyle + "-fx-text-fill: #ff9900;";
-
-                    }
-
-
-                    if (!tok.getNormalizedText().isEmpty()) {
                         buttonStyle = buttonStyle + "-fx-underline: true;";
-                        btnToken.setTooltip(new Tooltip(String.format("%s:%s -> %s", tok.getLemma(), tok.getPartOfSpeech(), tok.getNormalizedText() )));
-                    }
-                    else
-                    {                    btnToken.setTooltip(new Tooltip(String.format("%s:%s", tok.getLemma(), tok.getPartOfSpeech())));
-
+//                        buttonStyle = buttonStyle + "-fx-text-fill: #0000ff;";
 
                     }
-                        btnToken.setStyle(buttonStyle);
+
+                    if (diseaseTokens.contains(tok.getId()) && phenotypeTokens.contains(tok.getId())){
+                        buttonStyle = buttonStyle + "-fx-base: #800080;";
+                    }
+
+                    else if (diseaseTokens.contains(tok.getId())) {
+                        buttonStyle = buttonStyle + "-fx-base: #FF0000;";
+                    }
+                    else if (phenotypeTokens.contains(tok.getId())) {
+                        buttonStyle = buttonStyle + "-fx-base: #FF8C00;";
+//                        buttonStyle = buttonStyle + "-fx-font-weight: bold;";
+
+                    }
+
+
+//                    if (!tok.getNormalizedText().isEmpty()) {
+//                        buttonStyle = buttonStyle + "-fx-underline: true;";
+//                        btnToken.setTooltip(new Tooltip(String.format("%s:%s -> %s", tok.getLemma(), tok.getPartOfSpeech(), tok.getNormalizedText() )));
+//                    }
+//                    else
+                    {
+                        btnToken.setTooltip(new Tooltip(String.format("%s:%s", tok.getLemma(), tok.getPartOfSpeech())));
+                    }
+                    btnToken.setStyle(buttonStyle);
 
 
                     btnToken.setOnAction(new EventHandler<ActionEvent>() {
 
                         @Override
                         public void handle(ActionEvent e) {
-                            updateDependencies(((Button) e.getSource()).getId());
+                            updateDependenciesAndAnnotations(((Button) e.getSource()).getId());
                         }
                     });
                     tokenPane.getChildren().add(btnToken);
@@ -335,22 +354,22 @@ public class BaseUI extends Application {
                 }
         );
 
-        activeSent.generateDependencies();
-        activeSent.generateParseTree();
+//        activeSent.generateDependencies();
+//        activeSent.generateParseTree();
 
-        ListView<String> dependencyList = new ListView<String>();
-        ObservableList<String> items = FXCollections.observableArrayList(activeSent.getDependencyRelations().stream().map(d -> d.toString()).collect(Collectors.toList()));
-        dependencyList.setItems(items);
-        dependencyList.setPrefWidth(300);
+//        ListView<String> dependencyList = new ListView<String>();
+//        ObservableList<String> items = FXCollections.observableArrayList(activeSent.getDependencyRelations().stream().map(d -> d.toString()).collect(Collectors.toList()));
+//        dependencyList.setItems(items);
+//        dependencyList.setPrefWidth(300);
 
-        Text parseTree = new Text();
-        parseTree.setText(activeSent.getAnnotatedTree().toString());
-        parseTree.setWrappingWidth(width * .98);
+//        Text parseTree = new Text();
+//        parseTree.setText(activeSent.getAnnotatedTree().toString());
+//        parseTree.setWrappingWidth(width * .98);
 
         clearGPSentences(TOKENS_INDEX, true);
         GPSentences.addRow(TOKENS_INDEX, tokenPane);
-        GPSentences.addRow(PARSE_TREE_INDEX, parseTree);
-        GPSentences.addRow(DEPENDENCIES_INDEX, dependencyList);
+//        GPSentences.addRow(PARSE_TREE_INDEX, parseTree);
+//        GPSentences.addRow(DEPENDENCIES_INDEX, dependencyList);
         GPSentences.setVgap(5);
         GPSentences.setMargin(tokenPane, new Insets(10, 5, 10, 5));
 
@@ -368,49 +387,70 @@ public class BaseUI extends Application {
 
     }
 
-    private void updateDependencies(String textId) {
+    private void updateDependenciesAndAnnotations(String textId) {
 
         System.out.println("Update dependencies called with token text: " + textId);
         int id = Integer.parseInt(textId);
+
         APSentence sent = currentDoc.getSentenceWithID(currentSentId);
-        ListView<String> dependencyList = new ListView<String>();
-        ObservableList<String> items = FXCollections.observableArrayList(sent.getDependencyRelations()
-                .stream()
-                .filter(g -> (g.getDependent().getId() == id || g.getGovernor().getId() == id))
-                .map(d -> d.toString()).collect(Collectors.toList()));
-        dependencyList.setItems(items);
+
+//        ListView<String> dependencyList = new ListView<String>();
+//        ObservableList<String> items = FXCollections.observableArrayList(sent.getDependencyRelations()
+//                .stream()
+//                .filter(g -> (g.getDependent().getId() == id || g.getGovernor().getId() == id))
+//                .map(d -> d.toString()).collect(Collectors.toList()));
+//        dependencyList.setItems(items);
 
 
         //Point: Get token and see if Lexical Entities are there
         APToken tok = sent.getTokens().stream().filter(x -> x.getId() == id).collect(Collectors.toList()).get(0);
 
-        GPSentences.getChildren().remove(DEPENDENCIES_INDEX);
+        try {
+            GPSentences.getChildren().remove(ANNOTATION_INDEX);
+
+        }
+        catch (Exception e){
+            System.out.println("Cannot remove annotation panel.");
+        }
 
         if (!tok.getLexicalEntityList().isEmpty() || !sent.getAnnotations().isEmpty()) {
-            ListView<String> entityList = new ListView<String>();
+            ListView<String> geneList = new ListView<String>();
+            ListView<String> phenotypeList = new ListView<String>();
+            ListView<String> diseaseList = new ListView<String>();
 
             if(!tok.getLexicalEntityList().isEmpty()){
-                entityList.setItems(FXCollections.observableArrayList(((APGene) tok.getLexicalEntityList().get(0)).stringList()));
+                geneList.setItems(FXCollections.observableArrayList(((APGene) tok.getLexicalEntityList().get(0)).stringList()));
             }
 
-            if(!sent.getAnnotations().isEmpty()){
+            if(!sent.getAnnotations().stream().filter(x->x.getType().equals(AnnotationType.PHENOTYPE)).collect(Collectors.toList()).isEmpty()){
                 List<Annotation> tokenAnnotations = sent.getAnnotations().stream().filter(m->m.getType().equals(AnnotationType.PHENOTYPE)).filter(a-> a.getTokenIDs().contains(tok.getId())).collect(Collectors.toList());
                 for(Annotation annotation:tokenAnnotations)
                 {
-                    entityList.getItems().addAll(FXCollections.observableArrayList(((APPhenotype)annotation.getEntity()).stringList()));
+                    phenotypeList.getItems().addAll(FXCollections.observableArrayList(((APPhenotype)annotation.getEntity()).stringList()));
+                }
+
+            }
+            if(!sent.getAnnotations().stream().filter(x->x.getType().equals(AnnotationType.DISEASE)).collect(Collectors.toList()).isEmpty()){
+                List<Annotation> tokenAnnotations = sent.getAnnotations().stream().filter(m->m.getType().equals(AnnotationType.DISEASE)).filter(a-> a.getTokenIDs().contains(tok.getId())).collect(Collectors.toList());
+                for(Annotation annotation:tokenAnnotations)
+                {
+                    diseaseList.getItems().addAll(FXCollections.observableArrayList(((APDisease)annotation.getEntity()).stringList()));
                 }
 
             }
 
 
             HBox depLexHolder = new HBox();
-            dependencyList.setPrefWidth(450);
-            entityList.setPrefWidth(450);
-            depLexHolder.getChildren().addAll(dependencyList, entityList);
-            GPSentences.addRow(DEPENDENCIES_INDEX, depLexHolder);
-        } else {
-            GPSentences.addRow(DEPENDENCIES_INDEX, dependencyList);
+            geneList.setPrefWidth(450);
+            diseaseList.setPrefWidth(450);
+            phenotypeList.setPrefWidth(450);
+            geneList.setPrefWidth(450);
+            depLexHolder.getChildren().addAll(geneList, phenotypeList,diseaseList);
+            GPSentences.addRow(ANNOTATION_INDEX, depLexHolder);
         }
+// else {
+//            GPSentences.addRow(DEPENDENCIES_INDEX, dependencyList);
+//        }
 
     }
 

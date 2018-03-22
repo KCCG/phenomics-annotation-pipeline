@@ -25,7 +25,7 @@ public class APPhenotype extends LexicalEntity{
 
     public List<String> stringList() {
         List<String> lstData = new ArrayList<>();
-        lstData.add(String.format("%s: %s", "HPO", hpoID));
+        lstData.add(String.format("========%s========", hpoID ));
         lstData.add(String.format("%s: %s", "Complete URI", phenotype.getCompleteURI()));
         lstData.add(String.format("%s: %s", "Preferred Label", phenotype.getPreferredLabel()));
         lstData.add(String.format("%s: %s", "Other Labels",  String.join("\n",phenotype.getAlternativeLabels())));

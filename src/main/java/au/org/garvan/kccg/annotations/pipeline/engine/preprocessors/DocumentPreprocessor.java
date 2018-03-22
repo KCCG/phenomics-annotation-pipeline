@@ -1,6 +1,8 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.preprocessors;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.DiseaseHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.PhenotypeHandler;
+
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APPhrase;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.profiles.ProcessingProfile;
@@ -40,6 +42,10 @@ public class DocumentPreprocessor {
     @Getter
     private static PhenotypeHandler phenotypeHandler;
 
+    private static DiseaseHandler mondoHandler;
+
+
+
     //    private static NormalizationHandler LVGNormalizationHandler;
 
     static {
@@ -49,6 +55,11 @@ public class DocumentPreprocessor {
 
         slf4jLogger.info(String.format("Phenotype Handler init() called."));
         phenotypeHandler = new PhenotypeHandler();
+
+
+
+        mondoHandler = new DiseaseHandler("mondo.json");
+        mondoHandler.readFile();
 
 
         if(!CoreNLPManager.isInitialized())
@@ -118,6 +129,11 @@ public class DocumentPreprocessor {
                 sent.getTokens().add(tok);
                 id++;
             }
+//            if(docProfile.isProcessDependencies())
+//                sent.generateDependencies();
+//            if(docProfile.isProcessParseTree())
+//                sent.generateParseTree();
+
         }
         slf4jLogger.info(String.format("Hatching Article ID: %s Linguistic is done. Starting Annotations. ", articleId));
 
@@ -125,10 +141,16 @@ public class DocumentPreprocessor {
         {
             phenotypeHandler.processAndUpdateDocument(doc);
         }
+        if(docProfile.getAnnotationRequests().contains(AnnotationType.DISEASE))
+        {
+            mondoHandler.processAndUpdateDocument(doc, articleId);
+        }
         slf4jLogger.info(String.format("Hatching Article ID: %s Phenotype Annotation is done. ", articleId));
 
 
     }
+
+
 
 
     private static List<Integer> getIndexOfHyphen(String input){

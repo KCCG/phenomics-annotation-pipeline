@@ -4,6 +4,9 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDB
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.EntityType;
 import au.org.garvan.kccg.annotations.pipeline.engine.profiles.ProcessingProfile;
+import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
+import edu.stanford.nlp.simple.Sentence;
+import edu.stanford.nlp.simple.Token;
 import lombok.Getter;
 import lombok.Setter;
 import org.json.simple.JSONArray;
@@ -94,6 +97,17 @@ public class APDocument extends LinguisticEntity {
         } else {
             return null;
         }
+    }
+
+    public Pair<APSentence, List<APToken>> getSentenceAndTokenWithTokenOffsets(Integer offsetBegin, Integer offsetEnd){
+        List<APToken> tokens;
+        for(APSentence docSentence: sentences){
+            tokens = docSentence.getTokensInOffsetRange(offsetBegin-docSentence.getDocOffset().x,
+                    offsetEnd-docSentence.getDocOffset().x);
+            if (tokens.size()>0)
+                return new Pair<>(docSentence,tokens);
+        }
+        return null;
     }
 
 
