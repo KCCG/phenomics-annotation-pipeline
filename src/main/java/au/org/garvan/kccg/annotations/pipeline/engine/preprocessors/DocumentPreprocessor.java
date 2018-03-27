@@ -42,6 +42,7 @@ public class DocumentPreprocessor {
     @Getter
     private static PhenotypeHandler phenotypeHandler;
 
+    @Getter
     private static DiseaseHandler mondoHandler;
 
 

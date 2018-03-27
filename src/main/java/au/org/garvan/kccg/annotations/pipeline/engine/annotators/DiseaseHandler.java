@@ -3,6 +3,7 @@ package au.org.garvan.kccg.annotations.pipeline.engine.annotators;
 import au.org.garvan.kccg.annotations.pipeline.engine.connectors.AffinityConnector;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Disease.APDisease;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.APMultiWordAnnotationMapper;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.AnnotationHit;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.AnnotationTerm;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.AnnotationTermComparitor;
@@ -36,6 +37,7 @@ public class DiseaseHandler{
 
     private static AffinityConnector affinityConnector;
     private Map<String, APDisease> mondoDiseases;
+    private Map<String, String> diseaseLabelToMondo;
 
     private static final String STANDARD = "MONDO";
     private static final String VERSION = "2018";
@@ -49,6 +51,7 @@ public class DiseaseHandler{
     public void readFile() {
 
         try {
+            diseaseLabelToMondo = new HashMap<>();
             slf4jLogger.info(String.format("Reading lexicon. Filename:%s", fileName));
             String path = "lexicons/" + fileName;
             InputStream input = getClass().getResourceAsStream("resources/" + path);
@@ -68,7 +71,16 @@ public class DiseaseHandler{
                 if (!tempDisease.isDeprecated()) {
                     if (Strings.isNullOrEmpty(tempDisease.getLabel()))
                         tempDisease.setDeprecated(true);
-                    mondoDiseases.put(tempDisease.getMondoID(), tempDisease);
+                    else {
+                        mondoDiseases.put(tempDisease.getMondoID(), tempDisease);
+                        List<String> names = tempDisease.getSynonyms().stream().map(x -> x.getVal().toLowerCase()).collect(Collectors.toList());
+                        names.add(tempDisease.getLabel().toLowerCase());
+                        for (String name : names) {
+                            if (!Strings.isNullOrEmpty(name))
+                                diseaseLabelToMondo.put(name, tempDisease.getMondoID());
+                        }
+                    }
+
                 }
             }
         } catch (JsonParseException e) {
@@ -191,6 +203,9 @@ public class DiseaseHandler{
             return new JSONArray();
         }
 
+    }
+    public List<APMultiWordAnnotationMapper> searchDisease(String infix){
+        return diseaseLabelToMondo.entrySet().stream().filter(x->x.getKey().contains(infix.toLowerCase())).map(p-> new APMultiWordAnnotationMapper(p.getValue(),p.getKey())).collect(Collectors.toList());
     }
 
     public APDisease getDisease(String key) {

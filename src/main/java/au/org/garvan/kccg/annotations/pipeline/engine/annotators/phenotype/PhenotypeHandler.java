@@ -1,6 +1,5 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype;
 
-import au.org.garvan.kccg.annotations.pipeline.engine.annotators.BaseLexiconHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.cr.LongestMatchSort;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.cr.LongestSameMatchSort;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.cr.beans.ConceptAnnotation;
@@ -27,7 +26,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.util.
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.util.StatsUtil;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.util.TAConstants;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
-import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.APPhenotypeMapper;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.APMultiWordAnnotationMapper;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
@@ -37,19 +36,12 @@ import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
-
-import static org.apache.naming.ContextBindings.getClassLoader;
 
 public class PhenotypeHandler {
     private static final Logger logger = LoggerFactory.getLogger(PhenotypeHandler.class);
@@ -309,8 +301,8 @@ public class PhenotypeHandler {
         return valid;
     }
 
-    public List<APPhenotypeMapper> searchPhenotype(String infix){
-         return phenotypeLabelToHpo.entrySet().stream().filter(x->x.getKey().contains(infix.toLowerCase())).map(p-> new APPhenotypeMapper(p.getValue(),p.getKey())).collect(Collectors.toList());
+    public List<APMultiWordAnnotationMapper> searchPhenotype(String infix){
+         return phenotypeLabelToHpo.entrySet().stream().filter(x->x.getKey().contains(infix.toLowerCase())).map(p-> new APMultiWordAnnotationMapper(p.getValue(),p.getKey())).collect(Collectors.toList());
     }
     public String getPhenotypeLabelWithId(String id){
         if(hpoToPhenotypeConcept.containsKey(id)){

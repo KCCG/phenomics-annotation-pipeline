@@ -23,17 +23,17 @@ import static org.junit.Assert.*;
 
 public class AffinityConnectorTest {
 
-    AffinityConnector affinityConnector = new AffinityConnector();
-    APDocument apDocument;
-    @Before
-    public void init(){
-        apDocument= new APDocument("Angiosarcoma is a rare vascular soft tissue tumor of endothelial origin most commonly seen in the elderly as a primary cutaneous head and neck malignancy. Furthermore, a peritoneal angiosarcoma is an exceedingly rare entity. This is the second case of primary peritoneal angiosarcoma reported in literature that is not associated with prior radiotherapy. Herein, we describe a case of primary peritoneal angiosarcoma metastatic to both the liver and bone in a male patient with metachronous renal cell carcinoma and parathyroid adenoma.");
-//        apDocument.hatch(1);
-        apDocument.setCleanedText(apDocument.getOriginalText());
-    }
-    @Test
-    public void annotateAbstract() {
-            List<AnnotationHit> hits = affinityConnector.annotateAbstract(apDocument.getCleanedText(), 1, "end");
-
-    }
+//    AffinityConnector affinityConnector = new AffinityConnector();
+//    APDocument apDocument;
+//    @Before
+//    public void init(){
+//        apDocument= new APDocument("Angiosarcoma is a rare vascular soft tissue tumor of endothelial origin most commonly seen in the elderly as a primary cutaneous head and neck malignancy. Furthermore, a peritoneal angiosarcoma is an exceedingly rare entity. This is the second case of primary peritoneal angiosarcoma reported in literature that is not associated with prior radiotherapy. Herein, we describe a case of primary peritoneal angiosarcoma metastatic to both the liver and bone in a male patient with metachronous renal cell carcinoma and parathyroid adenoma.");
+////        apDocument.hatch(1);
+//        apDocument.setCleanedText(apDocument.getOriginalText());
+//    }
+//    @Test
+//    public void annotateAbstract() {
+//            List<AnnotationHit> hits = affinityConnector.annotateAbstract(apDocument.getCleanedText(), 1, "end");
+//
+//    }
 }
