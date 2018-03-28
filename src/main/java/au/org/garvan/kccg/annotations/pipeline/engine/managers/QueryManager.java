@@ -8,6 +8,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Art
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
 import au.org.garvan.kccg.annotations.pipeline.model.query.*;
+import com.google.common.base.Strings;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
@@ -244,9 +245,10 @@ public class QueryManager {
         AnnotationType smartQueryType = AnnotationType.ENTITY;
         List<RankedAutoCompleteEntity> returnList = new ArrayList<>();
 
-        if (infix.contains("#")) {
-            String[] splits = infix.split("#");
-            if (splits.length > 1) {
+        if (infix.contains(":")) {
+            String originalInfix = infix;
+            String[] splits = infix.split(":",2);
+            if (splits.length > 1 && !Strings.isNullOrEmpty(splits[1])) {
                 String suffix = "";
                 suffix = splits[0].toLowerCase();
                 infix = splits[1];
@@ -273,7 +275,9 @@ public class QueryManager {
                     case "hpo":
                         smartQueryType = AnnotationType.PHENOTYPE;
                         break;
-
+                    default:
+                        infix = originalInfix;
+                        smartSearch = false;
                 }
 
             }
