@@ -45,8 +45,8 @@ public class GraphDBNatives {
 
     private static Properties props = new Properties();
     private static IDBAccess remote;
-    @Value("${spring.dbhandlers.graphdb.graphprinting}")
-    private static boolean ENABLE_PRINTING;
+//    @Value("${spring.dbhandlers.graphdb.graphprinting}")
+    private static boolean ENABLE_PRINTING = false;
 
     @Autowired
     public GraphDBNatives(@Value("${spring.dbhandlers.graphdb.endpoint}") String neo4jDbEndpoint,
@@ -146,24 +146,27 @@ public class GraphDBNatives {
 
 
 
-            //Create publicational node and creation clause
-            JcNode nodePublication = new JcNode("nodePublication");
-            IClause publicationClause = MERGE.node(nodePublication).label(GraphDBConstants.PUBLICATION_NODE_LABEL)
-                    .property(GraphDBConstants.PUBLICATION_NODE_TITLE).value(article.getPublication().getTitle())
-                    .property(GraphDBConstants.PUBLICATION_NODE_ISO_ABBREVIATION).value(article.getPublication().getIsoAbbreviation())
-                    .property(GraphDBConstants.PUBLICATION_NODE_ISSN_TYPE).value(article.getPublication().getIssnType())
-                    .property(GraphDBConstants.PUBLICATION_NODE_ISSN_NUMBER).value(article.getPublication().getIssnNumber());
-            IClause publicationLinkClause = MERGE.node(nodeArticle).relation().out().type(GraphDBConstants.PUBLICATION_EDGE_TYPE)
-                    .property(GraphDBConstants.PUBLICATION_EDGE_DATE_PUBLISHED)
-                    .value(article.getDatePublished())
-                    .node(nodePublication);
-
             queryClauses.add(articleClause);
 
 //            queryClauses.addAll(authorsClauses);
             queryClauses.addAll(meshHeadingClauses);
-            queryClauses.add(publicationClause);
-            queryClauses.add(publicationLinkClause);
+
+
+            //Create publicational node and creation clause
+            if(article.getPublication().isValidKey()) {
+                JcNode nodePublication = new JcNode("nodePublication");
+                IClause publicationClause = MERGE.node(nodePublication).label(GraphDBConstants.PUBLICATION_NODE_LABEL)
+                        .property(GraphDBConstants.PUBLICATION_NODE_TITLE).value(article.getPublication().getTitle())
+                        .property(GraphDBConstants.PUBLICATION_NODE_ISO_ABBREVIATION).value(article.getPublication().getIsoAbbreviation())
+//                        .property(GraphDBConstants.PUBLICATION_NODE_ISSN_TYPE).value(article.getPublication().getIssnType())
+                        .property(GraphDBConstants.PUBLICATION_NODE_ISSN_NUMBER).value(article.getPublication().getIssnNumber());
+                IClause publicationLinkClause = MERGE.node(nodeArticle).relation().out().type(GraphDBConstants.PUBLICATION_EDGE_TYPE)
+                        .property(GraphDBConstants.PUBLICATION_EDGE_DATE_PUBLISHED)
+                        .value(article.getDatePublished())
+                        .node(nodePublication);
+                queryClauses.add(publicationClause);
+                queryClauses.add(publicationLinkClause);
+            }
 
             fillEntitiesGraphData(queryClauses, article, nodeArticle);
 
@@ -293,7 +296,7 @@ public class GraphDBNatives {
 
             }
         } else if (result.getDBErrors().size() > 0) {
-            slf4jLogger.info(String.format("Database errors while executing NEO4J query. Errors:%s", result.getGeneralErrors().toString()));
+            slf4jLogger.info(String.format("Database errors while executing NEO4J query. Errors:%s", result.getDBErrors().toString()));
 
         } else {
             if (ENABLE_PRINTING)

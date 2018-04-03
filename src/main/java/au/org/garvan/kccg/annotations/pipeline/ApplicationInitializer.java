@@ -1,7 +1,9 @@
 package au.org.garvan.kccg.annotations.pipeline;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.connectors.lambda.WorkerLambdaConnector;
 import au.org.garvan.kccg.annotations.pipeline.engine.managers.ArticleManager;
 import au.org.garvan.kccg.annotations.pipeline.engine.managers.QueryManager;
+import au.org.garvan.kccg.annotations.pipeline.engine.utilities.EngineEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +46,15 @@ public class ApplicationInitializer {
         } catch(RuntimeException ex) {
             log.error("Failed to initialize Query engine.", ex);
             System.exit(1);
+        }
+
+        if(EngineEnvironment.getSelfIngestionEnabled())
+        {
+            log.info("Self Ingestion is enabled.Invoking Lambda ");
+            WorkerLambdaConnector.invokeWorkerLambda(EngineEnvironment.getWorkerID(), true);
+        }
+        else{
+            log.info("Self Ingestion is disabled. ");
         }
 
     }
