@@ -248,9 +248,8 @@ public class QueryManager {
         if (infix.contains(":")) {
             String originalInfix = infix;
             String[] splits = infix.split(":",2);
-            if (splits.length > 1 && !Strings.isNullOrEmpty(splits[1])) {
-                String suffix = "";
-                suffix = splits[0].toLowerCase();
+            if (splits.length > 1) {
+                String suffix = splits[0].toLowerCase();
                 infix = splits[1];
                 smartSearch = true;
                 switch (suffix) {
@@ -280,7 +279,12 @@ public class QueryManager {
                         smartSearch = false;
                 }
 
+
             }
+        }
+        if (infix.length()<1)
+        {
+            smartQueryType = AnnotationType.ENTITY;
         }
 
 
