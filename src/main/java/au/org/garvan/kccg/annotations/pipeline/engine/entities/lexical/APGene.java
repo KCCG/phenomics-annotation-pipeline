@@ -79,7 +79,7 @@ public class APGene extends LexicalEntity {
 
     public List<String> stringList() {
         List<String> lstData = new ArrayList<>();
-        lstData.add(String.format("%s: %d", "HGNCID", HGNCID));
+        lstData.add(String.format("========HGNC:%s========", HGNCID ));
         lstData.add(String.format("%s: %s", "Approved Symbol", approvedSymbol));
         lstData.add(String.format("%s: %s", "Approved Name", approvedName));
         lstData.add(String.format("%s: %s", "Status", status));

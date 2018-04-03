@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class APPhenotypeMapper {
+public class APMultiWordAnnotationMapper {
     private String id;
     private String text;
 }

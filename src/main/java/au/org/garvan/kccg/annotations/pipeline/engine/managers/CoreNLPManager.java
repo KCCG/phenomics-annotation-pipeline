@@ -43,14 +43,16 @@ public final class CoreNLPManager {
 
         /*
         Point: Changed sentence hatching. No need to process dependency relations / parsing unless required.
+        TODO: Make it configurable
          */
         Properties sentProps = PropertiesUtils.asProperties(
                 "annotators", "tokenize,ssplit,pos,lemma",
                 "tokenize.language", "en");
-
+//
 //        Properties sentProps = PropertiesUtils.asProperties(
 //                "annotators", "tokenize,ssplit,pos,lemma,parse,natlog",
 //                "tokenize.language", "en");
+
 //        sentProps.setProperty("tokenize.whitespace", "true");
         sentencePipeline = new StanfordCoreNLP(sentProps);
 

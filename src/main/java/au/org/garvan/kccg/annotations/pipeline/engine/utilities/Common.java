@@ -5,6 +5,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.profiles.ProcessingProfile;
 import org.json.simple.JSONArray;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.List;
 
@@ -14,6 +15,8 @@ import java.util.List;
 public final class Common {
     private static List<Character> puncs = Arrays.asList('(',')','.',';',':',',','-','_','[',']','{','}',' ' );
 
+
+    public static List<String> STOPPING_POS = Arrays.asList("CC", "CD", "DT" , "IN", "TO");
     public static String getPunctuationLessText(APToken token) {
         return token.getOriginalText()
                 .trim()

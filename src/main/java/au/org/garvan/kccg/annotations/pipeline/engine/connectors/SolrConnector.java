@@ -82,7 +82,7 @@ public class SolrConnector implements BaseConnector {
         HttpUrl.Builder httpBuider = HttpUrl.parse(documentPoolURL + selectQuery).newBuilder();
         httpBuider.addQueryParameter("wt", "json");
         httpBuider.addQueryParameter("q", queryText);
-        httpBuider.addQueryParameter("rows", Integer.toString(50000));
+        httpBuider.addQueryParameter("rows", Integer.toString(500));
 
 
         Request request = new Request.Builder()
