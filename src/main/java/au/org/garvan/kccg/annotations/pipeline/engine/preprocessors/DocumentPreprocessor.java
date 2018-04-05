@@ -122,7 +122,7 @@ public class DocumentPreprocessor {
                 tok.setBeforeHyphen(hyphenIndex.contains(sent.getDocOffset().x+tok.getSentOffset().y));
                 tok.setAfterHyphen(hyphenIndex.contains(sent.getDocOffset().x+tok.getSentOffset().x-1));
 
-                if(docProfile.getAnnotationRequests().contains(AnnotationType.GENE)) {
+                if(tok.getOriginalText().length()>1 && docProfile.getAnnotationRequests().contains(AnnotationType.GENE)) {
                     APGene geneCheck = HGNCGeneHandler.getGene(tok.getOriginalText());
                     if (geneCheck != null)
                         tok.getLexicalEntityList().add(geneCheck);
