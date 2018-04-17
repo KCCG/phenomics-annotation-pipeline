@@ -46,7 +46,7 @@ public class GraphDBNatives {
     private static Properties props = new Properties();
     private static IDBAccess remote;
 //    @Value("${spring.dbhandlers.graphdb.graphprinting}")
-    private static boolean ENABLE_PRINTING = false;
+    private static boolean ENABLE_PRINTING = true;
 
     @Autowired
     public GraphDBNatives(@Value("${spring.dbhandlers.graphdb.endpoint}") String neo4jDbEndpoint,

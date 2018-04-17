@@ -65,10 +65,13 @@ public class DynamoDBHandler {
     public JSONObject getArticle(int pubMedId) {
         Table table = dynamoDB.getTable(articleTableName);
         Item item = table.getItem("pubMedID", Integer.toString(pubMedId));
-        if (item == null)
+        if (item == null) {
+            slf4jLogger.info(String.format("Article with ID:%d was missing in db.", pubMedId));
             return new JSONObject();
-        else
+        } else {
+            slf4jLogger.debug(String.format("Article with ID:%d was found in db.", pubMedId));
             return (JSONObject) JSONValue.parse(item.toJSON());
+        }
 
     }
 

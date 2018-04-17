@@ -1,5 +1,8 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.caches.L1cache.ArticleResponseCache;
+import au.org.garvan.kccg.annotations.pipeline.engine.caches.L1cache.FiltersResponseCache;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.cache.FiltersCacheObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManagerResultSet;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.APMultiWordAnnotationMapper;
@@ -8,7 +11,6 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Art
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
 import au.org.garvan.kccg.annotations.pipeline.model.query.*;
-import com.google.common.base.Strings;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
@@ -36,41 +38,8 @@ public class QueryManager {
     }
 
 
-//    public PaginatedSearchResult processQuery(SearchQuery query, Integer pageSize, Integer pageNo) {
-//        slf4jLogger.info(String.format("Processing search query with id:%s and content:%s", query.getQueryId(), query.toString()));
-//
-//        PaginationRequestParams qParams = new PaginationRequestParams(pageSize, pageNo);
-//        slf4jLogger.info(String.format("Query id:%s params are pageSize:%d, pageNo:%d", query.getQueryId(), qParams.getPageSize(), qParams.getPageNo()));
-//
-//
-//        List<SearchResult> results = new ArrayList<>();
-//        DBManagerResultSet resultSet = new DBManagerResultSet();
-//
-//
-//        Map<SearchQueryParams, Object> params = new HashMap<>();
-//        if (query.getAuthor() != null)
-//            params.put(SearchQueryParams.AUTHOR, query.getAuthor());
-//        if (query.getGene() != null)
-//            params.put(SearchQueryParams.GENES, new Pair<String, List<String>>(query.getGene().getCondition(), query.getGene().getSymbols()));
-//        if (query.getDateRange() != null)
-//            params.put(SearchQueryParams.DATERANGE, new Pair<>(query.getDateRange().getStartDate(), query.getDateRange().getEndDate()));
-//        if (query.getPublication() != null)
-//            params.put(SearchQueryParams.PUBLICATION, query.getPublication());
-//
-//        if (params.size() > 0) {
-//            resultSet = dbManager.searchArticles(params, qParams);
-//            for (RankedArticle entry : resultSet.getRankedArticles()) {
-//                results.add(constructSearchResult(entry));
-//            }
-//        }
-//
-//        slf4jLogger.info(String.format("Finished processing search query with id: %s. Total Articles:%d Result set:%d",
-//                query.getQueryId(), qParams.getTotalArticles(), results.size()));
-//        return constructFinalResult(results, resultSet, qParams);
-//
-//    }
 
-    public PaginatedSearchResultV1 processQueryV1(SearchQueryV1 query, Integer pageSize, Integer pageNo) {
+    public PaginatedSearchResult processQuery(SearchQueryV1 query, Integer pageSize, Integer pageNo) {
         slf4jLogger.info(String.format("Processing search query with id:%s and content:%s", query.getQueryId(), query.toString()));
 
         PaginationRequestParams qParams = new PaginationRequestParams(pageSize, pageNo);
@@ -95,39 +64,92 @@ public class QueryManager {
             resultSet = dbManager.searchArticlesWithFilters(query.getQueryId(), searchItems, filterItems, qParams);
             for (RankedArticle entry : resultSet.getRankedArticles()) {
                 if (entry.getArticle() != null)
-                    results.add(constructSearchResultV1(entry));
+                    results.add(constructSearchResult(entry));
             }
         }
         slf4jLogger.info(String.format("Finished processing search query with id: %s. Total Articles:%d Result set:%d",
                 query.getQueryId(), qParams.getTotalArticles(), results.size()));
-        return constructFinalResultV1(results, resultSet, qParams, query);
+        return constructFinalResult(results, resultSet, qParams, query);
 
     }
 
 
-//    public PaginatedSearchResult constructFinalResult(List<SearchResult> results, DBManagerResultSet resultSet, PaginationRequestParams qParams) {
-//        PaginatedSearchResult finalResult = new PaginatedSearchResult();
-//        finalResult.setArticles(results);
-//        finalResult.setPagination(qParams);
-//
-//        List<ConceptFilter> lstGeneFilter = new ArrayList<>();
-//        for (Map.Entry<String, Integer> entry : resultSet.getGeneCounts().entrySet()) {
-//            String symbol = entry.getKey();
-//            Integer count = entry.getValue();
-//            String id = String.valueOf(DocumentPreprocessor.getHGNCGeneHandler().getGene(symbol).getHGNCID());
-//            lstGeneFilter.add(new ConceptFilter(
-//                    id, AnnotationType.GENE.toString(),
-//                    symbol,
-//                    count, count));
-//        }
-//        List<ConceptFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
-//        finalResult.setFilters(sortedLstGeneFilter);
-//        return finalResult;
-//
-//    }
+    public PaginatedSearchResult processQueryV2(SearchQueryV2 query, Integer pageSize, Integer pageNo, Boolean isHistorical) {
+        boolean filterCacheHit = false;
+        boolean articleCacheHit = false;
 
-    public PaginatedSearchResultV1 constructFinalResultV1(List<SearchResultV1> results, DBManagerResultSet resultSet, PaginationRequestParams qParams, SearchQueryV1 query) {
-        PaginatedSearchResultV1 finalResult = new PaginatedSearchResultV1();
+        slf4jLogger.info(String.format("Processing search query with id:%s and content:%s", query.getQueryId(), query.toString()));
+
+        if (query.getSearchItems().size() > 0) {
+
+            PaginationRequestParams qParams = new PaginationRequestParams(pageSize, pageNo);
+            qParams.setIncludeHistorical(isHistorical);
+            slf4jLogger.info(String.format("Query id:%s params are pageSize:%d, pageNo:%d, isHistorical:%s", query.getQueryId(), qParams.getPageSize(), qParams.getPageNo(), qParams.getIncludeHistorical().toString()));
+
+
+            FiltersCacheObject cachedFilters = FiltersResponseCache.getFilters(query, qParams.getIncludeHistorical());
+            List<SearchResultV1> results = new ArrayList<>();
+            if (cachedFilters != null) {
+                filterCacheHit = true;
+                results = ArticleResponseCache.getArticles(query, qParams);
+                if (results != null)
+                    articleCacheHit = true;
+                else
+                    results = new ArrayList<>();
+            }
+
+
+            if (filterCacheHit && articleCacheHit) {
+                slf4jLogger.info(String.format("L1 Cache Hit(Complete): Finished processing search query with id: %s. Total Articles:%d Result set:%d",
+                        query.getQueryId(), cachedFilters.getArticlesCount(), results.size()));
+                return constructCachedFinalResultV2(results, cachedFilters, qParams, query);
+            } else if (filterCacheHit) {
+                DBManagerResultSet resultSet = new DBManagerResultSet();
+                resultSet = dbManager.searchArticlesWithFiltersV2(query.getQueryId(), query.getSearchItems(), query.getFilterItems(), qParams, false);
+                for (RankedArticle entry : resultSet.getRankedArticles()) {
+                    if (entry.getArticle() != null)
+                        results.add(constructSearchResult(entry));
+                }
+                resultSet.setConceptCounts(cachedFilters.getFinalFilters());
+                //Cache articles
+                ArticleResponseCache.putArticles(query, qParams, results);
+
+                slf4jLogger.info(String.format("L1 Cache Hit(Filters): Finished processing search query with id: %s. Total Articles:%d Result set:%d",
+                        query.getQueryId(), cachedFilters.getArticlesCount(), results.size()));
+                //Construct result and return
+                return constructFinalResultV2(results, resultSet, qParams, query);
+
+
+            } else if (!filterCacheHit && !articleCacheHit) {
+                DBManagerResultSet resultSet = new DBManagerResultSet();
+                resultSet = dbManager.searchArticlesWithFiltersV2(query.getQueryId(), query.getSearchItems(), query.getFilterItems(), qParams, true);
+                for (RankedArticle entry : resultSet.getRankedArticles()) {
+                    if (entry.getArticle() != null)
+                        results.add(constructSearchResult(entry));
+                }
+
+
+
+                FiltersCacheObject filtersForCache = new FiltersCacheObject(qParams.getTotalArticles(), resultSet.getConceptCounts());
+                //Cache result
+                FiltersResponseCache.putFilters(query, qParams.getIncludeHistorical(), filtersForCache);
+                ArticleResponseCache.putArticles(query, qParams, results);
+                //Log, Construct result and return
+
+                slf4jLogger.info(String.format("Finished processing search query with id: %s. Total Articles:%d Result set:%d",
+                        query.getQueryId(), qParams.getTotalArticles(), results.size()));
+                return constructFinalResultV2(results, resultSet, qParams, query);
+            }
+
+
+        }
+
+        return new PaginatedSearchResult();
+    }
+
+
+    public PaginatedSearchResult constructFinalResult(List<SearchResultV1> results, DBManagerResultSet resultSet, PaginationRequestParams qParams, SearchQueryV1 query) {
+        PaginatedSearchResult finalResult = new PaginatedSearchResult();
         finalResult.setArticles(results);
         finalResult.setPagination(qParams);
 
@@ -138,6 +160,40 @@ public class QueryManager {
         return finalResult;
 
     }
+
+
+
+
+
+
+    public PaginatedSearchResult constructFinalResultV2(List<SearchResultV1> results, DBManagerResultSet resultSet, PaginationRequestParams qParams, SearchQueryV2 query) {
+        PaginatedSearchResult finalResult = new PaginatedSearchResult();
+        finalResult.setArticles(results);
+        finalResult.setPagination(qParams);
+
+        List<ConceptFilter> lstGeneFilter = resultSet.getConceptCounts();
+        List<ConceptFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
+        finalResult.setFilters(sortedLstGeneFilter);
+        finalResult.setQueryId(query.getQueryId());
+        return finalResult;
+
+    }
+
+    public PaginatedSearchResult constructCachedFinalResultV2(List<SearchResultV1> cachedSearchResult, FiltersCacheObject cachedFilters, PaginationRequestParams qParams, SearchQueryV2 query) {
+        PaginatedSearchResult finalResult = new PaginatedSearchResult();
+        finalResult.setArticles(cachedSearchResult);
+
+        qParams.setTotalArticles(cachedFilters.getArticlesCount());
+        qParams.setTotalPages(qParams.getTotalArticles()/qParams.getPageSize());
+        finalResult.setPagination(qParams);
+
+        List<ConceptFilter> sortedLstGeneFilter = cachedFilters.getFinalFilters().stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
+        finalResult.setFilters(sortedLstGeneFilter);
+        finalResult.setQueryId(query.getQueryId());
+        return finalResult;
+
+    }
+
 
     public List<String> getAutocompleteList(String infix) {
         int baseRank = 1000;
@@ -170,33 +226,7 @@ public class QueryManager {
     }
 
 
-    private SearchResult constructSearchResult(RankedArticle rankedArticle) {
-        Article article = rankedArticle.getArticle();
-        List<JSONObject> annotations = rankedArticle.getJsonAnnotations();
-        // ^ This change is made to have one DTO throughout the hierarchy for simplicity of code.
-        SearchResult searchResult = new SearchResult();
-        searchResult.setPmid(article.getPubMedID());
-        searchResult.setArticleAbstract(article.getArticleAbstract().getOriginalText());
-        searchResult.setDatePublished(article.getDatePublished().toString());
-        searchResult.setArticleTitle(article.getArticleTitle());
-        searchResult.setLanguage(article.getLanguage());
-        searchResult.setAuthors(article.getAuthors());
-        searchResult.setPublication(article.getPublication());
-
-        if (annotations.size() > 0) {
-            searchResult.setArticleRank(rankedArticle.getRank());
-            for (JSONObject annotation : annotations) {
-                if (annotation.get("annotationType").toString().equals(AnnotationType.GENE.toString())) {
-                    JSONArray genes = (JSONArray) annotation.get("annotations");
-                    searchResult.fillGenes(genes);
-                }
-
-            }
-        }
-        return searchResult;
-    }
-
-    private SearchResultV1 constructSearchResultV1(RankedArticle rankedArticle) {
+    private SearchResultV1 constructSearchResult(RankedArticle rankedArticle) {
         Article article = rankedArticle.getArticle();
         List<JSONObject> annotations = rankedArticle.getJsonAnnotations();
         // ^ This change is made to have one DTO throughout the hierarchy for simplicity of code.

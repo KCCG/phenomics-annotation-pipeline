@@ -2,6 +2,7 @@ package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.DynamoDBHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.S3Handler;
+import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.graphDB.GraphDBCachedHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.graphDB.GraphDBOptimisedHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManagerResultSet;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
@@ -34,11 +35,11 @@ public class DatabaseManager {
     @Autowired
     private DynamoDBHandler dynamoDBHandler;
 
-//    @Autowired
-//    private GraphDBHandler graphDBHandler;
-
     @Autowired
     private GraphDBOptimisedHandler graphDBOptimisedHandler;
+
+    @Autowired
+    private GraphDBCachedHandler graphDBCachedHandler;
 
 
     @Autowired
@@ -69,38 +70,47 @@ public class DatabaseManager {
 
     }
 
-//    public DBManagerResultSet searchArticles(Map<SearchQueryParams, Object> params, PaginationRequestParams qParams) {
-//        DBManagerResultSet resultSet = graphDBHandler.fetchArticles(params, qParams);
-//
-//        List<RankedArticle> rankedArticles = resultSet.getRankedArticles();
-//
-//        for (RankedArticle anArticle : rankedArticles) {
-//            JSONObject jsonArticle = fetchArticle(anArticle.getPMID());
-//            if (!jsonArticle.isEmpty()) {
-//                anArticle.setArticle(new Article(new DynamoDBObject(jsonArticle, EntityType.Article), false));
-//                List<JSONObject> jsonAnnotations = new ArrayList<>();
-//
-//                JSONObject genes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE);
-//                JSONObject phenotypes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.PHENOTYPE);
-//
-//                if(genes.containsKey("annotationType"))
-//                    jsonAnnotations.add(genes);
-//                if(phenotypes.containsKey("annotationType"))
-//                    jsonAnnotations.add(phenotypes);
-//
-//                anArticle.setJsonAnnotations(jsonAnnotations);
-//            }
-//        }
-//        resultSet.setRankedArticles(rankedArticles);
-//        return resultSet;
-//
-//    }
 
-
-    public DBManagerResultSet searchArticlesWithFilters(String queryId, List<Pair<String, String>> searhItems, List<Pair<String, String>> filterItems, PaginationRequestParams qParams) {
-        DBManagerResultSet resultSet = graphDBOptimisedHandler.fetchArticlesWithFilters(queryId, searhItems, filterItems, qParams);
+    public DBManagerResultSet searchArticlesWithFilters(String queryId, List<Pair<String, String>> searchItems, List<Pair<String, String>> filterItems, PaginationRequestParams qParams) {
+        DBManagerResultSet resultSet = graphDBOptimisedHandler.fetchArticlesWithFilters(queryId, searchItems, filterItems, qParams);
 
         List<RankedArticle> rankedArticles = resultSet.getRankedArticles();
+
+        for (RankedArticle anArticle : rankedArticles) {
+            JSONObject jsonArticle = fetchArticle(anArticle.getPMID());
+            if (!jsonArticle.isEmpty()) {
+                anArticle.setArticle(new Article(new DynamoDBObject(jsonArticle, EntityType.Article), false));
+                List<JSONObject> jsonAnnotations = new ArrayList<>();
+
+                JSONObject genes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE);
+                JSONObject phenotypes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.PHENOTYPE);
+
+                if(genes.containsKey("annotationType"))
+                    jsonAnnotations.add(genes);
+                if(phenotypes.containsKey("annotationType"))
+                    jsonAnnotations.add(phenotypes);
+
+                anArticle.setJsonAnnotations(jsonAnnotations);
+
+            }
+        }
+
+        resultSet.setRankedArticles(rankedArticles);
+        return resultSet;
+
+    }
+
+
+
+
+    public DBManagerResultSet searchArticlesWithFiltersV2(String queryId, List<String>searchItems, List<String> filterItems, PaginationRequestParams qParams, Boolean fetchFiltersAndCount) {
+        DBManagerResultSet resultSet = graphDBCachedHandler.fetchArticlesWithFilters(queryId, searchItems, filterItems, qParams, fetchFiltersAndCount);
+
+        List<RankedArticle> rankedArticles = resultSet.getRankedArticles();
+
+        slf4jLogger.info(String.format("Query Id:%s processed by graph DB. Result set contains filters:%d, articles:%d - FetchFiltersCall was:%s", queryId, resultSet.getConceptCounts().size(), resultSet.getRankedArticles().size(), fetchFiltersAndCount.toString()));
+
+        slf4jLogger.info(String.format("Query Id:%s Calling dynamoDB to get articles and annotations. ", queryId));
 
         for (RankedArticle anArticle : rankedArticles) {
             JSONObject jsonArticle = fetchArticle(anArticle.getPMID());

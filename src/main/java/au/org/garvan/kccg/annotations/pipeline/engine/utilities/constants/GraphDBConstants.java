@@ -66,5 +66,9 @@ public class GraphDBConstants {
         }
     }
 
+    public static String CACHED_QUERY_ARTICLE_RESULT_SET_PAID_LABEL = "pmid";
+    public static String CACHED_QUERY_ARTICLE_RESULT_SET_SEARCH_COUNTS_LABEL = "counts";
+
+
 
 }

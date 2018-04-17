@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import org.json.simple.JSONObject;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by ahmed on 12/1/18.
@@ -36,8 +37,6 @@ public class ConceptFilter {
     Integer articleCount;
     @JsonProperty
     Integer filteredArticleCount;
-
-
 
     public void incrementArticleCount(Integer count){
         articleCount  = articleCount+count;

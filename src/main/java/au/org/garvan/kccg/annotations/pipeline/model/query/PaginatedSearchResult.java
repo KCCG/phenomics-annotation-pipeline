@@ -17,11 +17,11 @@ import java.util.List;
 @NoArgsConstructor
 @ApiModel
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Deprecated
 public class PaginatedSearchResult {
 
-    List<SearchResult> articles;
+    List<SearchResultV1> articles;
     PaginationRequestParams pagination;
     List<ConceptFilter> filters;
+    String queryId;
 
 }

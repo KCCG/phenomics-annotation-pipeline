@@ -1,8 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.connectors.BaseConnector;
-import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.graphDB.GraphDBHandler;
-import au.org.garvan.kccg.annotations.pipeline.model.query.PaginationRequestParams;
+import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.graphDB.GraphDBCachedHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
@@ -24,7 +23,7 @@ public class GraphDBHandlerTest {
 
     private final Logger slf4jLogger = LoggerFactory.getLogger(GraphDBHandlerTest.class);
     @Autowired
-    private GraphDBHandler gdb;
+    private GraphDBCachedHandler gdb;
     private BaseConnector testConnector;
     private List<Article> articles;
 
