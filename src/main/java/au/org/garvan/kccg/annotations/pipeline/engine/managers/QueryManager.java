@@ -91,6 +91,8 @@ public class QueryManager {
             List<SearchResultV1> results = new ArrayList<>();
             if (cachedFilters != null) {
                 filterCacheHit = true;
+                qParams.setTotalArticles(cachedFilters.getArticlesCount());
+                qParams.setTotalPages((int) Math.ceil((double) qParams.getTotalArticles() / qParams.getPageSize()));
                 results = ArticleResponseCache.getArticles(query, qParams);
                 if (results != null)
                     articleCacheHit = true;
@@ -105,7 +107,7 @@ public class QueryManager {
                 return constructCachedFinalResultV2(results, cachedFilters, qParams, query);
             } else if (filterCacheHit) {
                 DBManagerResultSet resultSet = new DBManagerResultSet();
-                resultSet = dbManager.searchArticlesWithFiltersV2(query.getQueryId(), query.getSearchItems(), query.getFilterItems(), qParams, false);
+                resultSet = dbManager.searchArticlesWithFiltersV2(query.getQueryId(), query.getSearchItems(), query.getFilterItems(), qParams, false, cachedFilters);
                 for (RankedArticle entry : resultSet.getRankedArticles()) {
                     if (entry.getArticle() != null)
                         results.add(constructSearchResult(entry));
@@ -122,17 +124,15 @@ public class QueryManager {
 
             } else if (!filterCacheHit && !articleCacheHit) {
                 DBManagerResultSet resultSet = new DBManagerResultSet();
-                resultSet = dbManager.searchArticlesWithFiltersV2(query.getQueryId(), query.getSearchItems(), query.getFilterItems(), qParams, true);
+                //Point: CachedFilter object is filled down the line
+                cachedFilters = new FiltersCacheObject();
+                resultSet = dbManager.searchArticlesWithFiltersV2(query.getQueryId(), query.getSearchItems(), query.getFilterItems(), qParams, true, cachedFilters);
                 for (RankedArticle entry : resultSet.getRankedArticles()) {
                     if (entry.getArticle() != null)
                         results.add(constructSearchResult(entry));
                 }
-
-
-
-                FiltersCacheObject filtersForCache = new FiltersCacheObject(qParams.getTotalArticles(), resultSet.getConceptCounts());
                 //Cache result
-                FiltersResponseCache.putFilters(query, qParams.getIncludeHistorical(), filtersForCache);
+                FiltersResponseCache.putFilters(query, qParams.getIncludeHistorical(), cachedFilters);
                 ArticleResponseCache.putArticles(query, qParams, results);
                 //Log, Construct result and return
 
@@ -184,7 +184,7 @@ public class QueryManager {
         finalResult.setArticles(cachedSearchResult);
 
         qParams.setTotalArticles(cachedFilters.getArticlesCount());
-        qParams.setTotalPages(qParams.getTotalArticles()/qParams.getPageSize());
+        qParams.setTotalPages((int) Math.ceil((double) qParams.getTotalArticles() / qParams.getPageSize()));
         finalResult.setPagination(qParams);
 
         List<ConceptFilter> sortedLstGeneFilter = cachedFilters.getFinalFilters().stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());

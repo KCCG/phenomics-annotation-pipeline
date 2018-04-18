@@ -33,6 +33,8 @@ public class DynamoDBHandler {
     String articleTableName;
     String annotationTableName;
     String subscriptionTableName;
+    String L2CacheTableName = "Phenomics-L2-Cache";
+
 
     @Autowired
     public DynamoDBHandler(@Value("${spring.dbhandlers.dynamodb.articletablename}") String configArticleTableName,
@@ -174,5 +176,32 @@ public class DynamoDBHandler {
         return getSubscription(subscriptionKey);
     }
 
+
+
+
+
+    //////////////////////////////////////////////////////    Cache DB Functions       ///////////////////////////////////////////////////////////////////////////////////
+
+    public JSONObject getCachedMetaData(String key){
+        Table table = dynamoDB.getTable(L2CacheTableName);
+        Item item = table.getItem("CacheID", key);
+        if (item == null) {
+            slf4jLogger.info(String.format("L2 Cache miss with key:%s", key));
+            return null;
+        } else {
+            slf4jLogger.debug(String.format("L2 Cache hit with key:%s", key));
+            return (JSONObject) JSONValue.parse(item.toJSON());
+        }
+
+
+    }
+
+    public void putCachedMetaData(String key, JSONObject jsonMetaData){
+        Table table = dynamoDB.getTable(L2CacheTableName);
+        Item cachedMetaData = Item.fromJSON(jsonMetaData.toString());
+        PutItemOutcome outcome = table.putItem(cachedMetaData);
+
+
+    }
 
 }

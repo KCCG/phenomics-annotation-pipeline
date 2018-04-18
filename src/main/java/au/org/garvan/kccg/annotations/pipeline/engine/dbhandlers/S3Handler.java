@@ -23,7 +23,7 @@ public class S3Handler {
     private final Logger slf4jLogger = LoggerFactory.getLogger(S3Handler.class);
 
 
-    private static String bucketName;
+    private static String abstractsBucketName;
     private static String region = "ap-southeast-2";
     private static AmazonS3 s3client = AmazonS3ClientBuilder.standard().withCredentials(new DefaultAWSCredentialsProviderChain()).withRegion(region).build();
 
@@ -32,14 +32,14 @@ public class S3Handler {
             byte[] bytesToWrite = article.getArticleAbstract().constructJson().toString().getBytes();
             ObjectMetadata omd = new ObjectMetadata();
             omd.setContentLength(bytesToWrite.length);
-            PutObjectResult result =  s3client.putObject(new PutObjectRequest(bucketName, keyName, new ByteArrayInputStream(bytesToWrite), omd));
+            PutObjectResult result =  s3client.putObject(new PutObjectRequest(abstractsBucketName, keyName, new ByteArrayInputStream(bytesToWrite), omd));
 
     }
 
     @Autowired
     public S3Handler(@Value("${spring.dbhandlers.S3.abstractbucket}") String s3AbstractsBucket){
 
-        bucketName = s3AbstractsBucket;
+        abstractsBucketName = s3AbstractsBucket;
         slf4jLogger.info(String.format("GraphDBHandler wired with bucket name:%s", s3AbstractsBucket));
     }
 

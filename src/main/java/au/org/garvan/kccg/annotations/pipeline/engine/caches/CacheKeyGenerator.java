@@ -45,4 +45,19 @@ public class CacheKeyGenerator {
         key = key + ";H-"+ isHistoricalRequest.toString();
         return key;
     }
+
+
+
+    public static String getL2CacheKey(List<String> searchIds, List<String> filterIds){
+        String key= "S-";
+        Collections.sort(searchIds);
+        String searchKeyPart = StringUtils.join(searchIds, ",");
+        key = key + searchKeyPart;
+        if(filterIds.size()>0) {
+            Collections.sort(filterIds);
+            String filterKeyPart = StringUtils.join(filterIds, ",");
+            key = key + ";F-" + filterKeyPart;
+        }
+        return key;
+    }
 }

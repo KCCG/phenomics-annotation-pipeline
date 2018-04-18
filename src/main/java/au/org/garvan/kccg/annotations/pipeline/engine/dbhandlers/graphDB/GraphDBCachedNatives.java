@@ -26,6 +26,7 @@ public class GraphDBCachedNatives {
 
     static {
         liveDriver = GraphDatabase.driver("bolt://52.64.25.182:7687/", AuthTokens.basic("neo4j", "neodev"));
+        historicalDriver = GraphDatabase.driver("bolt://52.64.25.182:7687/", AuthTokens.basic("neo4j", "neodev"));
     }
 
 
@@ -39,7 +40,10 @@ public class GraphDBCachedNatives {
 
     }
 
-    public static List<ConceptFilter> runSearchQueryForFilters(List<String> searchIds, List<String> filterIds) {
+
+    ////////////////////////////////////////////////////////         Live Server Calls   ///////////////////////////////////////////////////////////////
+
+    public static List<ConceptFilter> runSearchQueryForFilters(List<String> searchIds, List<String> filterIds, boolean isHistorical) {
         List<ConceptFilter> foundFilters = new ArrayList<>();
 
         String query;
@@ -48,7 +52,11 @@ public class GraphDBCachedNatives {
         else
             query = queryStringBuilder.buildQueryForSearchAndFilterItemsFilters(searchIds, filterIds);
 
-        try (Session session = liveDriver.session()) {
+
+        //Switch driver based on caller
+        Driver localDriver = isHistorical? historicalDriver: liveDriver;
+
+        try (Session session = localDriver.session()) {
             session.readTransaction(new TransactionWork<String>() {
                 @Override
                 public String execute(Transaction tx) {
@@ -69,10 +77,13 @@ public class GraphDBCachedNatives {
     }
 
 
-    public static Integer runQueryForArticleCount(List<String> searchIds, List<String> filterIds) {
+    public static Integer runQueryForArticleCount(List<String> searchIds, List<String> filterIds, boolean isHistorical) {
         List<Integer> articleCount = new ArrayList<>();
 
-        try (Session session = liveDriver.session()) {
+        //Switch driver based on caller
+        Driver localDriver = isHistorical? historicalDriver: liveDriver;
+
+        try (Session session = localDriver.session()) {
             session.readTransaction(new TransactionWork<String>() {
                 @Override
                 public String execute(Transaction tx) {
@@ -87,10 +98,14 @@ public class GraphDBCachedNatives {
 
 
 
-    public static List<Map> runQueryForArticles(List<String> searchIds, List<String> filterIds, Integer skip, Integer limit) {
+    public static List<Map> runQueryForArticles(List<String> searchIds, List<String> filterIds, Integer skip, Integer limit, boolean isHistorical) {
         List<Map> articles = new ArrayList<>();
 
-        try (Session session = liveDriver.session()) {
+
+        //Switch driver based on caller
+        Driver localDriver = isHistorical? historicalDriver: liveDriver;
+
+        try (Session session = localDriver.session()) {
             session.readTransaction(new TransactionWork<String>() {
                 @Override
                 public String execute(Transaction tx) {
@@ -105,6 +120,9 @@ public class GraphDBCachedNatives {
         }
         return articles;
     }
+    ////////////////////////////////////////////////////////  Live Server Calls End  ///////////////////////////////////////////////////////////////
+
+
 
 
     private static ConceptFilter createConceptFilterFromResult(Map graphRow) {
@@ -126,6 +144,10 @@ public class GraphDBCachedNatives {
     }
 
 
+
+    /***
+     * Query Builder Class for plain cypher to bolt
+     */
     public static class GraphDBQueryStringBuilder {
 
         public  String buildQueryForSearchItemsFilters(List<String> searchIds) {

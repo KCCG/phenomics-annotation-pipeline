@@ -4,6 +4,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.DynamoDBHandler
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.S3Handler;
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.graphDB.GraphDBCachedHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.graphDB.GraphDBOptimisedHandler;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.cache.FiltersCacheObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManagerResultSet;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
@@ -103,8 +104,8 @@ public class DatabaseManager {
 
 
 
-    public DBManagerResultSet searchArticlesWithFiltersV2(String queryId, List<String>searchItems, List<String> filterItems, PaginationRequestParams qParams, Boolean fetchFiltersAndCount) {
-        DBManagerResultSet resultSet = graphDBCachedHandler.fetchArticlesWithFilters(queryId, searchItems, filterItems, qParams, fetchFiltersAndCount);
+    public DBManagerResultSet searchArticlesWithFiltersV2(String queryId, List<String>searchItems, List<String> filterItems, PaginationRequestParams qParams, Boolean fetchFiltersAndCount, FiltersCacheObject cachedFilters) {
+        DBManagerResultSet resultSet = graphDBCachedHandler.fetchArticlesWithFilters(queryId, searchItems, filterItems, qParams, fetchFiltersAndCount, cachedFilters);
 
         List<RankedArticle> rankedArticles = resultSet.getRankedArticles();
 
