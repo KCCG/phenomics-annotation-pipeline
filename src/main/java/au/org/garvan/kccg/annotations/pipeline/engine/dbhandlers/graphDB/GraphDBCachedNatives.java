@@ -26,7 +26,7 @@ public class GraphDBCachedNatives {
 
     static {
         liveDriver = GraphDatabase.driver("bolt://52.64.25.182:7687/", AuthTokens.basic("neo4j", "neodev"));
-        historicalDriver = GraphDatabase.driver("bolt://52.64.25.182:7687/", AuthTokens.basic("neo4j", "neodev"));
+        historicalDriver = GraphDatabase.driver("bolt://52.63.6.209//:7687/", AuthTokens.basic("neo4j", "Neo4j@1Prod"));
     }
 
 
@@ -297,7 +297,7 @@ public class GraphDBCachedNatives {
         }
 
         private String printQuery(String query){
-            slf4jLogger.debug("Cypher Query: \n s%", query);
+            slf4jLogger.debug(String.format("Cypher Query: \n %s", query));
             return query;
         }
 

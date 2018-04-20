@@ -10,13 +10,13 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManage
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.constants.GraphDBConstants;
 import au.org.garvan.kccg.annotations.pipeline.model.query.*;
+import org.apache.el.parser.BooleanNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.text.CollationElementIterator;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 @Component
 public class GraphDBCachedHandler {
     //This limit is used in logic for L2 Cache (Articles)
-    private final Integer HISTORICAL_ARTICLES_CACHE_LIMIT= 800;
+    private final Integer HISTORICAL_ARTICLES_CACHE_LIMIT= 10000;
 
     private static final Logger slf4jLogger = LoggerFactory.getLogger(GraphDBCachedHandler.class);
 
@@ -58,6 +58,7 @@ public class GraphDBCachedHandler {
         Collections.sort(filterItems);
 
         if (!qParams.getIncludeHistorical()) {
+            slf4jLogger.info(String.format("Query id"));
             finalResultSet = fetchArticlesWithFiltersLive(queryId, searchItems, filterItems, qParams, getFiltersAndCount);
             //Point: The responsibility to update filter object has been delegated to this class.
             if(getFiltersAndCount){
@@ -108,9 +109,10 @@ public class GraphDBCachedHandler {
                 } else {
                     gotArticlesFromLocal = false;
                     if (localLiveArticleCount > (qParams.getPageSize() * (qParams.getPageNo() - 1))) {
+                        Integer foundLocally = localLiveArticleCount - (qParams.getPageSize() * (qParams.getPageNo() - 1));
                         pageOverLap = true;
-                        historicalArticlesParams.setSkip(localLiveArticleCount - (qParams.getPageSize() * (qParams.getPageNo() - 1)));
-                        historicalArticlesParams.setLimit(qParams.getPageSize()- historicalArticlesParams.getSkip());
+                        historicalArticlesParams.setSkip(0);
+                        historicalArticlesParams.setLimit(qParams.getPageSize()- foundLocally);
                     } else {
                         pageOverLap = false;
                         historicalArticlesParams.setSkip( (qParams.getPageSize() * (qParams.getPageNo() - 1)) - localLiveArticleCount);
@@ -164,10 +166,11 @@ public class GraphDBCachedHandler {
                     gotArticlesFromLocal = true;
                 } else {
                     gotArticlesFromLocal = false;
-                    if (liveArticlesCount > (qParams.getPageSize() * (qParams.getPageNo()) - 1)) {
+                    if (liveArticlesCount > (qParams.getPageSize() * (qParams.getPageNo() - 1))) {
+                        Integer foundLocally = liveArticlesCount - (qParams.getPageSize() * (qParams.getPageNo() - 1));
                         pageOverLap = true;
-                        historicalArticlesParams.setSkip(liveArticlesCount - (qParams.getPageSize() * (qParams.getPageNo()) - 1));
-                        historicalArticlesParams.setLimit(qParams.getPageSize()- historicalArticlesParams.getSkip());
+                        historicalArticlesParams.setSkip(0);
+                        historicalArticlesParams.setLimit(qParams.getPageSize()- foundLocally);
                     } else {
                         pageOverLap = false;
                         historicalArticlesParams.setSkip( (qParams.getPageSize() * (qParams.getPageNo() - 1)) - liveArticlesCount);
@@ -247,7 +250,7 @@ public class GraphDBCachedHandler {
         // 4: Get required page
 
 
-        slf4jLogger.info(String.format("GraphDBCachedHandler called with query ID:%s | SearchItemsCount:%d | FilterItemsCount:%d | PageSize:%d | PageNo:%d | GetFiltersAndCount:%s",
+        slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Live called | SearchItemsCount:%d | FilterItemsCount:%d | PageSize:%d | PageNo:%d | GetFiltersAndCount:%s",
                 queryId, searchItems.size(), filterItems.size(), qParams.getPageSize(), qParams.getPageNo(), getFiltersAndCount.toString()));
 
         DBManagerResultSet finalResultSet = new DBManagerResultSet();
@@ -277,7 +280,14 @@ public class GraphDBCachedHandler {
         List<Map> articlesMap = GraphDBCachedNatives.runQueryForArticles(searchItems, filterItems, ((qParams.getPageNo() - 1) * qParams.getPageSize()), qParams.getPageSize(), false);
         finalResultSet.setRankedArticles(prepareRankedArticles(articlesMap));
 
-        slf4jLogger.info(String.format("GraphDBCachedHandler completed query ID:%s", queryId));
+        if(getFiltersAndCount)
+        {
+            slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Live completed. Filters count:%d | Total Articles count:%d | Articles count:%d", queryId, finalResultSet.getConceptCounts().size(), qParams.getTotalArticles(), finalResultSet.getRankedArticles().size()));
+
+        }
+        else {
+            slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Live completed. Articles count:%d", queryId, finalResultSet.getRankedArticles().size()));
+        }
 
         return finalResultSet;
 
@@ -370,7 +380,7 @@ public class GraphDBCachedHandler {
         //POINT: This should not be called unless the articles are already cached and stored in L2
         List<RankedArticle> rankedArticles = new ArrayList<>();
 
-        slf4jLogger.info("QueryId:%s | Fetch Historical Articles Called with Params:%s.", queryId, articleParams.toString());
+        slf4jLogger.info(String.format("QueryId:%s | Fetch Historical Articles Called with Params:%s.", queryId, articleParams.toString()));
 
         String key = CacheKeyGenerator.getL2CacheKey(searchItems, filterItems);
         L2CacheObject cachedResult = L2Cache.getL2CachedData(key, true);
@@ -384,7 +394,10 @@ public class GraphDBCachedHandler {
 
     }
 
-    private DBManagerResultSet fetchArticlesWithFiltersHistorical(String queryId, List<String> searchItems, List<String> filterItems, boolean fetchArticles, L2CacheArticleParams articleParams) {
+    private DBManagerResultSet fetchArticlesWithFiltersHistorical(String queryId, List<String> searchItems, List<String> filterItems, Boolean fetchArticles, L2CacheArticleParams articleParams) {
+
+        slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical called | SearchItemsCount:%d | FilterItemsCount:%d | Fetch Articles flag:%s | Article Params :%s ",
+                queryId, searchItems.size(), filterItems.size(),  fetchArticles.toString(), articleParams.toString()));
 
         DBManagerResultSet historicalResultSet = new DBManagerResultSet();
 
@@ -392,6 +405,7 @@ public class GraphDBCachedHandler {
         L2CacheObject cachedResult = L2Cache.getL2CachedData(key,fetchArticles);
 
         if (cachedResult != null) {
+            slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical got cached data", queryId));
             articleParams.setTotalArticlesCount(cachedResult.getArticlesCount());
             historicalResultSet.setConceptCounts(cachedResult.getFinalFilters());
             if (fetchArticles) {
@@ -407,16 +421,25 @@ public class GraphDBCachedHandler {
             // 3: if Filters then get filters for S+F items
             //  3a: Concatenate S + F counts
             // 4: Get articles if required
-
+            slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step1: Getting search items filters.", queryId));
             List<ConceptFilter> searchFilters = getSearchItemsFiltersHistorical(queryId, searchItems);
+
+            slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step1: Got search items filters:%d.",queryId, searchFilters.size()));
+
+            slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step2: Getting articles count.",queryId));
             Integer articlesCount = GraphDBCachedNatives.runQueryForArticleCount(searchItems, filterItems, true);
+            slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step2: Got articles count:%d.",queryId, articlesCount));
 
             List<ConceptFilter> searchAndFilterItemsConceptFilters = new ArrayList<>();
             if (filterItems.size() > 0) {
+                slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step3: Getting search+filter items filters.",queryId));
                 searchAndFilterItemsConceptFilters = GraphDBCachedNatives.runSearchQueryForFilters(searchItems, filterItems, true);
+                slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step3: Got search+filter items filters:%d.",queryId, searchAndFilterItemsConceptFilters.size()));
                 updateSearchFilterCount(searchFilters, searchAndFilterItemsConceptFilters);
 
             }
+
+            slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step4: Getting articles.",queryId));
 
             List<Map> articlesMap;
             List<RankedArticle> topRankedArticle = new ArrayList<>();
@@ -437,19 +460,33 @@ public class GraphDBCachedHandler {
                 bottomRankedArticle = prepareRankedArticles(articlesMapBottom);
 
             }
+            slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step4: Got articles. Top:%d. | Bottom:%d ",queryId, topRankedArticle.size(), bottomRankedArticle.size()));
+
 
 
             //Caching Data fetched from Query
-            L2CacheObject L2DataToBeCached = new L2CacheObject(articlesCount,searchFilters.size(), topRankedArticle.size(), bottomRankedArticle.size(),bottomBatchSkip, searchFilters, topRankedArticle, bottomRankedArticle);
-            L2Cache.putL2CachedData(key, L2DataToBeCached);
+            slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step5: Caching Data",queryId));
 
+            L2CacheObject L2DataToBeCached = new L2CacheObject(key, articlesCount,searchFilters.size(), topRankedArticle.size(), bottomRankedArticle.size(), bottomBatchSkip,null, searchFilters, topRankedArticle, bottomRankedArticle);
+            L2Cache.putL2CachedData(L2DataToBeCached);
 
             //Prepare result to return
             articleParams.setTotalArticlesCount(articlesCount);
             historicalResultSet.setConceptCounts(searchFilters);
             if(fetchArticles){
+                slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step6: Getting historical articles.",queryId));
                 historicalResultSet.setRankedArticles(getRequiredArticlesHistorical(L2DataToBeCached, articleParams));
             }
+        }
+
+
+        if(fetchArticles)
+        {
+            slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical completed. Filters count:%d | Total Articles count:%d | Articles count:%d", queryId, historicalResultSet.getConceptCounts().size(), articleParams.getTotalArticlesCount(), historicalResultSet.getRankedArticles().size()));
+
+        }
+        else {
+            slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical completed. Filters count:%d", queryId, historicalResultSet.getConceptCounts().size()));
         }
 
         return historicalResultSet;
@@ -467,21 +504,21 @@ public class GraphDBCachedHandler {
         Integer endIndex= startIndex + params.getLimit();
 
         //If there is only top cached articles and last page is required then fetch end of list.
-        if(articlesObject.getCachedArticleBottomCount()<1)
-            endIndex = Math.min(endIndex,articlesObject.getCachedArticleTopCount());
+        if(articlesObject.getBottomArticlesCount()<1)
+            endIndex = Math.min(endIndex,articlesObject.getTopArticlesCount());
 
 
-        if(articlesObject.getCachedArticleTopCount()>=endIndex){
+        if(articlesObject.getTopArticlesCount()>=endIndex && endIndex>startIndex){
             articles = articlesObject.getTopRankedArticles().subList(startIndex, endIndex);
             return articles;
         }
 
-        if(articlesObject.getBottomBatchSkip()+articlesObject.getCachedArticleBottomCount()> params.getSkip()){
+        if(articlesObject.getBottomBatchSkip()+articlesObject.getBottomArticlesCount()> params.getSkip()){
 
             //Point: In case of last pages, this will help to fetch the results.
             articles = articlesObject.getBottomRankedArticles()
                     .subList(startIndex- articlesObject.getBottomBatchSkip()
-                            , Math.min(endIndex-articlesObject.getBottomBatchSkip(), articlesObject.getCachedArticleBottomCount()));
+                            , Math.min(endIndex-articlesObject.getBottomBatchSkip(), articlesObject.getBottomArticlesCount()));
             return articles;
 
         }
@@ -494,9 +531,10 @@ public class GraphDBCachedHandler {
         List<ConceptFilter> searchFilters;
         //First check in cache :
         String key = CacheKeyGenerator.getL2CacheKey(searchItems, new ArrayList<>());
-        searchFilters = L2Cache.getL2CachedFilters(key);
-        if(searchFilters!=null)
-            return searchFilters;
+        L2CacheObject l2CacheObject = L2Cache.getL2CachedData(key, false);
+
+        if(l2CacheObject!=null)
+            searchFilters =  l2CacheObject.getFinalFilters();
         else{
             searchFilters = GraphDBCachedNatives.runSearchQueryForFilters(searchItems, new ArrayList<>(), true);
             Integer rank = searchFilters.size();
@@ -504,8 +542,9 @@ public class GraphDBCachedHandler {
                 conceptFilter.setRank(rank);
                 rank--;
             }
-            return  searchFilters;
+
         }
+        return  searchFilters;
     }
 
 

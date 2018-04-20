@@ -39,7 +39,7 @@ public class FiltersResponseCache {
 
     }
     private static void put(String key, FiltersCacheObject filters){
-        queryCache.put(key, filters);
+//        queryCache.put(key, filters);
     }
 
     private static FiltersCacheObject get(String key){
