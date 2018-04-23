@@ -13,7 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.DigestUtils;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Component
 public class PersistentFiltersArticlesCache {
@@ -118,6 +121,19 @@ public class PersistentFiltersArticlesCache {
             s3Handler.putL2CacheArticles(cacheObject);
         }
 
+    }
+
+    public List<String> checkIfL2CachedDataIsThereForSpeedQuery(String key, Integer docLimit) {
+        List<String> articleIds = new ArrayList<>();
+        L2CacheObject l2CacheObject = dynamoDBHandler.getCachedMetaData(key);
+        if (l2CacheObject != null) {
+            if (l2CacheObject.getArticlesCount() <= docLimit) {
+                if (s3Handler.getL2CacheArticles(l2CacheObject)) {
+                    articleIds = l2CacheObject.getTopRankedArticles().stream().map(d -> d.getPMID()).collect(Collectors.toList());
+                }
+            }
+        }
+        return articleIds;
     }
 
 }

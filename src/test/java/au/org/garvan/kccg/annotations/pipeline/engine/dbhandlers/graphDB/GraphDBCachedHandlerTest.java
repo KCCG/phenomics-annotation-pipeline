@@ -23,17 +23,26 @@ public class GraphDBCachedHandlerTest {
     public void init(){
 
     }
+//
+//    @Test
+//    public void fetchArticlesWithFilters() {
+//        List<String> searchItems = Arrays.asList("1100");
+//        List<String> filterItems = Arrays.asList("1101");
+//
+//        PaginationRequestParams params = new PaginationRequestParams(10,2);
+//        graphDBCachedHandler.fetchArticlesWithFilters("1", searchItems, filterItems, params);
+//
+
+
+
+//    }
 
     @Test
-    public void fetchArticlesWithFilters() {
-        List<String> searchItems = Arrays.asList("1100");
-        List<String> filterItems = Arrays.asList("1101");
+    public void getFiltersSubset() {
 
-        PaginationRequestParams params = new PaginationRequestParams(10,2);
-        graphDBCachedHandler.fetchArticlesWithFilters("1", searchItems, filterItems, params);
-
-
-
+        List<String> filters = Arrays.asList("1100", "HP:0030955", "HP:00300");
+        List<List<String>> filtersCombo =  graphDBCachedHandler.getFiltersSubset(filters);
+        Integer x = filters.size();
 
     }
 }

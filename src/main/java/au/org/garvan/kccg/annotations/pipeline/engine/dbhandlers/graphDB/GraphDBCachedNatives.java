@@ -43,14 +43,14 @@ public class GraphDBCachedNatives {
 
     ////////////////////////////////////////////////////////         Live Server Calls   ///////////////////////////////////////////////////////////////
 
-    public static List<ConceptFilter> runSearchQueryForFilters(List<String> searchIds, List<String> filterIds, boolean isHistorical) {
+    public static List<ConceptFilter> runSearchQueryForFilters(List<String> searchIds, List<String> filterIds, boolean isHistorical, List<String> shortListedIds ) {
         List<ConceptFilter> foundFilters = new ArrayList<>();
 
         String query;
         if(searchIds.size()>0 && filterIds.size()==0)
             query = queryStringBuilder.buildQueryForSearchItemsFilters(searchIds);
         else
-            query = queryStringBuilder.buildQueryForSearchAndFilterItemsFilters(searchIds, filterIds);
+            query = queryStringBuilder.buildQueryForSearchAndFilterItemsFilters(searchIds, filterIds, shortListedIds);
 
 
         //Switch driver based on caller
@@ -77,7 +77,7 @@ public class GraphDBCachedNatives {
     }
 
 
-    public static Integer runQueryForArticleCount(List<String> searchIds, List<String> filterIds, boolean isHistorical) {
+    public static Integer runQueryForArticleCount(List<String> searchIds, List<String> filterIds, boolean isHistorical, List<String> shortListedIds) {
         List<Integer> articleCount = new ArrayList<>();
 
         //Switch driver based on caller
@@ -87,7 +87,7 @@ public class GraphDBCachedNatives {
             session.readTransaction(new TransactionWork<String>() {
                 @Override
                 public String execute(Transaction tx) {
-                    StatementResult result = tx.run(queryStringBuilder.buildQueryForArticleCount(searchIds, filterIds));
+                    StatementResult result = tx.run(queryStringBuilder.buildQueryForArticleCount(searchIds, filterIds, shortListedIds));
                     articleCount.add(Integer.parseInt(result.next().get(0).toString()));
                     return "";
                 }
@@ -98,7 +98,7 @@ public class GraphDBCachedNatives {
 
 
 
-    public static List<Map> runQueryForArticles(List<String> searchIds, List<String> filterIds, Integer skip, Integer limit, boolean isHistorical) {
+    public static List<Map> runQueryForArticles(List<String> searchIds, List<String> filterIds, Integer skip, Integer limit, boolean isHistorical, List<String> shortListedIds  ) {
         List<Map> articles = new ArrayList<>();
 
 
@@ -109,7 +109,7 @@ public class GraphDBCachedNatives {
             session.readTransaction(new TransactionWork<String>() {
                 @Override
                 public String execute(Transaction tx) {
-                    StatementResult result = tx.run(queryStringBuilder.buildQueryForArticlePage(searchIds, filterIds,skip,limit));
+                    StatementResult result = tx.run(queryStringBuilder.buildQueryForArticlePage(searchIds, filterIds, shortListedIds, skip,limit));
                     while (result.hasNext()) {
                         articles.add(result.next().asMap());
 
@@ -167,13 +167,22 @@ public class GraphDBCachedNatives {
 
         }
 
-        public  String buildQueryForSearchAndFilterItemsFilters(List<String> searchIds, List<String> filterIds ) {
+        public  String buildQueryForSearchAndFilterItemsFilters(List<String> searchIds, List<String> filterIds, List<String> shortListedIds  ) {
             String joined = searchIds.stream()
                     .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
                     .collect(Collectors.joining(", "));
 
             String query = "MATCH(e:Entity)-[:CONTAINS]-(a:Article)\n" +
                     "WHERE e.EID in [" + joined + "]\n";
+
+            //In case a sub filter is already found and injected
+            if(shortListedIds.size()>0){
+                String articleFilter = shortListedIds.stream()
+                        .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
+                        .collect(Collectors.joining(", "));
+                query = query + "AND a.PMID in [" + articleFilter + "]\n";
+            }
+
 
             if(filterIds.size()>0)
             {
@@ -195,7 +204,7 @@ public class GraphDBCachedNatives {
 
         }
 
-        public String buildQueryForArticleCount(List<String> searchIds, List<String> filterIds){
+        public String buildQueryForArticleCount(List<String> searchIds, List<String> filterIds, List<String> shortListedIds){
 //
 //            MATCH (e:Entity)-[c:CONTAINS]-(a:Article)
 //            WHERE e.EID in ["1100"]
@@ -207,8 +216,17 @@ public class GraphDBCachedNatives {
             String joined = searchIds.stream()
                     .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
                     .collect(Collectors.joining(", "));
+
             String query = "MATCH(e:Entity)-[:CONTAINS]-(a:Article) " +
                     "WHERE e.EID in [" + joined + "]\n" ;
+
+            //In case a sub filter is already found and injected
+            if(shortListedIds.size()>0){
+                String articleFilter = shortListedIds.stream()
+                        .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
+                        .collect(Collectors.joining(", "));
+                query = query + "AND a.PMID in [" + articleFilter + "]\n";
+            }
 
             if(filterIds.size()>0)
             {
@@ -227,7 +245,7 @@ public class GraphDBCachedNatives {
 
         }
 
-        public String buildQueryForArticlePage(List<String> searchIds, List<String> filterIds, Integer skip, Integer limit){
+        public String buildQueryForArticlePage(List<String> searchIds, List<String> filterIds,  List<String> shortListedIds , Integer skip, Integer limit){
 //
 //            MATCH (e:Entity)-[c:CONTAINS]-(a:Article)
 //            WHERE e.EID in ["1100"]
@@ -250,6 +268,15 @@ public class GraphDBCachedNatives {
 
             String query = "MATCH(e:Entity)-[c:CONTAINS]-(a:Article)\n" +
                     "WHERE e.EID in [" + joined + "]\n";
+
+            //In case a sub filter is already found and injected
+            if(shortListedIds.size()>0){
+                String articleFilter = shortListedIds.stream()
+                        .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
+                        .collect(Collectors.joining(", "));
+                query = query + "AND a.PMID in [" + articleFilter + "]\n";
+            }
+
 
             orderByStack.push("counts desc");
             String returnClause = String.format("RETURN distinct (a.PMID) as %s, count(distinct(c)) as %s ", GraphDBConstants.CACHED_QUERY_ARTICLE_RESULT_SET_PAID_LABEL, GraphDBConstants.CACHED_QUERY_ARTICLE_RESULT_SET_SEARCH_COUNTS_LABEL);

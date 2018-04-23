@@ -10,6 +10,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManage
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.constants.GraphDBConstants;
 import au.org.garvan.kccg.annotations.pipeline.model.query.*;
+import com.google.common.collect.Sets;
 import org.apache.el.parser.BooleanNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.text.CollationElementIterator;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -261,7 +263,7 @@ public class GraphDBCachedHandler {
             List<ConceptFilter> searchFilters = getSearchItemsFilters(queryId, searchItems, qParams);
             //Step 2: Getting article counts. This would be based on search and filter items. Tell Natives that it is a live call
             //Update query params
-            Integer articlesCount = GraphDBCachedNatives.runQueryForArticleCount(searchItems, filterItems, false);
+            Integer articlesCount = GraphDBCachedNatives.runQueryForArticleCount(searchItems, filterItems, false, new ArrayList<>());
             qParams.setTotalArticles(articlesCount);
             qParams.setTotalPages((int) Math.ceil((double) articlesCount / qParams.getPageSize()));
 
@@ -269,7 +271,7 @@ public class GraphDBCachedHandler {
             //Concatenate filters count.
             List<ConceptFilter> searchAndFilterItemsConceptFilters = new ArrayList<>();
             if (filterItems.size() > 0) {
-                searchAndFilterItemsConceptFilters = GraphDBCachedNatives.runSearchQueryForFilters(searchItems, filterItems, false);
+                searchAndFilterItemsConceptFilters = GraphDBCachedNatives.runSearchQueryForFilters(searchItems, filterItems, false, new ArrayList<>());
                 updateSearchFilterCount(searchFilters, searchAndFilterItemsConceptFilters);
 
             }
@@ -277,7 +279,7 @@ public class GraphDBCachedHandler {
 
         }
 
-        List<Map> articlesMap = GraphDBCachedNatives.runQueryForArticles(searchItems, filterItems, ((qParams.getPageNo() - 1) * qParams.getPageSize()), qParams.getPageSize(), false);
+        List<Map> articlesMap = GraphDBCachedNatives.runQueryForArticles(searchItems, filterItems, ((qParams.getPageNo() - 1) * qParams.getPageSize()), qParams.getPageSize(), false, new ArrayList<>());
         finalResultSet.setRankedArticles(prepareRankedArticles(articlesMap));
 
         if(getFiltersAndCount)
@@ -342,7 +344,7 @@ public class GraphDBCachedHandler {
             searchFilters = cachedFilters.getFinalFilters();
         else {
             //Make sure that it goes to live server
-            searchFilters = GraphDBCachedNatives.runSearchQueryForFilters(searchItems, new ArrayList<>(), false);
+            searchFilters = GraphDBCachedNatives.runSearchQueryForFilters(searchItems, new ArrayList<>(), false, new ArrayList<>());
             Integer rank = searchFilters.size();
             for (ConceptFilter conceptFilter : searchFilters) {
                 conceptFilter.setRank(rank);
@@ -415,6 +417,14 @@ public class GraphDBCachedHandler {
         }
         else {
 
+            //Point: Updated logic, check if without last filter
+            List<String> filterIDs = new ArrayList<>();
+            if(filterItems.size()>1) {
+                filterIDs = tryAndHitOneCachedFilterCombo(searchItems, filterItems);
+            }
+
+            ////
+
             //Steps:
             // 1: Get filters for S items
             // 2: Get articles count
@@ -427,13 +437,13 @@ public class GraphDBCachedHandler {
             slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step1: Got search items filters:%d.",queryId, searchFilters.size()));
 
             slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step2: Getting articles count.",queryId));
-            Integer articlesCount = GraphDBCachedNatives.runQueryForArticleCount(searchItems, filterItems, true);
+            Integer articlesCount = GraphDBCachedNatives.runQueryForArticleCount(searchItems, filterItems, true, filterIDs);
             slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step2: Got articles count:%d.",queryId, articlesCount));
 
             List<ConceptFilter> searchAndFilterItemsConceptFilters = new ArrayList<>();
             if (filterItems.size() > 0) {
                 slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step3: Getting search+filter items filters.",queryId));
-                searchAndFilterItemsConceptFilters = GraphDBCachedNatives.runSearchQueryForFilters(searchItems, filterItems, true);
+                searchAndFilterItemsConceptFilters = GraphDBCachedNatives.runSearchQueryForFilters(searchItems, filterItems, true, filterIDs);
                 slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step3: Got search+filter items filters:%d.",queryId, searchAndFilterItemsConceptFilters.size()));
                 updateSearchFilterCount(searchFilters, searchAndFilterItemsConceptFilters);
 
@@ -447,15 +457,15 @@ public class GraphDBCachedHandler {
             Integer bottomBatchSkip = -1;
 
             if(articlesCount<=HISTORICAL_ARTICLES_CACHE_LIMIT){
-                articlesMap = GraphDBCachedNatives.runQueryForArticles(searchItems, filterItems, 0, HISTORICAL_ARTICLES_CACHE_LIMIT, true);
+                articlesMap = GraphDBCachedNatives.runQueryForArticles(searchItems, filterItems, 0, HISTORICAL_ARTICLES_CACHE_LIMIT, true, filterIDs);
                 List<RankedArticle> rankedArticles = prepareRankedArticles(articlesMap);
                 topRankedArticle = rankedArticles;
             }
             else
             {
                 bottomBatchSkip = articlesCount-(HISTORICAL_ARTICLES_CACHE_LIMIT /2);
-                List<Map> articlesMapTop = GraphDBCachedNatives.runQueryForArticles(searchItems, filterItems, 0, HISTORICAL_ARTICLES_CACHE_LIMIT/2, true);
-                List<Map> articlesMapBottom = GraphDBCachedNatives.runQueryForArticles(searchItems, filterItems,  bottomBatchSkip, HISTORICAL_ARTICLES_CACHE_LIMIT/2, true);
+                List<Map> articlesMapTop = GraphDBCachedNatives.runQueryForArticles(searchItems, filterItems, 0, HISTORICAL_ARTICLES_CACHE_LIMIT/2, true, filterIDs);
+                List<Map> articlesMapBottom = GraphDBCachedNatives.runQueryForArticles(searchItems, filterItems,  bottomBatchSkip, HISTORICAL_ARTICLES_CACHE_LIMIT/2, true, filterIDs);
                 topRankedArticle = prepareRankedArticles(articlesMapTop);
                 bottomRankedArticle = prepareRankedArticles(articlesMapBottom);
 
@@ -527,7 +537,7 @@ public class GraphDBCachedHandler {
 
     }
 
-    private List<ConceptFilter> getSearchItemsFiltersHistorical(String queryId, List<String> searchItems) {
+    public  List<ConceptFilter> getSearchItemsFiltersHistorical(String queryId, List<String> searchItems) {
         List<ConceptFilter> searchFilters;
         //First check in cache :
         String key = CacheKeyGenerator.getL2CacheKey(searchItems, new ArrayList<>());
@@ -536,7 +546,7 @@ public class GraphDBCachedHandler {
         if(l2CacheObject!=null)
             searchFilters =  l2CacheObject.getFinalFilters();
         else{
-            searchFilters = GraphDBCachedNatives.runSearchQueryForFilters(searchItems, new ArrayList<>(), true);
+            searchFilters = GraphDBCachedNatives.runSearchQueryForFilters(searchItems, new ArrayList<>(), true, new ArrayList<>());
             Integer rank = searchFilters.size();
             for (ConceptFilter conceptFilter : searchFilters) {
                 conceptFilter.setRank(rank);
@@ -547,5 +557,46 @@ public class GraphDBCachedHandler {
         return  searchFilters;
     }
 
+    private List<String> tryAndHitOneCachedFilterCombo(List<String> searchItems, List<String> filterItems){
+        List<String> filterIDs = new ArrayList<>();
+        List<List<String>> possibleHistoricFilters = getFiltersSubset(filterItems);
+
+        for(List<String> historicFilter : possibleHistoricFilters)
+        {
+            String speedKey = CacheKeyGenerator.getL2CacheKey(searchItems, historicFilter);
+            filterIDs  = L2Cache.checkIfL2CachedDataIsThereForSpeedQuery(speedKey, HISTORICAL_ARTICLES_CACHE_LIMIT);
+            if(filterIDs.size()>0)
+                return filterIDs;
+        }
+        return filterIDs;
 
     }
+
+    public List<List<String>> getFiltersSubset(List<String> filters){
+        List<List<String>> returnList = new ArrayList<>();
+        Set<String> masterSet = Sets.newHashSet(filters);
+        Set<Set<String>> powerSet = Sets.powerSet(masterSet);
+        for(Set oneSet: powerSet){
+            if(!oneSet.isEmpty() && (oneSet.size()!=filters.size())){
+                List<String> oneFilterCombination = new ArrayList();
+                oneFilterCombination.addAll(oneSet);
+                Collections.sort(oneFilterCombination);
+                returnList.add(oneFilterCombination);
+            }
+        }
+        Collections.sort(returnList, new Comparator<List>(){
+            public int compare(List a1, List a2) {
+                return a2.size() - a1.size(); // assumes you want biggest to smallest
+            }
+        });
+
+
+        return returnList;
+
+
+    }
+
+
+
+}
+
