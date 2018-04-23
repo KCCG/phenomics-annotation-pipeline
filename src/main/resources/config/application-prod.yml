@@ -2,15 +2,28 @@ spring:
   dbhandlers:
     S3:
       abstractbucket: phenomics-article-abstracts-prod
+      l2cachefiltersbucket: phenomics-l2cache-filters
+      l2cachearticlesbucket: phenomics-l2cache-articles
     dynamodb:
       articletablename: phenomics-articles-prod
       annotationtablename: phenomics-annotations-prod
       subscriptiontablename: phenomics-subscriptions-prod
+      l2cachetablename: phenomics-l2-cache
     graphdb:
       endpoint: http://52.63.88.92:7474/
       graphprinting: false
       username: neo4j
       password: Neo4j@1Prod
+
+      live:
+        endpoint: bolt://52.63.88.92:7687/
+        username: neo4j
+        password: neodev
+      historical:
+        endpoint: bolt://52.63.6.209:7687/
+        username: neo4j
+        password: Neo4j@1Prod
+
   lambdaconnector:
     workerfunctionname: pubmed-ingestion-worker-lambda
 

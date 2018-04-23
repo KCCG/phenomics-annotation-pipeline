@@ -1,5 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.AnnotationControl;
 import au.org.garvan.kccg.annotations.pipeline.engine.caches.L1cache.ArticleResponseCache;
 import au.org.garvan.kccg.annotations.pipeline.engine.caches.L1cache.FiltersResponseCache;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.cache.FiltersCacheObject;
@@ -75,6 +76,8 @@ public class QueryManager {
 
 
     public PaginatedSearchResult processQueryV2(SearchQueryV2 query, Integer pageSize, Integer pageNo, Boolean isHistorical) {
+        slf4jLogger.debug(String.format("********************QueryID:%s*********************", query.getQueryId()));
+
         boolean filterCacheHit = false;
         boolean articleCacheHit = false;
 
@@ -162,10 +165,6 @@ public class QueryManager {
     }
 
 
-
-
-
-
     public PaginatedSearchResult constructFinalResultV2(List<SearchResultV1> results, DBManagerResultSet resultSet, PaginationRequestParams qParams, SearchQueryV2 query) {
         PaginatedSearchResult finalResult = new PaginatedSearchResult();
         finalResult.setArticles(results);
@@ -173,7 +172,7 @@ public class QueryManager {
 
         List<ConceptFilter> lstGeneFilter = resultSet.getConceptCounts();
         List<ConceptFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
-        finalResult.setFilters(sortedLstGeneFilter);
+        finalResult.setFilters(AnnotationControl.getControlledFilters(sortedLstGeneFilter));
         finalResult.setQueryId(query.getQueryId());
         return finalResult;
 
@@ -188,7 +187,7 @@ public class QueryManager {
         finalResult.setPagination(qParams);
 
         List<ConceptFilter> sortedLstGeneFilter = cachedFilters.getFinalFilters().stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
-        finalResult.setFilters(sortedLstGeneFilter);
+        finalResult.setFilters(AnnotationControl.getControlledFilters(sortedLstGeneFilter));
         finalResult.setQueryId(query.getQueryId());
         return finalResult;
 
@@ -324,14 +323,18 @@ public class QueryManager {
         List<APMultiWordAnnotationMapper> shortListedDiseases = new ArrayList<>();
 
         if (!smartSearch || smartQueryType.equals(AnnotationType.GENE)) {
-            shortlistedGenes = DocumentPreprocessor.getHGNCGeneHandler().searchGenes(infix);
+            shortlistedGenes =  AnnotationControl.getControlledGeneAnnotations(
+                    DocumentPreprocessor.getHGNCGeneHandler().searchGenes(infix));
         }
         if (!smartSearch || smartQueryType.equals(AnnotationType.PHENOTYPE)) {
-            shortListedPhenotypes = DocumentPreprocessor.getPhenotypeHandler().searchPhenotype(infix);
+
+            shortListedPhenotypes = AnnotationControl.getControlledMWAnnotations(
+                    DocumentPreprocessor.getPhenotypeHandler().searchPhenotype(infix));
         }
 
         if (!smartSearch || smartQueryType.equals(AnnotationType.DISEASE)) {
-            shortListedDiseases = DocumentPreprocessor.getMondoHandler().searchDisease(infix);
+            shortListedDiseases = AnnotationControl.getControlledMWAnnotations(
+                    DocumentPreprocessor.getMondoHandler().searchDisease(infix));
         }
 
         //Ranking results

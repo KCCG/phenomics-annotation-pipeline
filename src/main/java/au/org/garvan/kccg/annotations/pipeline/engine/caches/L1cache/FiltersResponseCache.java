@@ -39,7 +39,8 @@ public class FiltersResponseCache {
 
     }
     private static void put(String key, FiltersCacheObject filters){
-//        queryCache.put(key, filters);
+        queryCache.put(key, filters);
+        slf4jLogger.info("L1 Cache - Approximate size of filters cache:%d", queryCache.size());
     }
 
     private static FiltersCacheObject get(String key){
@@ -68,6 +69,11 @@ public class FiltersResponseCache {
         String key = CacheKeyGenerator.getL1CacheKeyForFilters(query,includeHistorical);
         slf4jLogger.info(String.format("L1Cache putting filters with key:%s", key));
         put(key, filters);
+    }
+
+    public static void clearCache(){
+        slf4jLogger.info("L1 Cache - Flushing all filters entries from cache.");
+        queryCache.invalidateAll();
     }
 
 }

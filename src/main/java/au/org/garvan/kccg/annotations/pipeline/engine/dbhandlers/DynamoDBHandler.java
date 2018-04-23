@@ -34,18 +34,20 @@ public class DynamoDBHandler {
     String articleTableName;
     String annotationTableName;
     String subscriptionTableName;
-    String L2CacheTableName = "Phenomics-L2-Cache";
+    String L2CacheTableName;
 
 
     @Autowired
     public DynamoDBHandler(@Value("${spring.dbhandlers.dynamodb.articletablename}") String configArticleTableName,
                            @Value("${spring.dbhandlers.dynamodb.annotationtablename}") String configAnnotationTableName,
-                           @Value("${spring.dbhandlers.dynamodb.subscriptiontablename}") String configSubscriptionTableName) {
+                           @Value("${spring.dbhandlers.dynamodb.subscriptiontablename}") String configSubscriptionTableName,
+                           @Value("${spring.dbhandlers.dynamodb.l2cachetablename}") String configL2CacheTableName) {
         articleTableName = configArticleTableName;
         annotationTableName = configAnnotationTableName;
         subscriptionTableName = configSubscriptionTableName;
+        L2CacheTableName  = configL2CacheTableName;
 
-        slf4jLogger.info(String.format("DynamoDBHandler wired with Articles Table: %s, Annotations Table:%s and Subscriptions Table:%s", articleTableName, annotationTableName,subscriptionTableName));
+        slf4jLogger.info(String.format("DynamoDBHandler wired with Articles Table: %s | Annotations Table:%s | Subscriptions Table:%s | L2Cache Table: %s", articleTableName, annotationTableName,subscriptionTableName, L2CacheTableName));
 
     }
 

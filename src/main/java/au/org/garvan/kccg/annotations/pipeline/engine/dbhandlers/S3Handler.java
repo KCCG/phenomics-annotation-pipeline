@@ -46,7 +46,7 @@ public class S3Handler {
         l2CacheFiltersBucketName = phenomicsL2CacheFilters;
         l2CacheArticlesBucketName = phenomicsL2CacheArticles;
 
-        slf4jLogger.info(String.format("S3Handler wired with buckets:%s\n%s\n%s", abstractsBucketName, l2CacheFiltersBucketName, l2CacheArticlesBucketName));
+        slf4jLogger.info(String.format("S3Handler wired with buckets:%s - %s - %s", abstractsBucketName, l2CacheFiltersBucketName, l2CacheArticlesBucketName));
     }
 
     /////////////////////////////////////////////////                 //////////////////////////////////////////////////////////////////////////

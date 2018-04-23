@@ -6,12 +6,19 @@ spring:
       articletablename: phenomics-articles-dev
       annotationtablename: phenomics-annotations-dev
       subscriptiontablename: phenomics-subscriptions-dev
+      l2cachetablename: phenomics-l2-cache
     graphdb:
-#    TODO: Change this to dns record.
       endpoint: http://52.64.25.182:7474/
-      graphprinting: false
       username: neo4j
       password: neodev
+      live:
+        endpoint: bolt://52.63.88.92:7687/
+        username: neo4j
+        password: neodev
+      historical:
+        endpoint: bolt://52.63.6.209:7687/
+        username: neo4j
+        password: Neo4j@1Prod
 
   subscriptionservice:
     subscriptiontime: 2

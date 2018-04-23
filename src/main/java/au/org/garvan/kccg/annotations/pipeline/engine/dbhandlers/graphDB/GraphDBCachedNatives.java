@@ -8,13 +8,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 import java.util.stream.Collectors;
-
+@Component
 public class GraphDBCachedNatives {
 
     private static final Logger slf4jLogger = LoggerFactory.getLogger(GraphDBCachedNatives.class);
@@ -24,19 +25,26 @@ public class GraphDBCachedNatives {
 
     private static GraphDBQueryStringBuilder queryStringBuilder = new GraphDBQueryStringBuilder();
 
-    static {
-        liveDriver = GraphDatabase.driver("bolt://52.64.25.182:7687/", AuthTokens.basic("neo4j", "neodev"));
-        historicalDriver = GraphDatabase.driver("bolt://52.63.6.209//:7687/", AuthTokens.basic("neo4j", "Neo4j@1Prod"));
-    }
+//    static {
+//        liveDriver = GraphDatabase.driver("bolt://52.64.25.182:7687/", AuthTokens.basic("neo4j", "neodev"));
+//        historicalDriver = GraphDatabase.driver("bolt://52.63.6.209//:7687/", AuthTokens.basic("neo4j", "Neo4j@1Prod"));
+//    }
 
 
     @Autowired
-    public GraphDBCachedNatives(@org.springframework.beans.factory.annotation.Value("${spring.dbhandlers.graphdb.endpoint}") String neo4jDbEndpoint,
-                                @org.springframework.beans.factory.annotation.Value("${spring.dbhandlers.graphdb.username}") String userName,
-                                @Value("${spring.dbhandlers.graphdb.password}") String password) {
+    public GraphDBCachedNatives(@Value("${spring.dbhandlers.graphdb.live.endpoint}") String neo4jDbEndpointLive,
+                                @Value("${spring.dbhandlers.graphdb.live.username}") String userNameLive,
+                                @Value("${spring.dbhandlers.graphdb.live.password}") String passwordLive,
 
-        liveDriver = GraphDatabase.driver(neo4jDbEndpoint, AuthTokens.basic(userName, password));
-        slf4jLogger.info(String.format("GraphDBCached liveDriver wired with endpoint:%s", neo4jDbEndpoint));
+                                @Value("${spring.dbhandlers.graphdb.historical.endpoint}") String neo4jDbEndpointHistorical,
+                                @Value("${spring.dbhandlers.graphdb.historical.username}") String userNameHistorical,
+                                @Value("${spring.dbhandlers.graphdb.historical.password}") String passwordHistorical) {
+
+        liveDriver = GraphDatabase.driver(neo4jDbEndpointLive, AuthTokens.basic(userNameLive, passwordLive));
+        slf4jLogger.info(String.format("GraphDBCached liveDriver wired with endpoint:%s", neo4jDbEndpointLive));
+
+        historicalDriver = GraphDatabase.driver(neo4jDbEndpointHistorical, AuthTokens.basic(userNameHistorical, passwordHistorical));
+        slf4jLogger.info(String.format("GraphDBCached historicalDriver wired with endpoint:%s", neo4jDbEndpointHistorical));
 
     }
 

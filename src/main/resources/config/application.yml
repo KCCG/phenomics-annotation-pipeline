@@ -8,11 +8,20 @@ spring:
       articletablename: phenomics-articles
       annotationtablename: phenomics-annotations
       subscriptiontablename: test-phenomics-subscriptions
+      l2cachetablename: phenomics-l2-cache
     graphdb:
       endpoint: http://localhost:7474/
-      graphprinting: false
       username:
       password:
+      live:
+        endpoint: bolt://52.63.88.92:7687/
+        username: neo4j
+        password: Neo4j@1Prod
+      historical:
+        endpoint: bolt://52.63.6.209:7687/
+        username: neo4j
+        password: Neo4j@1Prod
+
   lambdaconnector:
       workerfunctionname: pubmed-ingestion-worker-lambda
   subscriptionservice:

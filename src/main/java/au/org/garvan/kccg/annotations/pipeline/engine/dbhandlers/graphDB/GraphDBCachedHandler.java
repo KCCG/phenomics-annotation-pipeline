@@ -417,10 +417,13 @@ public class GraphDBCachedHandler {
         }
         else {
 
-            //Point: Updated logic, check if without last filter
-            List<String> filterIDs = new ArrayList<>();
+            //Point: Updated logic for speedup - Try to see if L2 has document ids with any combination of filters except main query.
+            List<String> shortListedIDs = new ArrayList<>();
             if(filterItems.size()>1) {
-                filterIDs = tryAndHitOneCachedFilterCombo(searchItems, filterItems);
+                shortListedIDs = tryAndHitOneCachedFilterCombo(searchItems, filterItems);
+                if(shortListedIDs.size()>0)
+                    slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical found shortlisted PMIDs for a sub query.", queryId));
+
             }
 
             ////
@@ -437,13 +440,13 @@ public class GraphDBCachedHandler {
             slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step1: Got search items filters:%d.",queryId, searchFilters.size()));
 
             slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step2: Getting articles count.",queryId));
-            Integer articlesCount = GraphDBCachedNatives.runQueryForArticleCount(searchItems, filterItems, true, filterIDs);
+            Integer articlesCount = GraphDBCachedNatives.runQueryForArticleCount(searchItems, filterItems, true, shortListedIDs);
             slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step2: Got articles count:%d.",queryId, articlesCount));
 
             List<ConceptFilter> searchAndFilterItemsConceptFilters = new ArrayList<>();
             if (filterItems.size() > 0) {
                 slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step3: Getting search+filter items filters.",queryId));
-                searchAndFilterItemsConceptFilters = GraphDBCachedNatives.runSearchQueryForFilters(searchItems, filterItems, true, filterIDs);
+                searchAndFilterItemsConceptFilters = GraphDBCachedNatives.runSearchQueryForFilters(searchItems, filterItems, true, shortListedIDs);
                 slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step3: Got search+filter items filters:%d.",queryId, searchAndFilterItemsConceptFilters.size()));
                 updateSearchFilterCount(searchFilters, searchAndFilterItemsConceptFilters);
 
@@ -457,15 +460,15 @@ public class GraphDBCachedHandler {
             Integer bottomBatchSkip = -1;
 
             if(articlesCount<=HISTORICAL_ARTICLES_CACHE_LIMIT){
-                articlesMap = GraphDBCachedNatives.runQueryForArticles(searchItems, filterItems, 0, HISTORICAL_ARTICLES_CACHE_LIMIT, true, filterIDs);
+                articlesMap = GraphDBCachedNatives.runQueryForArticles(searchItems, filterItems, 0, HISTORICAL_ARTICLES_CACHE_LIMIT, true, shortListedIDs);
                 List<RankedArticle> rankedArticles = prepareRankedArticles(articlesMap);
                 topRankedArticle = rankedArticles;
             }
             else
             {
                 bottomBatchSkip = articlesCount-(HISTORICAL_ARTICLES_CACHE_LIMIT /2);
-                List<Map> articlesMapTop = GraphDBCachedNatives.runQueryForArticles(searchItems, filterItems, 0, HISTORICAL_ARTICLES_CACHE_LIMIT/2, true, filterIDs);
-                List<Map> articlesMapBottom = GraphDBCachedNatives.runQueryForArticles(searchItems, filterItems,  bottomBatchSkip, HISTORICAL_ARTICLES_CACHE_LIMIT/2, true, filterIDs);
+                List<Map> articlesMapTop = GraphDBCachedNatives.runQueryForArticles(searchItems, filterItems, 0, HISTORICAL_ARTICLES_CACHE_LIMIT/2, true, shortListedIDs);
+                List<Map> articlesMapBottom = GraphDBCachedNatives.runQueryForArticles(searchItems, filterItems,  bottomBatchSkip, HISTORICAL_ARTICLES_CACHE_LIMIT/2, true, shortListedIDs);
                 topRankedArticle = prepareRankedArticles(articlesMapTop);
                 bottomRankedArticle = prepareRankedArticles(articlesMapBottom);
 
@@ -565,8 +568,9 @@ public class GraphDBCachedHandler {
         {
             String speedKey = CacheKeyGenerator.getL2CacheKey(searchItems, historicFilter);
             filterIDs  = L2Cache.checkIfL2CachedDataIsThereForSpeedQuery(speedKey, HISTORICAL_ARTICLES_CACHE_LIMIT);
-            if(filterIDs.size()>0)
+            if(filterIDs.size()>0){
                 return filterIDs;
+            }
         }
         return filterIDs;
 

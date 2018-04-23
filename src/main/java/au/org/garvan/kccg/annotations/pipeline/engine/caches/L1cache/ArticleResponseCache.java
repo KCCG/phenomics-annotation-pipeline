@@ -39,6 +39,8 @@ public class ArticleResponseCache {
 
     private static void put(String key, List<SearchResultV1> articles){
         queryCache.put(key, articles);
+        slf4jLogger.info("L1 Cache - Approximate size of articles cache:%d", queryCache.size());
+
     }
 
     private static List<SearchResultV1> get(String key){
@@ -67,6 +69,12 @@ public class ArticleResponseCache {
         String key = CacheKeyGenerator.getL1CacheKeyForPaginatedArticles(query, params);
         slf4jLogger.info(String.format("L1Cache putting articles list with key:%s", key));
         put(key, lstArticles);
+    }
+
+
+    public static void clearCache(){
+        slf4jLogger.info("L1 Cache - Flushing all article entries from cache.");
+        queryCache.invalidateAll();
     }
 
 
