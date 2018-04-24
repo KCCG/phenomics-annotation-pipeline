@@ -39,7 +39,7 @@ public class ArticleResponseCache {
 
     private static void put(String key, List<SearchResultV1> articles){
         queryCache.put(key, articles);
-        slf4jLogger.info("L1 Cache - Approximate size of articles cache:%d", queryCache.size());
+        slf4jLogger.info(String.format("L1 Cache - Approximate size of articles cache:%d", queryCache.size()));
 
     }
 

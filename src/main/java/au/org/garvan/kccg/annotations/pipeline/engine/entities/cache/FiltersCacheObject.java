@@ -14,7 +14,6 @@ public class FiltersCacheObject {
 
     Integer articlesCount = - 1;
     List<ConceptFilter> finalFilters;
-
     Integer liveArticleCount = -1;
 
 }

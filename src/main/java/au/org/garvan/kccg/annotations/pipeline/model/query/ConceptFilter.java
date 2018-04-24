@@ -45,4 +45,12 @@ public class ConceptFilter {
     public void incrementFilteredArticleCount(Integer count){
         filteredArticleCount  = filteredArticleCount+count;
     }
+
+    @Override
+    public ConceptFilter clone(){
+        ConceptFilter cloneFilter = new ConceptFilter(
+                this.id, this.type,this.text,this.rank,this.articleCount,this.filteredArticleCount
+        );
+        return  cloneFilter;
+    }
 }

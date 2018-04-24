@@ -219,7 +219,9 @@ public class GraphDBCachedHandler {
     private List<ConceptFilter> mergeLiveAndHistoricalFilters(List<ConceptFilter> liveFilters, List<ConceptFilter> historicalFilters){
         //Point: Considering historical filters to be a bigger list, it is indexed.
         //Point Continue: Then live filters are looped through and appended in the index list
-        Map<String,ConceptFilter> indexedHistoricalFilters = historicalFilters.stream().collect(Collectors.toMap(ConceptFilter::getId, Function.identity()));
+        //Point: Creating a new list (clone) as we intend to modify the counts
+        Map<String,ConceptFilter> indexedHistoricalFilters = historicalFilters.stream().collect(Collectors.toMap(ConceptFilter::getId, s->s.clone()));
+
         for(ConceptFilter lFilter: liveFilters){
             if(indexedHistoricalFilters.containsKey(lFilter.getId()))
             {
@@ -270,12 +272,18 @@ public class GraphDBCachedHandler {
             //Step 3: If there are filters in query then find filters based on search and filter items.
             //Concatenate filters count.
             List<ConceptFilter> searchAndFilterItemsConceptFilters = new ArrayList<>();
+            List<ConceptFilter> consolidatedConceptFilters = new ArrayList<>();
             if (filterItems.size() > 0) {
                 searchAndFilterItemsConceptFilters = GraphDBCachedNatives.runSearchQueryForFilters(searchItems, filterItems, false, new ArrayList<>());
-                updateSearchFilterCount(searchFilters, searchAndFilterItemsConceptFilters);
+                consolidatedConceptFilters = updateSearchFilterCount(searchFilters, searchAndFilterItemsConceptFilters);
 
             }
-            finalResultSet.setConceptCounts(searchFilters);
+            else
+            {
+                consolidatedConceptFilters = searchFilters;
+            }
+
+            finalResultSet.setConceptCounts(consolidatedConceptFilters);
 
         }
 
@@ -354,19 +362,23 @@ public class GraphDBCachedHandler {
         return searchFilters;
     }
 
-    private void updateSearchFilterCount(List<ConceptFilter> searchFilters, List<ConceptFilter> searchAndFilterItemsConceptFilters) {
+    private List<ConceptFilter> updateSearchFilterCount(List<ConceptFilter> searchFilters, List<ConceptFilter> searchAndFilterItemsConceptFilters) {
+
+        //Point: Creating new filter objects as these are cached entries.
+        List<ConceptFilter> updatedFilters = searchFilters.stream().map(s->s.clone()).collect(Collectors.toList());
         HashMap<String, Integer> searchAndFilterItemsMap = new HashMap<>();
 
         for (ConceptFilter aConcept : searchAndFilterItemsConceptFilters) {
             searchAndFilterItemsMap.put(aConcept.getId(), aConcept.getArticleCount());
         }
 
-        for (ConceptFilter aConcept : searchFilters) {
+        for (ConceptFilter aConcept : updatedFilters) {
             if (searchAndFilterItemsMap.containsKey(aConcept.getId())) {
                 aConcept.setFilteredArticleCount(searchAndFilterItemsMap.get(aConcept.getId()));
             } else
                 aConcept.setFilteredArticleCount(0);
         }
+        return updatedFilters;
     }
 
     //////////////////////////////////////////////////////        Live Server Process End        ///////////////////////////////////////////////////////////////////////////////////
@@ -444,12 +456,17 @@ public class GraphDBCachedHandler {
             slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step2: Got articles count:%d.",queryId, articlesCount));
 
             List<ConceptFilter> searchAndFilterItemsConceptFilters = new ArrayList<>();
+            List<ConceptFilter> consolidatedFilters = new ArrayList<>();
+
             if (filterItems.size() > 0) {
                 slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step3: Getting search+filter items filters.",queryId));
                 searchAndFilterItemsConceptFilters = GraphDBCachedNatives.runSearchQueryForFilters(searchItems, filterItems, true, shortListedIDs);
                 slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step3: Got search+filter items filters:%d.",queryId, searchAndFilterItemsConceptFilters.size()));
-                updateSearchFilterCount(searchFilters, searchAndFilterItemsConceptFilters);
+                consolidatedFilters= updateSearchFilterCount(searchFilters, searchAndFilterItemsConceptFilters);
 
+            }
+            else{
+                consolidatedFilters = searchFilters;
             }
 
             slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step4: Getting articles.",queryId));
@@ -480,12 +497,12 @@ public class GraphDBCachedHandler {
             //Caching Data fetched from Query
             slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step5: Caching Data",queryId));
 
-            L2CacheObject L2DataToBeCached = new L2CacheObject(key, articlesCount,searchFilters.size(), topRankedArticle.size(), bottomRankedArticle.size(), bottomBatchSkip,null, searchFilters, topRankedArticle, bottomRankedArticle);
+            L2CacheObject L2DataToBeCached = new L2CacheObject(key, articlesCount,consolidatedFilters.size(), topRankedArticle.size(), bottomRankedArticle.size(), bottomBatchSkip,null, consolidatedFilters, topRankedArticle, bottomRankedArticle);
             L2Cache.putL2CachedData(L2DataToBeCached);
 
             //Prepare result to return
             articleParams.setTotalArticlesCount(articlesCount);
-            historicalResultSet.setConceptCounts(searchFilters);
+            historicalResultSet.setConceptCounts(consolidatedFilters);
             if(fetchArticles){
                 slf4jLogger.info(String.format("QueryId:%s GraphDBCachedHandler-Historical Step6: Getting historical articles.",queryId));
                 historicalResultSet.setRankedArticles(getRequiredArticlesHistorical(L2DataToBeCached, articleParams));

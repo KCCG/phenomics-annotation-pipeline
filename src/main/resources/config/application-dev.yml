@@ -2,6 +2,8 @@ spring:
   dbhandlers:
     S3:
       abstractbucket: phenomics-article-abstracts-dev
+      l2cachefiltersbucket: phenomics-graph-l2cache-filters
+      l2cachearticlesbucket: phenomics-graph-l2cache-articles
     dynamodb:
       articletablename: phenomics-articles-dev
       annotationtablename: phenomics-annotations-dev

@@ -40,7 +40,7 @@ public class FiltersResponseCache {
     }
     private static void put(String key, FiltersCacheObject filters){
         queryCache.put(key, filters);
-        slf4jLogger.info("L1 Cache - Approximate size of filters cache:%d", queryCache.size());
+        slf4jLogger.info(String.format("L1 Cache - Approximate size of filters cache:%d", queryCache.size()));
     }
 
     private static FiltersCacheObject get(String key){
