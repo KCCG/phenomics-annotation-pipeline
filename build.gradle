@@ -42,6 +42,7 @@ dependencies {
             "io.springfox:springfox-swagger-ui:2.5.0",
             "javax.mail:mail:1.4",
             "com.squareup.okhttp3:okhttp:3.6.0",
+            "org.neo4j.driver:neo4j-java-driver:1.5.1",
 
             //CR
             "org.jsoup:jsoup:1.8.3",

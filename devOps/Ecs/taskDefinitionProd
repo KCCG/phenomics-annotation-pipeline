@@ -52,7 +52,7 @@
     {
       "name": "springlogs",
       "host": {
-        "sourcePath": "/var/log/worker1/"
+        "sourcePath": "/var/log/pipeline-worker/"
       }
 
     },

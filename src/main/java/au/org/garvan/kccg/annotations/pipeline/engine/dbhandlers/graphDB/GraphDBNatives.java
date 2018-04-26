@@ -45,7 +45,6 @@ public class GraphDBNatives {
 
     private static Properties props = new Properties();
     private static IDBAccess remote;
-//    @Value("${spring.dbhandlers.graphdb.graphprinting}")
     private static boolean ENABLE_PRINTING = false;
 
     @Autowired

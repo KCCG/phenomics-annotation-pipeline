@@ -12,6 +12,7 @@ public class PaginationRequestParams {
     Integer pageNo;
     Integer totalArticles;
     Integer totalPages;
+    Boolean includeHistorical;
 
 
     public PaginationRequestParams(Integer pSize, Integer pNo){
@@ -19,6 +20,7 @@ public class PaginationRequestParams {
         pageNo = pNo==null? 1: pNo;
         totalArticles =0;
         totalPages=0;
+        includeHistorical = false;
     }
 
 }

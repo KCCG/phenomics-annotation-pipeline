@@ -1,5 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.cache.L2CacheObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
@@ -33,16 +34,20 @@ public class DynamoDBHandler {
     String articleTableName;
     String annotationTableName;
     String subscriptionTableName;
+    String L2CacheTableName;
+
 
     @Autowired
     public DynamoDBHandler(@Value("${spring.dbhandlers.dynamodb.articletablename}") String configArticleTableName,
                            @Value("${spring.dbhandlers.dynamodb.annotationtablename}") String configAnnotationTableName,
-                           @Value("${spring.dbhandlers.dynamodb.subscriptiontablename}") String configSubscriptionTableName) {
+                           @Value("${spring.dbhandlers.dynamodb.subscriptiontablename}") String configSubscriptionTableName,
+                           @Value("${spring.dbhandlers.dynamodb.l2cachetablename}") String configL2CacheTableName) {
         articleTableName = configArticleTableName;
         annotationTableName = configAnnotationTableName;
         subscriptionTableName = configSubscriptionTableName;
+        L2CacheTableName  = configL2CacheTableName;
 
-        slf4jLogger.info(String.format("DynamoDBHandler wired with Articles Table: %s, Annotations Table:%s and Subscriptions Table:%s", articleTableName, annotationTableName,subscriptionTableName));
+        slf4jLogger.info(String.format("DynamoDBHandler wired with Articles Table: %s | Annotations Table:%s | Subscriptions Table:%s | L2Cache Table: %s", articleTableName, annotationTableName,subscriptionTableName, L2CacheTableName));
 
     }
 
@@ -65,10 +70,13 @@ public class DynamoDBHandler {
     public JSONObject getArticle(int pubMedId) {
         Table table = dynamoDB.getTable(articleTableName);
         Item item = table.getItem("pubMedID", Integer.toString(pubMedId));
-        if (item == null)
+        if (item == null) {
+            slf4jLogger.info(String.format("Article with ID:%d was missing in db.", pubMedId));
             return new JSONObject();
-        else
+        } else {
+            slf4jLogger.debug(String.format("Article with ID:%d was found in db.", pubMedId));
             return (JSONObject) JSONValue.parse(item.toJSON());
+        }
 
     }
 
@@ -171,5 +179,49 @@ public class DynamoDBHandler {
         return getSubscription(subscriptionKey);
     }
 
+
+
+
+
+    //////////////////////////////////////////////////////    Cache DB Functions       ///////////////////////////////////////////////////////////////////////////////////
+
+    public L2CacheObject getCachedMetaData(String key){
+        Table table = dynamoDB.getTable(L2CacheTableName);
+        Item item = table.getItem("cacheKey", key);
+        if (item == null) {
+            slf4jLogger.info(String.format("L2 Cache miss with key:%s", key));
+            return null;
+        } else {
+
+            L2CacheObject l2CacheObject = new L2CacheObject();
+            l2CacheObject.setCacheKey(item.getString("cacheKey"));
+            l2CacheObject.setArticlesCount(item.getInt(("articlesCount")));
+            l2CacheObject.setTopArticlesCount(item.getInt("topArticlesCount"));
+            l2CacheObject.setBottomArticlesCount(item.getInt("bottomArticlesCount"));
+            l2CacheObject.setFiltersCount(item.getInt("filtersCount"));
+            l2CacheObject.setBottomBatchSkip(item.getInt("bottomBatchSkip"));
+            l2CacheObject.setDataKey(item.getString("dataKey"));
+            slf4jLogger.debug(String.format("L2 Cache hit in dynamo with key:%s", key));
+            return l2CacheObject;
+        }
+
+
+    }
+
+    public void putCachedMetaData(L2CacheObject l2CacheObject){
+        Table table = dynamoDB.getTable(L2CacheTableName);
+        JSONObject jsonMetaData = new JSONObject();
+        jsonMetaData.put("cacheKey", l2CacheObject.getCacheKey() );
+        jsonMetaData.put("articlesCount", l2CacheObject.getArticlesCount() );
+        jsonMetaData.put("topArticlesCount", l2CacheObject.getTopArticlesCount() );
+        jsonMetaData.put("bottomArticlesCount", l2CacheObject.getBottomArticlesCount() );
+        jsonMetaData.put("filtersCount", l2CacheObject.getFiltersCount() );
+        jsonMetaData.put("bottomBatchSkip", l2CacheObject.getBottomBatchSkip());
+        //MD5 hash key for data json files.
+        jsonMetaData.put("dataKey", l2CacheObject.getDataKey());
+        Item cachedMetaData = Item.fromJSON(jsonMetaData.toString());
+        PutItemOutcome outcome = table.putItem(cachedMetaData);
+
+    }
 
 }
