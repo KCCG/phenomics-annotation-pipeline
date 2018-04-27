@@ -1,6 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.preprocessors;
 
-import au.org.garvan.kccg.annotations.pipeline.engine.annotators.DiseaseHandler;
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.disease.DiseaseHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.PhenotypeHandler;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APPhrase;
@@ -59,7 +59,7 @@ public class DocumentPreprocessor {
 
 
 
-        mondoHandler = new DiseaseHandler("mondo20180415.json");
+        mondoHandler = new DiseaseHandler();
         mondoHandler.readFile();
 
 

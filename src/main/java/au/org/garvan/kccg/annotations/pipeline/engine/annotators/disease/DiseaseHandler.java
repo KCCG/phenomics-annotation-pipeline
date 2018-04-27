@@ -1,4 +1,4 @@
-package au.org.garvan.kccg.annotations.pipeline.engine.annotators;
+package au.org.garvan.kccg.annotations.pipeline.engine.annotators.disease;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.connectors.AffinityConnector;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 public class DiseaseHandler{
     private final Logger slf4jLogger = LoggerFactory.getLogger(DiseaseHandler.class);
 
-    private String fileName;
 
     private static AffinityConnector affinityConnector;
     private Map<String, APDisease> mondoDiseases;
@@ -42,59 +41,14 @@ public class DiseaseHandler{
     private static final String STANDARD = "MONDO";
     private static final String VERSION = "2018";
 
-    public DiseaseHandler(String fName){
-        fileName = fName;
+    public DiseaseHandler(){
+
         affinityConnector = new AffinityConnector();
 
     }
 
-    public void readFile() {
 
-        try {
-            diseaseLabelToMondo = new HashMap<>();
-            slf4jLogger.info(String.format("Reading lexicon. Filename:%s", fileName));
-            String path = "lexicons/" + fileName;
-            InputStream input = getClass().getResourceAsStream("resources/" + path);
-            if (input == null) {
-                // this is how we load file within editor (eg eclipse)
-                input = DiseaseHandler.class.getClassLoader().getResourceAsStream(path);
-            }
-
-            ObjectMapper mapper = new ObjectMapper();
-            MondoJsonFile jsonMondo = mapper.readValue(input, MondoJsonFile.class);
-            ArrayList diseaseNodes = jsonMondo.getDiseaseNodes();
-
-            mondoDiseases = new HashMap<>();
-            for (Object object : diseaseNodes) {
-                LinkedHashMap linkedDisease = (LinkedHashMap) object;
-                APDisease tempDisease = new APDisease(linkedDisease);
-                if (!tempDisease.isDeprecated()) {
-                    if (Strings.isNullOrEmpty(tempDisease.getLabel()))
-                        tempDisease.setDeprecated(true);
-                    else {
-                        mondoDiseases.put(tempDisease.getMondoID(), tempDisease);
-                        List<String> names = tempDisease.getSynonyms().stream().map(x -> x.getVal().toLowerCase()).collect(Collectors.toList());
-                        names.add(tempDisease.getLabel().toLowerCase());
-                        for (String name : names) {
-                            if (!Strings.isNullOrEmpty(name))
-                                diseaseLabelToMondo.put(name, tempDisease.getMondoID());
-                        }
-                    }
-
-                }
-            }
-        } catch (JsonParseException e) {
-            e.printStackTrace();
-        } catch (JsonMappingException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-//        List<String> allLines = mondoDiseases.values().stream().map(s->s.getStringForFile()).collect(Collectors.toList());
-//        APFileWriter.writeSmallTextFile(allLines, "mondo");
-
-    }
+    public void readFile(String fName) {}
 
     public void processAndUpdateDocument(APDocument apDocument, int articleId) {
 
@@ -179,31 +133,7 @@ public class DiseaseHandler{
         return chains;
     }
 
-    @NoArgsConstructor
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class MondoJsonFile{
 
-        @JsonProperty("graphs")
-        JSONArray graphs;
-
-
-
-        public ArrayList getDiseaseNodes(){
-
-            for(Object obj: graphs){
-                LinkedHashMap linkedGraph = (LinkedHashMap) obj;
-                if(linkedGraph.containsKey("id") && linkedGraph.get("id").toString().equals("http://purl.obolibrary.org/obo/mondo.owl")){
-                    return (ArrayList)linkedGraph.get("nodes");
-
-                }
-
-
-            }
-
-            return new JSONArray();
-        }
-
-    }
     public List<APMultiWordAnnotationMapper> searchDisease(String infix){
         return diseaseLabelToMondo.entrySet().stream().filter(x->x.getKey().contains(infix.toLowerCase())).map(p-> new APMultiWordAnnotationMapper(p.getValue(),p.getKey())).collect(Collectors.toList());
     }
