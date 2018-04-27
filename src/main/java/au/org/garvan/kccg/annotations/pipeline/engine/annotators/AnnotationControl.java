@@ -11,12 +11,14 @@ import java.util.stream.Collectors;
 
 @Component
 public class AnnotationControl {
-    private static Integer filtersCount = 200;
+    private static Integer filtersCount = 100;
     private static final List<String> controlList = Arrays.asList("HP:0002664", "11515", "HP:0012531");
 
 
     public static List<ConceptFilter> getControlledFilters(List<ConceptFilter> input){
-        return input.stream().filter(f-> !controlList.contains(f.getId())).limit(filtersCount).collect(Collectors.toList());
+        return input.stream().filter(f-> !controlList.contains(f.getId()))
+                .filter(f->f.getFilteredArticleCount()>0)
+                .limit(filtersCount).collect(Collectors.toList());
     }
 
 
