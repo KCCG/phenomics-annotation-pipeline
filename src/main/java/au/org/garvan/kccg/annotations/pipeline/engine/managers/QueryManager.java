@@ -332,10 +332,10 @@ public class QueryManager {
                     DocumentPreprocessor.getPhenotypeHandler().searchPhenotype(infix));
         }
 
-        if (!smartSearch || smartQueryType.equals(AnnotationType.DISEASE)) {
-            shortListedDiseases = AnnotationControl.getControlledMWAnnotations(
-                    DocumentPreprocessor.getMondoHandler().searchDisease(infix));
-        }
+//        if (!smartSearch || smartQueryType.equals(AnnotationType.DISEASE)) {
+//            shortListedDiseases = AnnotationControl.getControlledMWAnnotations(
+//                    DocumentPreprocessor.getMondoHandler().searchDisease(infix));
+//        }
 
         //Ranking results
         Map<Object, Integer> rankedEntities = new HashMap<>();

@@ -59,7 +59,7 @@ public class DocumentPreprocessor {
 
 
 
-        mondoHandler = new DiseaseHandler("mondo.json");
+        mondoHandler = new DiseaseHandler("mondo20180415.json");
         mondoHandler.readFile();
 
 

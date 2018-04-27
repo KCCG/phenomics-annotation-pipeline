@@ -52,7 +52,7 @@ public class QueryController {
     }
 
     @ApiOperation(value = "searchArticles", nickname = "searchArticles")
-    @RequestMapping(value = "/query/v2.0", method = RequestMethod.POST, produces = "application/json")
+    @RequestMapping(value = "/query/", method = RequestMethod.POST, produces = "application/json")
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Success", response = PaginatedSearchResult.class),
@@ -79,25 +79,25 @@ public class QueryController {
     }
 
 
-
-
-    @ApiOperation(value = "getAutocomplete", nickname = "getAutocomplete", notes = "")
-    @RequestMapping(value = "/query/autocomplete/{infix}", method = RequestMethod.GET, produces = "application/json")
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Success", responseContainer = "List"),
-            @ApiResponse(code = 401, message = "Unauthorized"),
-            @ApiResponse(code = 403, message = "Forbidden"),
-            @ApiResponse(code = 404, message = "Not Found"),
-            @ApiResponse(code = 500, message = "Failure")})
-    @CrossOrigin
-    public List<String> getAutocomplete(@PathVariable(value = "infix") @ApiParam("infix") String infix) {
-
-        return engine.getAutocompleteList(infix.toUpperCase().trim());
-
-    }
+//
+//
+//    @ApiOperation(value = "getAutocomplete", nickname = "getAutocomplete", notes = "")
+//    @RequestMapping(value = "/query/autocomplete/old/{infix}", method = RequestMethod.GET, produces = "application/json")
+//    @ApiResponses(value = {
+//            @ApiResponse(code = 200, message = "Success", responseContainer = "List"),
+//            @ApiResponse(code = 401, message = "Unauthorized"),
+//            @ApiResponse(code = 403, message = "Forbidden"),
+//            @ApiResponse(code = 404, message = "Not Found"),
+//            @ApiResponse(code = 500, message = "Failure")})
+//    @CrossOrigin
+//    public List<String> getAutocomplete(@PathVariable(value = "infix") @ApiParam("infix") String infix) {
+//
+//        return engine.getAutocompleteList(infix.toUpperCase().trim());
+//
+//    }
 
     @ApiOperation(value = "getAutocompleteGeneric", nickname = "getAutocompleteGeneric", notes = "")
-    @RequestMapping(value = "/query/autocomplete/beta/{infix}", method = RequestMethod.GET, produces = "application/json")
+    @RequestMapping(value = "/query/autocomplete/{infix}", method = RequestMethod.GET, produces = "application/json")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Success", responseContainer = "List"),
             @ApiResponse(code = 401, message = "Unauthorized"),
