@@ -9,9 +9,12 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.APMultiWordAnnotationMapper;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.EntityType;
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
 import au.org.garvan.kccg.annotations.pipeline.model.query.*;
+import info.aduna.text.StringUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
@@ -159,7 +162,7 @@ public class QueryManager {
         List<ConceptFilter> lstGeneFilter = resultSet.getConceptCounts();
         List<ConceptFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
         finalResult.setFilters(sortedLstGeneFilter);
-        finalResult.setQueryId(query.getQueryId());
+        finalResult.setQuery(getQueryEcho(query));
         return finalResult;
 
     }
@@ -173,7 +176,8 @@ public class QueryManager {
         List<ConceptFilter> lstGeneFilter = resultSet.getConceptCounts();
         List<ConceptFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
         finalResult.setFilters(AnnotationControl.getControlledFilters(sortedLstGeneFilter));
-        finalResult.setQueryId(query.getQueryId());
+
+        finalResult.setQuery(getQueryEcho(query));
         return finalResult;
 
     }
@@ -188,10 +192,69 @@ public class QueryManager {
 
         List<ConceptFilter> sortedLstGeneFilter = cachedFilters.getFinalFilters().stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
         finalResult.setFilters(AnnotationControl.getControlledFilters(sortedLstGeneFilter));
-        finalResult.setQueryId(query.getQueryId());
+        finalResult.setQuery(getQueryEcho(query));
         return finalResult;
 
     }
+
+    private SearchQueryEcho getQueryEcho(SearchQueryV2 query){
+        List<ConceptFilter> sItems = query.getSearchItems().stream()
+                                            .map(s-> (getFilterBasedOnId(s)))
+                                            .collect(Collectors.toList());
+
+        List<ConceptFilter> fItems = query.getFilterItems().stream()
+                                        .map(f-> getFilterBasedOnId(f))
+                                        .collect(Collectors.toList());
+
+        SearchQueryEcho searchQueryEcho = new SearchQueryEcho(
+                query.getQueryId(),
+                sItems,
+                fItems
+        );
+
+        return searchQueryEcho;
+
+    }
+
+    private SearchQueryEcho getQueryEcho(SearchQueryV1 query){
+        List<ConceptFilter> sItems = query.getSearchItems().stream()
+                .map(s-> (getFilterBasedOnId(s.getId())))
+                .collect(Collectors.toList());
+
+        List<ConceptFilter> fItems = query.getFilterItems().stream()
+                .map(f-> getFilterBasedOnId(f.getId()))
+                .collect(Collectors.toList());
+
+        SearchQueryEcho searchQueryEcho = new SearchQueryEcho(
+                query.getQueryId(),
+                sItems,
+                fItems
+        );
+
+        return searchQueryEcho;
+
+    }
+    private ConceptFilter getFilterBasedOnId(String id) {
+        ConceptFilter conceptFilter = new ConceptFilter();
+        if (id.contains("HP")) {
+            //Phenotype
+            String text = DocumentPreprocessor.getPhenotypeHandler().getPhenotypeLabelWithId(id);
+            conceptFilter.setId(id);
+            conceptFilter.setType(AnnotationType.PHENOTYPE.toString());
+            conceptFilter.setText(text);
+        } else if (StringUtils.isNumeric(id)) {
+            // Gene
+            APGene aGene = DocumentPreprocessor.getHGNCGeneHandler().getGeneWithId(id);
+            if (aGene != null) {
+                conceptFilter.setId(id);
+                conceptFilter.setType(AnnotationType.GENE.toString());
+                conceptFilter.setText(aGene.getApprovedSymbol());
+            }
+        }
+        return conceptFilter;
+    }
+
+
 
 
     public List<String> getAutocompleteList(String infix) {
@@ -446,6 +509,8 @@ public class QueryManager {
 
         return returnList;
     }
+
+
 
 
 }

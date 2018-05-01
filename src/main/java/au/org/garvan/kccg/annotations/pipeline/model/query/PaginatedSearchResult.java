@@ -22,6 +22,6 @@ public class PaginatedSearchResult {
     List<SearchResultV1> articles;
     PaginationRequestParams pagination;
     List<ConceptFilter> filters;
-    String queryId;
+    SearchQueryEcho query;
 
 }
