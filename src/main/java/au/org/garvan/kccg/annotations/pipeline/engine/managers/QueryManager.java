@@ -1,11 +1,13 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.AnnotationControl;
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.Utilities;
 import au.org.garvan.kccg.annotations.pipeline.engine.caches.L1cache.ArticleResponseCache;
 import au.org.garvan.kccg.annotations.pipeline.engine.caches.L1cache.FiltersResponseCache;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.cache.FiltersCacheObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManagerResultSet;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.APMultiWordAnnotationMapper;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
@@ -236,21 +238,26 @@ public class QueryManager {
     }
     private ConceptFilter getFilterBasedOnId(String id) {
         ConceptFilter conceptFilter = new ConceptFilter();
-        if (id.contains("HP")) {
-            //Phenotype
-            String text = DocumentPreprocessor.getPhenotypeHandler().getPhenotypeLabelWithId(id);
-            conceptFilter.setId(id);
-            conceptFilter.setType(AnnotationType.PHENOTYPE.toString());
-            conceptFilter.setText(text);
-        } else if (StringUtils.isNumeric(id)) {
-            // Gene
-            APGene aGene = DocumentPreprocessor.getHGNCGeneHandler().getGeneWithId(id);
-            if (aGene != null) {
+        AnnotationType type = Utilities.getAnnotationTypeBasedOnId(id);
+        switch(type) {
+            case PHENOTYPE:
+                //Phenotype
+                String text = DocumentPreprocessor.getPhenotypeHandler().getPhenotypeLabelWithId(id);
                 conceptFilter.setId(id);
-                conceptFilter.setType(AnnotationType.GENE.toString());
-                conceptFilter.setText(aGene.getApprovedSymbol());
-            }
+                conceptFilter.setType(AnnotationType.PHENOTYPE.toString());
+                conceptFilter.setText(text);
+                break;
+            case GENE:
+                // Gene
+                APGene aGene = DocumentPreprocessor.getHGNCGeneHandler().getGeneWithId(id);
+                if (aGene != null) {
+                    conceptFilter.setId(id);
+                    conceptFilter.setType(AnnotationType.GENE.toString());
+                    conceptFilter.setText(aGene.getApprovedSymbol());
+                }
+                break;
         }
+
         return conceptFilter;
     }
 
