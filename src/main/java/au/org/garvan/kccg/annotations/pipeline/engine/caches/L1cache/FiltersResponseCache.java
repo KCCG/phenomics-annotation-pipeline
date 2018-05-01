@@ -26,7 +26,7 @@ public class FiltersResponseCache {
     static {
         slf4jLogger.info("Initializing Filters Response Cache L1.");
         queryCache = CacheBuilder.newBuilder()
-                .maximumSize(10000)
+                .maximumSize(1000)
                 .expireAfterWrite(24, TimeUnit.HOURS)
                 .build(
                         new CacheLoader<String, FiltersCacheObject>(){

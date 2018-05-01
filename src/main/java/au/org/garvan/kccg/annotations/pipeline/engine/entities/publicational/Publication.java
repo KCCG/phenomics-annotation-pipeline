@@ -7,6 +7,7 @@ import com.google.common.base.Strings;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import org.bouncycastle.crypto.ec.ECElGamalDecryptor;
 import org.json.simple.JSONObject;
 
 /**
@@ -48,10 +49,34 @@ public class Publication {
     public Publication(DynamoDBObject dbObject){
         if(dbObject.getEntityType().equals(EntityType.Publication))
         {
-            title = dbObject.getJsonObject() .get("title").toString();
-            isoAbbreviation = dbObject.getJsonObject().get("isoAbbreviation").toString();
-            issnType = Common.emptyStringToNA(dbObject.getJsonObject().get("issnType").toString());
-            issnNumber = Common.emptyStringToNA(dbObject.getJsonObject().get("issnNumber").toString());
+            try {
+                title = dbObject.getJsonObject().get("title").toString();
+            }
+            catch (Exception e){
+                title = "N/A";
+            }
+
+            try {
+                isoAbbreviation = dbObject.getJsonObject().get("isoAbbreviation").toString();
+            }
+            catch (Exception e){
+                isoAbbreviation = "N/A";
+            }
+
+            try {
+                issnType = Common.emptyStringToNA(dbObject.getJsonObject().get("issnType").toString());
+            }
+            catch(Exception e)
+            {
+                issnType = "N/A";
+            }
+            try {
+                issnNumber = Common.emptyStringToNA(dbObject.getJsonObject().get("issnNumber").toString());
+            }
+            catch (Exception e)
+            {
+                issnNumber = "N/A";
+            }
 
         }
         else{
