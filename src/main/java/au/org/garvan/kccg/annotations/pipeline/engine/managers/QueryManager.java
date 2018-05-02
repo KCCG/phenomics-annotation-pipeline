@@ -201,11 +201,11 @@ public class QueryManager {
 
     private SearchQueryEcho getQueryEcho(SearchQueryV2 query){
         List<ConceptFilter> sItems = query.getSearchItems().stream()
-                                            .map(s-> (getFilterBasedOnId(s)))
+                                            .map(s-> (Utilities.getFilterBasedOnId(s)))
                                             .collect(Collectors.toList());
 
         List<ConceptFilter> fItems = query.getFilterItems().stream()
-                                        .map(f-> getFilterBasedOnId(f))
+                                        .map(f-> Utilities.getFilterBasedOnId(f))
                                         .collect(Collectors.toList());
 
         SearchQueryEcho searchQueryEcho = new SearchQueryEcho(
@@ -220,11 +220,11 @@ public class QueryManager {
 
     private SearchQueryEcho getQueryEcho(SearchQueryV1 query){
         List<ConceptFilter> sItems = query.getSearchItems().stream()
-                .map(s-> (getFilterBasedOnId(s.getId())))
+                .map(s-> (Utilities.getFilterBasedOnId(s.getId())))
                 .collect(Collectors.toList());
 
         List<ConceptFilter> fItems = query.getFilterItems().stream()
-                .map(f-> getFilterBasedOnId(f.getId()))
+                .map(f-> Utilities.getFilterBasedOnId(f.getId()))
                 .collect(Collectors.toList());
 
         SearchQueryEcho searchQueryEcho = new SearchQueryEcho(
@@ -236,30 +236,7 @@ public class QueryManager {
         return searchQueryEcho;
 
     }
-    private ConceptFilter getFilterBasedOnId(String id) {
-        ConceptFilter conceptFilter = new ConceptFilter();
-        AnnotationType type = Utilities.getAnnotationTypeBasedOnId(id);
-        switch(type) {
-            case PHENOTYPE:
-                //Phenotype
-                String text = DocumentPreprocessor.getPhenotypeHandler().getPhenotypeLabelWithId(id);
-                conceptFilter.setId(id);
-                conceptFilter.setType(AnnotationType.PHENOTYPE.toString());
-                conceptFilter.setText(text);
-                break;
-            case GENE:
-                // Gene
-                APGene aGene = DocumentPreprocessor.getHGNCGeneHandler().getGeneWithId(id);
-                if (aGene != null) {
-                    conceptFilter.setId(id);
-                    conceptFilter.setType(AnnotationType.GENE.toString());
-                    conceptFilter.setText(aGene.getApprovedSymbol());
-                }
-                break;
-        }
 
-        return conceptFilter;
-    }
 
 
 

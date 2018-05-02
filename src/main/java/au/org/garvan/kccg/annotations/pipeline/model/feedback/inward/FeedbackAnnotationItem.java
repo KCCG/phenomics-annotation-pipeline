@@ -1,4 +1,4 @@
-package au.org.garvan.kccg.annotations.pipeline.model.feedback;
+package au.org.garvan.kccg.annotations.pipeline.model.feedback.inward;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

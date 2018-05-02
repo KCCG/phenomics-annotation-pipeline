@@ -37,6 +37,14 @@ public class SearchQueryV2 {
     @ApiModelProperty
     private List<String> filterItems;
 
+    public SearchQueryV2 clone(){
+       SearchQueryV2 searchQueryV2 =   new SearchQueryV2();
+       searchQueryV2.setQueryId(this.queryId);
+       searchQueryV2.setSearchItems(this.searchItems.stream().collect(Collectors.toList()));
+       searchQueryV2.setFilterItems(this.filterItems.stream().collect(Collectors.toList()));
+       return searchQueryV2;
+    }
+
 
     public JSONObject constructJson(){
         ObjectMapper mapper = new ObjectMapper();
