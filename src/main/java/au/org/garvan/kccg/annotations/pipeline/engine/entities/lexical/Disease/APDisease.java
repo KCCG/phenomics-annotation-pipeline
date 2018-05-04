@@ -1,12 +1,10 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Disease;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.LexicalEntity;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import com.google.common.base.Strings;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import java.util.ArrayList;
@@ -26,7 +24,7 @@ public class APDisease extends LexicalEntity {
     private String mondoID;
     private String definition;
     private String label;
-    private List<APDiseaseSynonym> synonyms;
+    private List<String> synonyms;
     private boolean deprecated;
 
     public APDisease(LinkedHashMap linkedHashMap) {
@@ -48,8 +46,10 @@ public class APDisease extends LexicalEntity {
 
                     ArrayList lstSynonyms = (ArrayList) linkedMeta.get("synonyms");
                     for (Object obj : lstSynonyms) {
-                        APDiseaseSynonym tempSyn = new APDiseaseSynonym((LinkedHashMap) obj);
-                        synonyms.add(tempSyn);
+                        LinkedHashMap synonymMap =   ((LinkedHashMap)obj);
+                        if(synonymMap.get("pred").toString().equals("hasExactSynonym"))
+                            synonyms.add(synonymMap.get("val").toString());
+
                     }
                 }
             }
@@ -68,35 +68,37 @@ public class APDisease extends LexicalEntity {
     }
 
 
-    public String getStringForFile(){
-        String disease = String.format("%s:::\"%s\"", mondoID, label.replace("/", " " )
-//                .trim()
-//                .replace("(", "")
-//                .replace(")", "")
-//                .replace(".", "")
-//                .replace(";", "")
-//                .replace(":", "")
-//                .replace(",", "")
-//                .replace("-", "")
-                .trim());
-        for (APDiseaseSynonym s : synonyms){
 
 
-            if(!Strings.isNullOrEmpty(s.getVal()) && !s.getVal().toUpperCase().equals(s.getVal()) ){
-                disease = disease + " OR " +  String.format("\"%s\"", s.getVal().replace("/", " " )
-//                        .trim()
-//                        .replace("(", "")
-//                        .replace(")", "")
-//                        .replace(".", "")
-//                        .replace(";", "")
-//                        .replace(":", "")
-//                        .replace(",", "")
-//                        .replace("-", "")
-                        .trim());
-            }
+    public JSONObject getAnnotationJsonForAnnotator(){
+        JSONObject jsonDiseases = new JSONObject();
+
+        jsonDiseases.put("oboURI", oboURI);
+        jsonDiseases.put("mondoID", mondoID);
+        jsonDiseases.put("definition", definition);
+        jsonDiseases.put("label", label);
+        jsonDiseases.put("synonyms", synonyms);
+        jsonDiseases.put("deprecated", deprecated);
+
+        return jsonDiseases;
+
+    }
+
+
+    public JSONObject getAnnotationJsonForAffinity(){
+        JSONObject jsonDiseases = new JSONObject();
+
+        jsonDiseases.put("queryId", this.getMondoID());
+        jsonDiseases.put("queryType", AnnotationType.DISEASE.toString());
+
+        String queryString = String.format("\"%s\"", this.label.trim());
+        if(synonyms.size()>0)
+        {
+            queryString = queryString + " OR " + synonyms.stream().map(s-> String.format("\"%s\"", s.trim())).collect(Collectors.joining(" OR "));
 
         }
-        return disease;
+        jsonDiseases.put("queryString", queryString);
+        return jsonDiseases;
 
     }
 
@@ -120,7 +122,7 @@ public class APDisease extends LexicalEntity {
         lstData.add(String.format("========%s========", mondoID ));
         lstData.add(String.format("%s: %s", "Complete URI", oboURI));
         lstData.add(String.format("%s: %s", "Preferred Label", label));
-        lstData.add(String.format("%s: %s", "Other Labels",  String.join("\n",synonyms.stream().map(s->s.getVal()).collect(Collectors.toList()))));
+        lstData.add(String.format("%s: %s", "Other Labels",  String.join("\n",synonyms)));
 
         return lstData;
     }
