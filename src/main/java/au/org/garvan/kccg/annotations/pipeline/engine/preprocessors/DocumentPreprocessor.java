@@ -60,7 +60,7 @@ public class DocumentPreprocessor {
 
 
         mondoHandler = new DiseaseHandler();
-        mondoHandler.readFile();
+        mondoHandler.init();
 
 
         if(!CoreNLPManager.isInitialized())
@@ -141,12 +141,17 @@ public class DocumentPreprocessor {
         if(docProfile.getAnnotationRequests().contains(AnnotationType.PHENOTYPE))
         {
             phenotypeHandler.processAndUpdateDocument(doc);
+            slf4jLogger.info(String.format("Hatching Article ID: %s Phenotype Annotation is done. ", articleId));
+
         }
         if(docProfile.getAnnotationRequests().contains(AnnotationType.DISEASE))
         {
             mondoHandler.processAndUpdateDocument(doc, articleId);
+            slf4jLogger.info(String.format("Hatching Article ID: %s Disease Annotation is done. ", articleId));
+
         }
-        slf4jLogger.info(String.format("Hatching Article ID: %s Phenotype Annotation is done. ", articleId));
+        slf4jLogger.info(String.format("Hatching Article ID: %s  Annotations are completed. ", articleId));
+
 
 
     }

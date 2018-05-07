@@ -20,13 +20,16 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import edu.stanford.nlp.util.ArrayMap;
 import lombok.NoArgsConstructor;
 import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Collect$;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -38,8 +41,8 @@ public class DiseaseHandler{
     private Map<String, APDisease> mondoDiseases;
     private Map<String, String> diseaseLabelToMondo;
 
-    private static final String STANDARD = "MONDO";
-    private static final String VERSION = "2018";
+    private static String STANDARD;
+    private static String VERSION;
 
     public DiseaseHandler(){
 
@@ -47,13 +50,31 @@ public class DiseaseHandler{
 
     }
 
+    /***
+     * Init for index reading
+     */
+    public void init(){
+        mondoDiseases = new HashMap<>();
+        diseaseLabelToMondo = new HashMap<>();
+        readFile("mondoAnnotationIndex.json");
 
-    public void readFile(String fName) {}
+    }
 
+
+    /***
+     * Annotation function called from document preprocessor.
+     * @param apDocument
+     * @param articleId
+     */
+
+    //TODO: Split in two functions, one for calling affinity and other to fetch results.
     public void processAndUpdateDocument(APDocument apDocument, int articleId) {
 
+        //TODO: Call
         List<AnnotationHit> diseaseHits =   affinityConnector.annotateAbstract(apDocument.getCleanedText(), articleId, "en");
 
+
+        //TODO: Add call and fetch result
         for(AnnotationHit dHit: diseaseHits){
             APDisease selectedDisease = getDisease(dHit.getAnnotationID());
             List<List<AnnotationTerm>> chainedTerms = chainAnnotationTerms(dHit.getHits());
@@ -84,6 +105,40 @@ public class DiseaseHandler{
             }
 
         }
+
+        //POINT: Longest Match
+        sustainLongestMatch(apDocument);
+
+    }
+
+    private void sustainLongestMatch(APDocument apDocument){
+        List<APSentence> apSentences = apDocument.getSentences().stream().filter(s->s.getAnnotations().stream().filter(a->a.getType().equals(AnnotationType.DISEASE)).collect(Collectors.toList()).size()>1).collect(Collectors.toList());
+        for (APSentence candidateSentence : apSentences){
+
+            List<Annotation> annotations = candidateSentence.getAnnotations().stream().filter(a->a.getType().equals(AnnotationType.DISEASE)).collect(Collectors.toList());
+            List<Integer> removals = new ArrayList<>();
+            for(Integer x = 0; x< annotations.size(); x++) {
+                for(Integer y = x+1; y<annotations.size(); y++)
+                {
+                    if(annotations.get(x).getTokenIDs().size() != annotations.get(y).getTokenIDs().size()) {
+                        Integer largerAnnotationIndex = annotations.get(x).getTokenIDs().size() > annotations.get(y).getTokenIDs().size()? x :y;
+                        Integer smallAnnotationIndex =  annotations.get(x).getTokenIDs().size() > annotations.get(y).getTokenIDs().size()? y :x;
+
+                        if(annotations.get(largerAnnotationIndex).getTokenIDs().containsAll(annotations.get(smallAnnotationIndex).getTokenIDs())){
+                            slf4jLogger.debug(String.format("Dissolving smaller annotation. Document id:%d |  LargeTokens:%s  | SmallTokens:%s ", apDocument.getId(), annotations.get(largerAnnotationIndex).getTokenIDs().toString(), annotations.get(smallAnnotationIndex).getTokenIDs().toString()));
+                            candidateSentence.getAnnotations().remove(annotations.get(smallAnnotationIndex));
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+
+        }
+
 
     }
 
@@ -134,6 +189,11 @@ public class DiseaseHandler{
     }
 
 
+    /***
+     * Helping function for autocomplete.
+     * @param infix
+     * @return
+     */
     public List<APMultiWordAnnotationMapper> searchDisease(String infix){
         return diseaseLabelToMondo.entrySet().stream().filter(x->x.getKey().contains(infix.toLowerCase())).map(p-> new APMultiWordAnnotationMapper(p.getValue(),p.getKey())).collect(Collectors.toList());
     }
@@ -143,6 +203,59 @@ public class DiseaseHandler{
             return mondoDiseases.get(key);
         else
             return null;
+    }
+
+
+    /***
+     * Index is generated and given with artifact
+     * @param fileName
+     */
+    private void readFile(String fileName) {
+
+        slf4jLogger.info(String.format("Reading index file. Filename:%s", fileName));
+        String path =  "lexicons/"+ fileName;
+        InputStream input = getClass().getResourceAsStream("resources/" + path);
+        if (input == null) {
+            // this is how we load file within editor (eg eclipse)
+            input = DiseaseHandler.class.getClassLoader().getResourceAsStream(path);
+        }
+
+        try {
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
+            String line;
+            StringBuilder stringBuilder = new StringBuilder();
+
+            while((line = reader.readLine()) != null) {
+                stringBuilder.append(line);
+            }
+            JSONObject jsonObject = (JSONObject) JSONValue.parse(stringBuilder.toString());
+            VERSION = jsonObject.get("version").toString();
+            STANDARD = jsonObject.get("standard").toString();
+            if(jsonObject.containsKey("diseases")){
+                JSONArray jsonDiseases = (JSONArray) jsonObject.get("diseases");
+
+                for(Object obj: jsonDiseases){
+                    JSONObject jsonDisease = (JSONObject) obj;
+
+                    ObjectMapper mapper = new ObjectMapper();
+                    APDisease apDisease =  mapper.readValue(jsonDisease.toString(), APDisease.class);
+                    mondoDiseases.put(apDisease.getMondoID(), apDisease);
+                    diseaseLabelToMondo.put(apDisease.getLabel(), apDisease.getMondoID());
+                    apDisease.getSynonyms().stream().forEach(s-> diseaseLabelToMondo.put(s, apDisease.getMondoID()));
+
+                }
+            }
+
+
+
+            reader.close();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
 

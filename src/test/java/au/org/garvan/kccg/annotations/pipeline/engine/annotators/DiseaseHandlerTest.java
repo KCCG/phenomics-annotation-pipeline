@@ -3,6 +3,7 @@ package au.org.garvan.kccg.annotations.pipeline.engine.annotators;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.disease.DiseaseHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -12,9 +13,9 @@ import static org.junit.Assert.*;
 public class DiseaseHandlerTest {
 
     DiseaseHandler diseaseHandler = new DiseaseHandler();
-    @Test
-    public void readFile() {
-            diseaseHandler.readFile("mondo20180415.json");
+    @Before
+    public void init() {
+            diseaseHandler.init();
 
     }
 

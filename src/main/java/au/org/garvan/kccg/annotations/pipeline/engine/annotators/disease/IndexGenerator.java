@@ -41,7 +41,7 @@ public class IndexGenerator {
     private final String STANDARD = "MONDO";
     private final String ANNOTATIONS = AnnotationType.DISEASE.toString();
 
-    private static final List<String> diseaseIdsControlList = Arrays.asList("MONDO:0021150","MONDO:0021151","MONDO:0000001","MONDO:0021153","MONDO:0021140","MONDO:0021141");
+    private static final List<String> diseaseIdsControlList = Arrays.asList("MONDO:0021150","MONDO:0021151","MONDO:0000001","MONDO:0021153","MONDO:0021140","MONDO:0021141", "MONDO:0002254", "MONDO:0021137", "MONDO:0021178", "MONDO:0021136", "MONDO:0021137" );
 
     public void generateIndex(String fName) {
         fileName = fName;
