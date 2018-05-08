@@ -15,7 +15,8 @@ import java.util.stream.IntStream;
 public class GenesHandler extends BaseLexiconHandler {
     private final List<String> HGNCFileHeader = Arrays.asList("HGNC ID", "Approved Symbol", "Approved Name", "Status", "Previous Symbols", "Synonyms", "Chromosome", "Accession Numbers", "RefSeq IDs", "Gene Family Tag", "Gene family description", "Gene family ID");
     private Map<String, Integer> headerMap;
-    private Map<String, APGene> geneList = new HashMap<>();
+    private Map<String, APGene> geneMapWithSymbol = new HashMap<>();
+    private Map<String, APGene> geneMapWithIds = new HashMap<>();
 
 
     public GenesHandler(String fName) {
@@ -36,8 +37,8 @@ public class GenesHandler extends BaseLexiconHandler {
         if (verifyHeader(HGNCFileHeader)) {
             for (List<String> d : data) {
                 String geneSymbol = d.get(headerMap.get("Approved Symbol"));
-                if (geneList.containsKey(geneSymbol)) {
-                    APGene preExistedGene = geneList.get(geneSymbol);
+                if (geneMapWithSymbol.containsKey(geneSymbol)) {
+                    APGene preExistedGene = geneMapWithSymbol.get(geneSymbol);
                     preExistedGene.getGeneFamilyTag().add(d.get(headerMap.get("Gene Family Tag")));
                     preExistedGene.getGeneFamilyDescription().add(d.get(headerMap.get("Gene family description")));
                     preExistedGene.getGeneFamilyID().add(Integer.parseInt(d.get(headerMap.get("Gene family ID"))));
@@ -59,7 +60,8 @@ public class GenesHandler extends BaseLexiconHandler {
                             new ArrayList<> (Arrays.asList(d.get(headerMap.get("Gene family description")).isEmpty()?"None":d.get(headerMap.get("Gene family description")))),
                             new ArrayList<> (Arrays.asList(Integer.parseInt(d.get(headerMap.get("Gene family ID")).isEmpty()? "0" : d.get(headerMap.get("Gene family ID")))))
                     );
-                    geneList.put(geneSymbol, tempGene);
+                    geneMapWithSymbol.put(geneSymbol, tempGene);
+                    geneMapWithIds.put(String.valueOf(tempGene.getHGNCID()), tempGene);
                 }
             }
         }
@@ -67,14 +69,18 @@ public class GenesHandler extends BaseLexiconHandler {
     }
 
     public APGene getGene(String tokenText) {
-        if (geneList.containsKey(tokenText))
-            return geneList.get(tokenText);
+        if (geneMapWithSymbol.containsKey(tokenText))
+            return geneMapWithSymbol.get(tokenText);
         else
             return null;
     }
 
+    public APGene getGeneWithId(String id) {
+            return geneMapWithIds.get(id);
+    }
+
     public List<String> serchGenes(String text){
-          List<APGene> collectedGenes =  geneList.entrySet().stream().
+          List<APGene> collectedGenes =  geneMapWithSymbol.entrySet().stream().
                  filter(x->x.getKey().contains(text))
                   .map(map->map.getValue())
                   .collect(Collectors.toList());
@@ -84,7 +90,7 @@ public class GenesHandler extends BaseLexiconHandler {
 
     }
     public List<APGene> searchGenes(String text){
-          List<APGene> collectedGenes =  geneList.entrySet().stream().
+          List<APGene> collectedGenes =  geneMapWithSymbol.entrySet().stream().
                  filter(x->x.getKey().contains(text))
                   .map(map->map.getValue())
                   .collect(Collectors.toList());
@@ -94,16 +100,6 @@ public class GenesHandler extends BaseLexiconHandler {
 
     }
 
-    /***
-     * For the search query, Genes are treated as generic filters.
-     * Only IDs are passed. This function will collect all genes passed as IDs in list of String.
-     * @param IDs
-     * @return
-     */
-    public List<APGene> geteGenesWithIDs(List<String> IDs)
-    {
-        return geneList.values().stream().filter( g->  IDs.contains(String.valueOf(g.getHGNCID()))).collect(Collectors.toList());
-    }
 
 
 

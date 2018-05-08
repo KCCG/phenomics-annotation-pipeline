@@ -20,10 +20,10 @@ import java.util.stream.Collectors;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor(access = AccessLevel.PUBLIC)
+//@AllArgsConstructor(access = AccessLevel.PUBLIC)
 @ApiModel
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SearchQueryV2 {
+public class SearchQueryEcho {
 
 
     @ApiModelProperty
@@ -31,33 +31,29 @@ public class SearchQueryV2 {
 
     @JsonProperty
     @ApiModelProperty
-    private List<String> searchItems;
+    private List<InputItemDto> searchItems;
 
     @JsonProperty
     @ApiModelProperty
-    private List<String> filterItems;
+    private List<InputItemDto> filterItems;
 
-    public SearchQueryV2 clone(){
-       SearchQueryV2 searchQueryV2 =   new SearchQueryV2();
-       searchQueryV2.setQueryId(this.queryId);
-       searchQueryV2.setSearchItems(this.searchItems.stream().collect(Collectors.toList()));
-       searchQueryV2.setFilterItems(this.filterItems.stream().collect(Collectors.toList()));
-       return searchQueryV2;
+
+    @Data
+    @AllArgsConstructor
+    public static class InputItemDto {
+
+        @JsonProperty
+        String id;
+        @JsonProperty
+        String type;
+        @JsonProperty
+        String text;
     }
 
-
-    public JSONObject constructJson(){
-        ObjectMapper mapper = new ObjectMapper();
-        String jsonString="{}";
-        try {
-            jsonString= mapper.writeValueAsString(this);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
-
-        JSONObject returnObject = (JSONObject) JSONValue.parse(jsonString);
-        return returnObject;
+    public SearchQueryEcho(String qId, List<ConceptFilter> sItems, List<ConceptFilter> fItems ){
+        queryId = qId;
+        searchItems = sItems.stream().map(s-> new InputItemDto(s.getId(), s.getType(),s.getText())).collect(Collectors.toList());
+        filterItems = fItems.stream().map(s-> new InputItemDto(s.getId(), s.getType(),s.getText())).collect(Collectors.toList());
     }
-
 
 }

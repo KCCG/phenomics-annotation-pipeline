@@ -1,17 +1,22 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.managers;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.AnnotationControl;
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.Utilities;
 import au.org.garvan.kccg.annotations.pipeline.engine.caches.L1cache.ArticleResponseCache;
 import au.org.garvan.kccg.annotations.pipeline.engine.caches.L1cache.FiltersResponseCache;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.cache.FiltersCacheObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManagerResultSet;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.APMultiWordAnnotationMapper;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
+import au.org.garvan.kccg.annotations.pipeline.engine.enums.EntityType;
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
 import au.org.garvan.kccg.annotations.pipeline.model.query.*;
+import info.aduna.text.StringUtil;
+import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
@@ -159,7 +164,7 @@ public class QueryManager {
         List<ConceptFilter> lstGeneFilter = resultSet.getConceptCounts();
         List<ConceptFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
         finalResult.setFilters(sortedLstGeneFilter);
-        finalResult.setQueryId(query.getQueryId());
+        finalResult.setQuery(getQueryEcho(query));
         return finalResult;
 
     }
@@ -173,7 +178,8 @@ public class QueryManager {
         List<ConceptFilter> lstGeneFilter = resultSet.getConceptCounts();
         List<ConceptFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
         finalResult.setFilters(AnnotationControl.getControlledFilters(sortedLstGeneFilter));
-        finalResult.setQueryId(query.getQueryId());
+
+        finalResult.setQuery(getQueryEcho(query));
         return finalResult;
 
     }
@@ -188,10 +194,51 @@ public class QueryManager {
 
         List<ConceptFilter> sortedLstGeneFilter = cachedFilters.getFinalFilters().stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
         finalResult.setFilters(AnnotationControl.getControlledFilters(sortedLstGeneFilter));
-        finalResult.setQueryId(query.getQueryId());
+        finalResult.setQuery(getQueryEcho(query));
         return finalResult;
 
     }
+
+    private SearchQueryEcho getQueryEcho(SearchQueryV2 query){
+        List<ConceptFilter> sItems = query.getSearchItems().stream()
+                                            .map(s-> (Utilities.getFilterBasedOnId(s)))
+                                            .collect(Collectors.toList());
+
+        List<ConceptFilter> fItems = query.getFilterItems().stream()
+                                        .map(f-> Utilities.getFilterBasedOnId(f))
+                                        .collect(Collectors.toList());
+
+        SearchQueryEcho searchQueryEcho = new SearchQueryEcho(
+                query.getQueryId(),
+                sItems,
+                fItems
+        );
+
+        return searchQueryEcho;
+
+    }
+
+    private SearchQueryEcho getQueryEcho(SearchQueryV1 query){
+        List<ConceptFilter> sItems = query.getSearchItems().stream()
+                .map(s-> (Utilities.getFilterBasedOnId(s.getId())))
+                .collect(Collectors.toList());
+
+        List<ConceptFilter> fItems = query.getFilterItems().stream()
+                .map(f-> Utilities.getFilterBasedOnId(f.getId()))
+                .collect(Collectors.toList());
+
+        SearchQueryEcho searchQueryEcho = new SearchQueryEcho(
+                query.getQueryId(),
+                sItems,
+                fItems
+        );
+
+        return searchQueryEcho;
+
+    }
+
+
+
 
 
     public List<String> getAutocompleteList(String infix) {
@@ -446,6 +493,8 @@ public class QueryManager {
 
         return returnList;
     }
+
+
 
 
 }

@@ -36,7 +36,8 @@ public class PersistentFiltersArticlesCache {
     static {
         slf4jLogger.info("Initializing Persistent Filters Article Cache L2.");
         l3Cache = CacheBuilder.newBuilder()
-                .maximumSize(500)
+                .maximumSize(100)
+                .expireAfterWrite(1, TimeUnit.HOURS)
                 .build(
                         new CacheLoader<String, L2CacheObject>(){
                             @Override
