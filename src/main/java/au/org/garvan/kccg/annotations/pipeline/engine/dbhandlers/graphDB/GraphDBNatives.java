@@ -4,6 +4,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.ArticleW
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Disease.APDisease;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.LexicalEntity;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APSentence;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
@@ -26,6 +27,8 @@ import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcString;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.Util;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +48,7 @@ public class GraphDBNatives {
 
     private static Properties props = new Properties();
     private static IDBAccess remote;
-    private static boolean ENABLE_PRINTING = false;
+    private static boolean ENABLE_PRINTING = true;
 
     @Autowired
     public GraphDBNatives(@Value("${spring.dbhandlers.graphdb.endpoint}") String neo4jDbEndpoint,
@@ -69,7 +72,6 @@ public class GraphDBNatives {
         System.out.println("QUERY: " + title + " --------------------");
         // map to Cypher
         String cypher = iot.jcypher.util.Util.toCypher(query, format);
-
         System.out.println("CYPHER --------------------");
         System.out.println(cypher);
 
@@ -134,7 +136,7 @@ public class GraphDBNatives {
                     JcNode tempMeshHeading = new JcNode("nodeMeshHeading" + Integer.toString(x));
                     nodeListMeshHeadings.add(tempMeshHeading);
                     meshHeadingClauses.add(MERGE.node(tempMeshHeading).label(GraphDBConstants.MESH_HEADING_NODE_LABEL)
-                            .property(GraphDBConstants.MESH_HEADING_NODE_ID).value(currentMeshHeading. getUI())
+                            .property(GraphDBConstants.MESH_HEADING_NODE_ID).value(currentMeshHeading.getUI())
                             .property(GraphDBConstants.MESH_HEADING_TEXT).value(currentMeshHeading.getText()));
 
                     meshHeadingClauses.add(MERGE.node(nodeArticle).relation().out()
@@ -144,7 +146,6 @@ public class GraphDBNatives {
             }
 
 
-
             queryClauses.add(articleClause);
 
 //            queryClauses.addAll(authorsClauses);
@@ -152,7 +153,7 @@ public class GraphDBNatives {
 
 
             //Create publicational node and creation clause
-            if(article.getPublication().isValidKey()) {
+            if (article.getPublication().isValidKey()) {
                 JcNode nodePublication = new JcNode("nodePublication");
                 IClause publicationClause = MERGE.node(nodePublication).label(GraphDBConstants.PUBLICATION_NODE_LABEL)
                         .property(GraphDBConstants.PUBLICATION_NODE_TITLE).value(article.getPublication().getTitle())
@@ -168,6 +169,8 @@ public class GraphDBNatives {
             }
 
             fillEntitiesGraphData(queryClauses, article, nodeArticle);
+            //Point: Changing logic to unique edge between an entity and article.
+            //smartFillEntitiesGraphData(queryClauses, article, nodeArticle);
 
             JcQueryResult result = executeQueryClauses(queryClauses);
 
@@ -196,7 +199,7 @@ public class GraphDBNatives {
                             IClause geneClause = MERGE.node(nodeGene)
                                     .label(GraphDBConstants.getEntityLabel(AnnotationType.GENE))
                                     .label(GraphDBConstants.ENTITY_NODE_LABEL)
-                                    .property(GraphDBConstants.ENTITY_NODE_ID).value( String.valueOf(gene.getHGNCID()))
+                                    .property(GraphDBConstants.ENTITY_NODE_ID).value(String.valueOf(gene.getHGNCID()))
                                     .property(GraphDBConstants.ENTITY_NODE_TEXT).value(gene.getApprovedSymbol())
                                     .property(GraphDBConstants.ENTITY_NODE_STANDARD).value("HGNC")
                                     .property(GraphDBConstants.ENTITY_NODE_VERSION).value("2017")
@@ -222,23 +225,35 @@ public class GraphDBNatives {
             }
 
         }
-        Map<APSentence, List<Annotation>> phenotypeAnnotations= new LinkedHashMap<>();
-        for(APSentence sentence: article.getArticleAbstract().getSentences()){
-            if(sentence.getAnnotations().stream().filter(f->f.getType().equals(AnnotationType.PHENOTYPE)).count()>0) {
-                phenotypeAnnotations.put(sentence, sentence.getAnnotations());
+        Map<APSentence, List<Annotation>> genericAnnotations = new LinkedHashMap<>();
+        for (APSentence sentence : article.getArticleAbstract().getSentences()) {
+            if (sentence.getAnnotations().size() > 0) {
+                genericAnnotations.put(sentence, sentence.getAnnotations());
             }
         }
-        if(phenotypeAnnotations.size()>0){
-            for (Map.Entry<APSentence,  List<Annotation>> entry : phenotypeAnnotations.entrySet()) {
+
+        if (genericAnnotations.size() > 0) {
+            for (Map.Entry<APSentence, List<Annotation>> entry : genericAnnotations.entrySet()) {
                 int sentId = entry.getKey().getId();
-                Point sentDocOffset= entry.getKey().getDocOffset();
-                for (Annotation annotation : entry.getValue()){
-                    APPhenotype phenotype = (APPhenotype) annotation.getEntity();
-                    JcNode nodePhenotype = new JcNode(String.format("nodePhenotype%d_%d", sentId, annotation.getOffet().x + annotation.getOffet().y ));
+                Point sentDocOffset = entry.getKey().getDocOffset();
+                for (Annotation annotation : entry.getValue()) {
+
+                    String entityID = "";
+                    String entityLabel = "";
+
+                    if (annotation.getType().equals(AnnotationType.PHENOTYPE)) {
+                        entityID = ((APPhenotype) annotation.getEntity()).getHpoID();
+                        entityLabel = ((APPhenotype) annotation.getEntity()).getPhenotype().getPreferredLabel();
+                    } else if (annotation.getType().equals(AnnotationType.DISEASE)) {
+                        entityID = ((APDisease) annotation.getEntity()).getMondoID();
+                        entityLabel = ((APDisease) annotation.getEntity()).getLabel();
+                    }
+
+                    JcNode nodePhenotype = new JcNode(String.format("nodeEntity%d_%d_%s_%s", sentId, annotation.getOffset().x + annotation.getOffset().y, annotation.getType().toString(), entityID.replace(":", "_")));
                     IClause geneClause = MERGE.node(nodePhenotype).label(GraphDBConstants.getEntityLabel(annotation.getType()))
                             .label(GraphDBConstants.ENTITY_NODE_LABEL)
-                            .property(GraphDBConstants.ENTITY_NODE_ID).value(phenotype.getHpoID())
-                            .property(GraphDBConstants.ENTITY_NODE_TEXT).value(phenotype.getPhenotype().getPreferredLabel())
+                            .property(GraphDBConstants.ENTITY_NODE_ID).value(entityID)
+                            .property(GraphDBConstants.ENTITY_NODE_TEXT).value(entityLabel)
                             .property(GraphDBConstants.ENTITY_NODE_STANDARD).value(annotation.getStandard())
                             .property(GraphDBConstants.ENTITY_NODE_VERSION).value(annotation.getVersion())
                             .property(GraphDBConstants.ENTITY_NODE_TYPE).value(annotation.getType().toString());
@@ -246,13 +261,12 @@ public class GraphDBNatives {
                     IClause phenotypeLinkClause =
                             MERGE.node(nodeArticle).relation().out().type(GraphDBConstants.ENTITY_EDGE_TYPE)
                                     .property(GraphDBConstants.ENTITY_EDGE_SENT_ID).value(sentId)
-                                    .property(GraphDBConstants.ENTITY_EDGE_DOC_OFFSET_BEGIN).value(sentDocOffset.x + annotation.getOffet().x)
-                                    .property(GraphDBConstants.ENTITY_EDGE_DOC_OFFSET_END).value(sentDocOffset.x + annotation.getOffet().y)
+                                    .property(GraphDBConstants.ENTITY_EDGE_DOC_OFFSET_BEGIN).value(sentDocOffset.x + annotation.getOffset().x)
+                                    .property(GraphDBConstants.ENTITY_EDGE_DOC_OFFSET_END).value(sentDocOffset.x + annotation.getOffset().y)
                                     .property(GraphDBConstants.ENTITY_EDGE_FIELD).value("Abstract")
                                     .node(nodePhenotype);
                     queryClauses.add(geneClause);
                     queryClauses.add(phenotypeLinkClause);
-
 
 
                 }
@@ -261,11 +275,105 @@ public class GraphDBNatives {
         }
 
 
-
-
-
-            //TODO: Find entities from Title if required
     }
+
+
+    private static void smartFillEntitiesGraphData(List<IClause> queryClauses, Article article, JcNode nodeArticle) {
+
+        //TODO: Find entities from Abstract and fill node and relationship
+        HashMap<String, GraphEntity> finalEntities = new HashMap<>();
+
+        Map<APSentence, List<APToken>> entities = article.getArticleAbstract().getTokensWithEntities();
+        if (entities.size() > 0) {
+            for (Map.Entry<APSentence, List<APToken>> entry : entities.entrySet()) {
+                APSentence sent = entry.getKey();
+                List<APToken> tokens = entry.getValue();
+                for (APToken token : tokens) {
+                    for (LexicalEntity lex : token.getLexicalEntityList()) {
+                        if (lex instanceof APGene) {
+                            APGene gene = (APGene) lex;
+                            GraphEntity geneEntity;
+                            if (finalEntities.containsKey(gene.getHGNCID())) {
+                                geneEntity = finalEntities.get(gene.getHGNCID());
+                            } else {
+                                geneEntity = new GraphEntity();
+                                geneEntity.setEntityId(String.valueOf(gene.getHGNCID()));
+                                geneEntity.setEntityLabel(gene.getApprovedSymbol());
+                                geneEntity.setVersion("2017");
+                                geneEntity.setStandard("HGNC");
+                                geneEntity.setType(AnnotationType.GENE);
+                                finalEntities.put(geneEntity.getEntityId(), geneEntity);
+                            }
+                            geneEntity.getSentenceIds().add(sent.getId());
+                            geneEntity.getOffsetBegins().add(sent.getDocOffset().x + token.getSentOffset().x);
+                            geneEntity.getOffsetEnds().add(sent.getDocOffset().x + token.getSentOffset().y);
+
+                        }
+                    } //Gene for loop
+                }//Tokens
+            }//Sentence for
+        }
+        Map<APSentence, List<Annotation>> genericAnnotations = new LinkedHashMap<>();
+        for (APSentence sentence : article.getArticleAbstract().getSentences()) {
+            if (sentence.getAnnotations().size() > 0) {
+                genericAnnotations.put(sentence, sentence.getAnnotations());
+            }
+        }
+
+        if (genericAnnotations.size() > 0) {
+            for (Map.Entry<APSentence, List<Annotation>> entry : genericAnnotations.entrySet()) {
+                int sentId = entry.getKey().getId();
+                Point sentDocOffset = entry.getKey().getDocOffset();
+                for (Annotation annotation : entry.getValue()) {
+
+                    GraphEntity genericEntity;
+                    if (finalEntities.containsKey(annotation.getAnnotationId())) {
+                        genericEntity = finalEntities.get(annotation.getAnnotationId());
+                    } else {
+                        genericEntity = new GraphEntity();
+                        genericEntity.setEntityId(String.valueOf(annotation.getAnnotationId()));
+                        genericEntity.setEntityLabel(annotation.getAnnotationLabel());
+                        genericEntity.setVersion(annotation.getVersion());
+                        genericEntity.setStandard(annotation.getStandard());
+                        genericEntity.setType(annotation.getType());
+                        finalEntities.put(genericEntity.getEntityId(), genericEntity);
+                    }
+                    genericEntity.getSentenceIds().add(sentId);
+                    genericEntity.getOffsetBegins().add(sentDocOffset.x + annotation.getOffset().x);
+                    genericEntity.getOffsetEnds().add(sentDocOffset.x + annotation.getOffset().y);
+                }
+            }
+
+        }//Generic size check
+
+        if (finalEntities.size() > 0) {
+            for (GraphEntity graphEntity : finalEntities.values()) {
+
+                JcNode nodeEntity = new JcNode(String.format("nodeEntitySmart%s", graphEntity.entityId.replace(":", "_")));
+                IClause entityClause = MERGE.node(nodeEntity).label(GraphDBConstants.getEntityLabel(graphEntity.getType()))
+                        .label(GraphDBConstants.ENTITY_NODE_LABEL)
+                        .property(GraphDBConstants.ENTITY_NODE_ID).value(graphEntity.entityId)
+                        .property(GraphDBConstants.ENTITY_NODE_TEXT).value(graphEntity.entityLabel)
+                        .property(GraphDBConstants.ENTITY_NODE_STANDARD).value(graphEntity.standard)
+                        .property(GraphDBConstants.ENTITY_NODE_VERSION).value(graphEntity.version)
+                        .property(GraphDBConstants.ENTITY_NODE_TYPE).value(graphEntity.getType().toString());
+
+                IClause entityLinkClause =
+                        MERGE.node(nodeArticle).relation().out().type(GraphDBConstants.ENTITY_EDGE_TYPE)
+                                .property(GraphDBConstants.ENTITY_EDGE_SENT_ID).value(graphEntity.sentenceIds)
+                                .property(GraphDBConstants.ENTITY_EDGE_DOC_OFFSET_BEGIN).value(graphEntity.offsetBegins)
+                                .property(GraphDBConstants.ENTITY_EDGE_DOC_OFFSET_END).value(graphEntity.offsetEnds)
+                                .property(GraphDBConstants.ENTITY_EDGE_FIELD).value("Abstract")
+                                .node(nodeEntity);
+                queryClauses.add(entityClause);
+                queryClauses.add(entityLinkClause);
+            }
+        }
+
+
+        //TODO: Find entities from Title if required
+    }
+
 
     private static IClause[] getClausesArray(List<IClause> input) {
 
@@ -316,8 +424,6 @@ public class GraphDBNatives {
     }
 
 
-
-
     //////////////////////////////////////////////////////////////////////////////
 
     public static Set<String> processQueryResult(JcQueryResult result, SearchQueryParams qType) {
@@ -359,15 +465,13 @@ public class GraphDBNatives {
      * @param counts
      * @return
      */
-    public static List<ArticleWiseConcepts> processResultForConcepts(List<String> PMIDs, List<String> symbols,List<String> types, List<String> texts, List<BigDecimal> counts) {
+    public static List<ArticleWiseConcepts> processResultForConcepts(List<String> PMIDs, List<String> symbols, List<String> types, List<String> texts, List<BigDecimal> counts) {
         List<ArticleWiseConcepts> lst = new ArrayList<>();
         for (int x = 0; x < PMIDs.size(); x++) {
-            lst.add( new ArticleWiseConcepts(PMIDs.get(x), symbols.get(x), types.get(x), texts.get(x),counts.get(x)));
+            lst.add(new ArticleWiseConcepts(PMIDs.get(x), symbols.get(x), types.get(x), texts.get(x), counts.get(x)));
         }
         return lst;
     }
-
-
 
 
     /***
@@ -376,21 +480,35 @@ public class GraphDBNatives {
      * @param qParams
      * @return
      */
-    public static List<RankedArticle> getRequiredPage(List<RankedArticle> countedArticles, PaginationRequestParams qParams){
-        int startIndex = qParams.getPageSize()* (qParams.getPageNo()-1);
-        int endIndex = Math.min((qParams.getPageNo()*qParams.getPageSize()), countedArticles.size());
-        if(startIndex>endIndex)
+    public static List<RankedArticle> getRequiredPage(List<RankedArticle> countedArticles, PaginationRequestParams qParams) {
+        int startIndex = qParams.getPageSize() * (qParams.getPageNo() - 1);
+        int endIndex = Math.min((qParams.getPageNo() * qParams.getPageSize()), countedArticles.size());
+        if (startIndex > endIndex)
             return new ArrayList<>();
-        List<RankedArticle> page = countedArticles.subList(startIndex,endIndex);
+        List<RankedArticle> page = countedArticles.subList(startIndex, endIndex);
 
-        for (int x=0; x<page.size() ;x++)
-        {
-            page.get(x).setRank(page.size()-x);
+        for (int x = 0; x < page.size(); x++) {
+            page.get(x).setRank(page.size() - x);
         }
         return page;
     }
 
 
+    @Data
+    @NoArgsConstructor
+    private static class GraphEntity {
+        String entityId;
+        String entityLabel;
+        String standard;
+        String version;
+        AnnotationType type;
+
+        List<Integer> sentenceIds = new ArrayList<>();
+        List<Integer> offsetBegins = new ArrayList<>();
+        List<Integer> offsetEnds = new ArrayList<>();
+
+
+    }
 
 
 }

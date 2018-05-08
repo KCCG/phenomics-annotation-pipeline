@@ -5,8 +5,8 @@ spring:
       l2cachefiltersbucket: phenomics-l2cache-filters
       l2cachearticlesbucket: phenomics-l2cache-articles
     dynamodb:
-      articletablename: phenomics-articles
-      annotationtablename: phenomics-annotations
+      articletablename: test-phenomics-articles
+      annotationtablename: test-phenomics-annotations
       subscriptiontablename: test-phenomics-subscriptions
       l2cachetablename: phenomics-l2-cache
     graphdb:
@@ -37,7 +37,7 @@ logging:
     file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %p | stackName=phenomics | appName=annotation-pipepline | source= %c{1.} | %msg%n"
   level:
     root: WARN
-    au.org.garvan.kccg.annotations.pipeline: DEBUG
+    au.org.garvan.kccg.annotations.pipeline: INFO
 
 
 

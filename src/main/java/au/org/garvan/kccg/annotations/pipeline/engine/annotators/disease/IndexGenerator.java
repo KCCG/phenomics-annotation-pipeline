@@ -92,14 +92,29 @@ public class IndexGenerator {
 
                 //Point: Rule 1a: Token length. If single then length should be more than 3(tokenLengthThreshold)
                 //Point: Rule 1b: If number of tokens is greater that 6(tokenNumberThreshold) and have 2 commas and threshold then discard
-                if (!discard) {
+                if (!discard && !labelDiscarded) {
 
-                    if (tokens.size() == 1 && tokens.get(0).getOriginalText().length() < tokenLengthThreshold) {
-                        slf4jLogger.debug(String.format("Disease:%s | Found single token and less than length: %s.", apDisease.getMondoID(), oneForm));
-                        discardedStrings.add(oneForm);
-                        discard = true;
-                        if (iterator == 0)
-                            labelDiscarded = true;
+                    if(tokens.size()==1){
+
+                    }
+
+                    if (tokens.size() == 1  ) {
+                        if(tokens.get(0).getOriginalText().length() < tokenLengthThreshold) {
+                            slf4jLogger.debug(String.format("Disease:%s | Found single token and less than length: %s.", apDisease.getMondoID(), oneForm));
+                            discardedStrings.add(oneForm);
+                            discard = true;
+                            if (iterator == 0)
+                                labelDiscarded = true;
+                        }
+                        else if(tokens.get(0).getOriginalText().length()<1.5*tokenLengthThreshold && onlyText(tokens.get(0).getOriginalText())) {
+                            if(tokens.get(0).getPartOfSpeech().equals("JJ")){
+                                discardedStrings.add(oneForm);
+                                discard = true;
+                                if (iterator == 0)
+                                    labelDiscarded = true;
+                            }
+
+                        }
                     } else if (tokens.size() > tokenNumberThreshold && (tokenAnalysis.getCountOfComma() > 1 || tokenAnalysis.getCountOfParenthesis() > 0 || tokenAnalysis.getCountOfSlash() > 0)) {
                         slf4jLogger.debug(String.format("Disease:%s | Found long string with symbols: %s.", apDisease.getMondoID(), oneForm));
                         discardedStrings.add(oneForm);
@@ -112,7 +127,7 @@ public class IndexGenerator {
                 }
 
                 //Point: Rule2: If count of or is greater than zero and parenthesis are present
-                if (!discard) {
+                if (!discard && !labelDiscarded) {
                     if (tokenAnalysis.getCountOfOr() > 0 && tokenAnalysis.getCountOfParenthesis() > 1) {
                         //Point: Step2: Check of or is present in string with parenthesis, if yes remove string
                         slf4jLogger.debug(String.format("Disease:%s | Found or in string: %s.", apDisease.getMondoID(), oneForm));
@@ -124,7 +139,7 @@ public class IndexGenerator {
                 }
 
 
-                if (!discard) {
+                if (!discard && !labelDiscarded) {
                     //Point: Rule3: If count of comma is 1 then swap string. If more than 1 then discard
                     if (tokenAnalysis.getCountOfComma() > 0) {
                         slf4jLogger.debug(String.format("Disease:%s | Found comma:%s.", apDisease.getMondoID(), oneForm));
@@ -273,6 +288,10 @@ public class IndexGenerator {
         }
 
         return modified;
+    }
+
+    private boolean onlyText(String input){
+        return input.matches("[a-zA-Z]+");
     }
 
     private void writeIndexFiles(List<APDisease> selectedDiseases) {
