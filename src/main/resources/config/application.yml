@@ -24,6 +24,8 @@ spring:
 
   notificationconnector:
     endpoint: https://phenomics.kccg.garvan.org.au/notification
+  affinityconnector:
+    endpoint: http://localhost:9020
   lambdaconnector:
       workerfunctionname: pubmed-ingestion-worker-lambda
 

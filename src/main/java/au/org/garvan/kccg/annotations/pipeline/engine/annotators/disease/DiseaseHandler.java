@@ -28,6 +28,7 @@ import org.json.simple.JSONValue;
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Collect$;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.*;
 import java.util.*;
@@ -36,7 +37,7 @@ import java.util.stream.Collectors;
 public class DiseaseHandler{
     private final Logger slf4jLogger = LoggerFactory.getLogger(DiseaseHandler.class);
 
-
+    @Autowired
     private static AffinityConnector affinityConnector;
     private Map<String, APDisease> mondoDiseases;
     private Map<String, String> diseaseLabelToMondo;
@@ -46,7 +47,7 @@ public class DiseaseHandler{
 
     public DiseaseHandler(){
 
-        affinityConnector = new AffinityConnector();
+        //affinityConnector = new AffinityConnector();
 
     }
 
