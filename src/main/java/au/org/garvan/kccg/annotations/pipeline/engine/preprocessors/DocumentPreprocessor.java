@@ -21,6 +21,8 @@ import edu.stanford.nlp.util.CoreMap;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.awt.*;
 import java.util.*;
@@ -31,6 +33,7 @@ import java.util.regex.Pattern;
 /**
  * Created by ahmed on 1/8/17.
  */
+@Component
 public class DocumentPreprocessor {
     private static final Logger slf4jLogger = LoggerFactory.getLogger(DocumentPreprocessor.class);
     private static List<Character> spaceRiders = Arrays.asList('(',')',';',':','_','[',']','{','}','/' , '"', '-');
@@ -58,9 +61,7 @@ public class DocumentPreprocessor {
         phenotypeHandler = new PhenotypeHandler();
 
 
-
         mondoHandler = new DiseaseHandler();
-        mondoHandler.init();
 
 
         if(!CoreNLPManager.isInitialized())

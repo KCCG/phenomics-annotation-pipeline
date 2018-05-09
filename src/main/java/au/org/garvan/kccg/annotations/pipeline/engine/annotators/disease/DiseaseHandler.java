@@ -14,50 +14,46 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToke
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Common;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Strings;
-import edu.stanford.nlp.util.ArrayMap;
+import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Collect$;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+
+@AllArgsConstructor
+@Component
 public class DiseaseHandler{
     private final Logger slf4jLogger = LoggerFactory.getLogger(DiseaseHandler.class);
 
     @Autowired
-    private static AffinityConnector affinityConnector;
+    private static AffinityConnector affinityServiceConnector;
+
+
     private Map<String, APDisease> mondoDiseases;
     private Map<String, String> diseaseLabelToMondo;
 
     private static String STANDARD;
     private static String VERSION;
 
-    public DiseaseHandler(){
-
-        //affinityConnector = new AffinityConnector();
-
-    }
-
     /***
      * Init for index reading
      */
-    public void init(){
+    @Autowired
+    public DiseaseHandler(){
         mondoDiseases = new HashMap<>();
         diseaseLabelToMondo = new HashMap<>();
         readFile("mondoAnnotationIndex.json");
+        affinityServiceConnector = new AffinityConnector();
 
     }
 
@@ -72,7 +68,7 @@ public class DiseaseHandler{
     public void processAndUpdateDocument(APDocument apDocument, int articleId) {
 
         //TODO: Call
-        List<AnnotationHit> diseaseHits =   affinityConnector.annotateAbstract(apDocument.getCleanedText(), articleId, "en");
+        List<AnnotationHit> diseaseHits =   affinityServiceConnector.annotateAbstract(apDocument.getCleanedText(), articleId, "en");
 
 
         //TODO: Add call and fetch result

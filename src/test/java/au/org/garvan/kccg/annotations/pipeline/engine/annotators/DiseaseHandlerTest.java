@@ -15,7 +15,7 @@ public class DiseaseHandlerTest {
     DiseaseHandler diseaseHandler = new DiseaseHandler();
     @Before
     public void init() {
-            diseaseHandler.init();
+
 
     }
 

@@ -39,7 +39,7 @@ logging:
     file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %p | stackName=phenomics | appName=annotation-pipepline | source= %c{1.} | %msg%n"
   level:
     root: WARN
-    au.org.garvan.kccg.annotations.pipeline: INFO
+    au.org.garvan.kccg.annotations.pipeline: DEBUG
 
 
 

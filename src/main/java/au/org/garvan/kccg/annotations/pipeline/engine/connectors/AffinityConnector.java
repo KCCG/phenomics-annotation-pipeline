@@ -4,6 +4,8 @@ import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.graphDB.GraphDB
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.AnnotationHit;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import okhttp3.*;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
@@ -12,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -21,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by ahmed on 20/3/18.
  */
+
 @Component
 public class AffinityConnector {
 
@@ -44,6 +48,14 @@ public class AffinityConnector {
         slf4jLogger.info(String.format("Affinity connector wired with endpoint:%s", affinityURL));
 
     }
+
+    public AffinityConnector(){
+        slf4jLogger.info(String.format("Affinity connector wired with endpoint:%s", affinityURL));
+
+    }
+
+
+
     public List<AnnotationHit> annotateAbstract(String text, int id, String lang) {
         AnnotationHit[] annotationHits = null;
 
