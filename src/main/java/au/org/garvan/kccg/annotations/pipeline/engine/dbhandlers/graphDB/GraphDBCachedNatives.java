@@ -269,7 +269,6 @@ public class GraphDBCachedNatives {
 //            SKIP 10
 //            LIMIT 10
 
-            Stack<String> orderByStack = new Stack();
             String joined = searchIds.stream()
                     .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
                     .collect(Collectors.joining(", "));
@@ -286,9 +285,8 @@ public class GraphDBCachedNatives {
             }
 
 
-            orderByStack.push("counts desc");
-            String returnClause = String.format("RETURN distinct (a.PMID) as %s, count(distinct(c)) as %s ", GraphDBConstants.CACHED_QUERY_ARTICLE_RESULT_SET_PAID_LABEL, GraphDBConstants.CACHED_QUERY_ARTICLE_RESULT_SET_SEARCH_COUNTS_LABEL);
-            String withClause = "WITH a, c";
+            String returnClause = String.format("RETURN distinct (a.PMID) as %s, count(distinct(e)) as %s , ( count(distinct(c)) ", GraphDBConstants.CACHED_QUERY_ARTICLE_RESULT_SET_PAID_LABEL, GraphDBConstants.CACHED_QUERY_ARTICLE_RESULT_SET_SEARCH_COUNTS_LABEL);
+            String withClause = "WITH a, c, e";
 
             if(filterIds.size()>0)
             {
@@ -302,29 +300,17 @@ public class GraphDBCachedNatives {
                     query = query + tempQuery;
                     //Update clauses
                     withClause = withClause + String.format(", c%d ",iterator);
-                    String countsLabel = GraphDBConstants.CACHED_QUERY_ARTICLE_RESULT_SET_SEARCH_COUNTS_LABEL + iterator.toString();
-                    returnClause = returnClause + String.format(", count(distinct(c%d)) as %s ", iterator,countsLabel);
-                    orderByStack.push(String.format("%s desc",countsLabel));
+                    returnClause = returnClause + String.format("+ count(distinct(c%d)) ", iterator);
                     iterator++;
                 }
 
             }
-            else
-            {
-                returnClause = returnClause + "\n";
 
-            }
-            String orderByClause = "ORDER BY ";
-            while(!orderByStack.isEmpty()){
-                orderByClause = orderByClause + orderByStack.pop();
-                if(!orderByStack.isEmpty()){
-                    orderByClause = orderByClause + ",";
-                }
-                else
-                    orderByClause = orderByClause + "\n";
-            }
+            returnClause = returnClause + ") as hits \n";
 
-            String paginationClause = String.format("SKIP %d \nLIMIT %d", skip, limit);
+            String orderByClause = "ORDER BY shits desc, hits desc, a.PMID desc \n";
+
+            String paginationClause = String.format("SKIP %d\nLIMIT %d", skip, limit);
             String returnString = query +  returnClause + orderByClause + paginationClause;
             return  printQuery(returnString);
 
@@ -332,7 +318,7 @@ public class GraphDBCachedNatives {
         }
 
         private String printQuery(String query){
-            slf4jLogger.debug(String.format("Cypher Query: \n %s", query));
+            slf4jLogger.debug(String.format("Cypher Query: \n%s", query));
             return query;
         }
 
