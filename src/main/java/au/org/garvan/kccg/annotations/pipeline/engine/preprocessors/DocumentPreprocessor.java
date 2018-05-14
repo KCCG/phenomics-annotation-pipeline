@@ -1,6 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.preprocessors;
 
-import au.org.garvan.kccg.annotations.pipeline.engine.annotators.DiseaseHandler;
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.disease.DiseaseHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.PhenotypeHandler;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APPhrase;
@@ -21,6 +21,8 @@ import edu.stanford.nlp.util.CoreMap;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.awt.*;
 import java.util.*;
@@ -31,6 +33,7 @@ import java.util.regex.Pattern;
 /**
  * Created by ahmed on 1/8/17.
  */
+@Component
 public class DocumentPreprocessor {
     private static final Logger slf4jLogger = LoggerFactory.getLogger(DocumentPreprocessor.class);
     private static List<Character> spaceRiders = Arrays.asList('(',')',';',':','_','[',']','{','}','/' , '"', '-');
@@ -58,9 +61,7 @@ public class DocumentPreprocessor {
         phenotypeHandler = new PhenotypeHandler();
 
 
-
-        mondoHandler = new DiseaseHandler("mondo20180415.json");
-        mondoHandler.readFile();
+        mondoHandler = new DiseaseHandler();
 
 
         if(!CoreNLPManager.isInitialized())
@@ -141,12 +142,17 @@ public class DocumentPreprocessor {
         if(docProfile.getAnnotationRequests().contains(AnnotationType.PHENOTYPE))
         {
             phenotypeHandler.processAndUpdateDocument(doc);
+            slf4jLogger.info(String.format("Hatching Article ID: %s Phenotype Annotation is done. ", articleId));
+
         }
         if(docProfile.getAnnotationRequests().contains(AnnotationType.DISEASE))
         {
             mondoHandler.processAndUpdateDocument(doc, articleId);
+            slf4jLogger.info(String.format("Hatching Article ID: %s Disease Annotation is done. ", articleId));
+
         }
-        slf4jLogger.info(String.format("Hatching Article ID: %s Phenotype Annotation is done. ", articleId));
+        slf4jLogger.info(String.format("Hatching Article ID: %s  Annotations are completed. ", articleId));
+
 
 
     }

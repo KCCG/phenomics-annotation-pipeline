@@ -71,7 +71,7 @@ public class SolrConnector implements BaseConnector {
             }
 
         }
-        return docs;
+        return getUniqueDocuments(docs);
 
     }
 
@@ -107,7 +107,10 @@ public class SolrConnector implements BaseConnector {
             }
 
         }
-        return docs;
+
+
+
+        return getUniqueDocuments(docs);
 
     }
 
@@ -182,6 +185,21 @@ public class SolrConnector implements BaseConnector {
 
         return count;
     }
+
+    private List<APDocument> getUniqueDocuments(List<APDocument> fetchedDocs){
+        List<APDocument> uniqueList = new ArrayList<>();
+        List<Integer> ids = new ArrayList<>();
+
+        for (APDocument apDocument: fetchedDocs){
+            if (!ids.contains(apDocument.getId())){
+                ids.add(apDocument.getId());
+                uniqueList.add(apDocument);
+            }
+        }
+        return uniqueList;
+
+    }
+
 
 
 }

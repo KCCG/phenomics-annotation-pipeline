@@ -1,5 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Disease.APDisease;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -21,7 +22,7 @@ public class Annotation {
     private String standard;
     private String version;
 
-    public Point getOffet(){
+    public Point getOffset(){
         Point offset = new Point(1000, 0);
         for(Point point: tokenOffsets){
             if(point.x<offset.x)
@@ -30,6 +31,33 @@ public class Annotation {
                 offset.y = point.y;
         }
         return offset;
+
+    }
+
+    public String getAnnotationId(){
+        if(type !=null){
+            switch (type){
+                case PHENOTYPE:
+                    return ((APPhenotype)entity).getHpoID();
+                case DISEASE:
+                    return ((APDisease)entity).getMondoID();
+
+            }
+        }
+        return null;
+
+    }
+
+    public String getAnnotationLabel(){
+        if(type !=null){
+            switch (type){
+                case PHENOTYPE:
+                    return ((APPhenotype)entity).getPhenotype().getPreferredLabel();
+                case DISEASE:
+                    return ((APDisease)entity).getLabel();
+            }
+        }
+        return null;
 
     }
 }

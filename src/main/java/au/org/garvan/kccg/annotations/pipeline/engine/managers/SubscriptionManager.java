@@ -84,9 +84,16 @@ public class SubscriptionManager {
 
         //Check search query validity.
         JSONObject jsonQuery = subRequest.getQuery().constructJson();
-        if(!jsonQuery.containsKey("queryId")){
-            return new Pair<>(false, "Search query is invalid.");
+        if(!jsonQuery.containsKey("searchItems")){
+            return new Pair<>(false, "Search query should have search items.");
         }
+
+        if(jsonQuery.containsKey("searchItems")){
+            JSONArray jsonSearchItems = (JSONArray) jsonQuery.get("searchItems");
+            if(jsonSearchItems == null || jsonSearchItems.size()<1)
+                return new Pair<>(false, "Invalid search items.");
+        }
+
 
 
         Map<String, Object> argumentMap = new HashMap<>();

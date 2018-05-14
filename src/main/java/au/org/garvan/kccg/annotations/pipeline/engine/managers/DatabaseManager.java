@@ -85,11 +85,14 @@ public class DatabaseManager {
 
                 JSONObject genes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE);
                 JSONObject phenotypes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.PHENOTYPE);
+                JSONObject diseases =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.DISEASE);
 
                 if(genes.containsKey("annotationType"))
                     jsonAnnotations.add(genes);
                 if(phenotypes.containsKey("annotationType"))
                     jsonAnnotations.add(phenotypes);
+                if(diseases.containsKey("annotationType"))
+                    jsonAnnotations.add(diseases);
 
                 anArticle.setJsonAnnotations(jsonAnnotations);
 
@@ -124,11 +127,14 @@ public class DatabaseManager {
 
                 JSONObject genes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE);
                 JSONObject phenotypes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.PHENOTYPE);
+                JSONObject diseases =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.DISEASE);
 
                 if(genes.containsKey("annotationType"))
                     jsonAnnotations.add(genes);
                 if(phenotypes.containsKey("annotationType"))
                     jsonAnnotations.add(phenotypes);
+                if(diseases.containsKey("annotationType"))
+                    jsonAnnotations.add(diseases);
 
                 anArticle.setJsonAnnotations(jsonAnnotations);
 

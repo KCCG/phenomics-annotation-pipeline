@@ -3,10 +3,10 @@ package au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Disease.APDisease;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.LexicalEntity;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
-import au.org.garvan.kccg.annotations.pipeline.engine.managers.DatabaseManager;
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
@@ -250,6 +250,9 @@ public class Article {
     public JSONArray getAbstractEntities(){
         JSONArray returnArray = new JSONArray();
 
+
+        //Point: Genes are stored differently at token level; Hence treated separately
+        //TODO: move it to a generic place
         Map<APSentence, List<APToken>> geneAnnotations = articleAbstract.getTokensWithEntities();
         if (geneAnnotations.size()>0)
         {
@@ -285,39 +288,61 @@ public class Article {
             returnArray.add(returnObject);
         }
 
-        Map<APSentence, List<Annotation>> phenotypeAnnotations= new LinkedHashMap<>();
+        //Point: Phenotype and Diseases can be handled here.
+
+        Map<APSentence, List<Annotation>> genericAnnotations= new LinkedHashMap<>();
         for(APSentence sentence: articleAbstract.getSentences()){
-            if(sentence.getAnnotations().stream().filter(f->f.getType().equals(AnnotationType.PHENOTYPE)).count()>0) {
-                phenotypeAnnotations.put(sentence, sentence.getAnnotations());
+            if(sentence.getAnnotations().size() >0) {
+                genericAnnotations.put(sentence, sentence.getAnnotations());
             }
         }
 
-        if(phenotypeAnnotations.size()>0){
-
-            JSONObject returnObject = new JSONObject();
-            returnObject.put("pubMedID", Integer.toString(pubMedID));
-            returnObject.put("annotationType", AnnotationType.PHENOTYPE.toString());
+        if(genericAnnotations.size()>0){
             JSONArray phenotypes = new JSONArray();
-            for (Map.Entry<APSentence,  List<Annotation>> entry : phenotypeAnnotations.entrySet()) {
+            JSONArray diseases = new JSONArray();
+            for (Map.Entry<APSentence, List<Annotation>> entry : genericAnnotations.entrySet()) {
                 int sentId = entry.getKey().getId();
-                Point sentDocOffset= entry.getKey().getDocOffset();
-                for (Annotation annotation : entry.getValue()){
+                Point sentDocOffset = entry.getKey().getDocOffset();
+                for (Annotation annotation : entry.getValue()) {
+                    AnnotationType type = annotation.getType();
+                    JSONObject jsonObject = new JSONObject();
+                    jsonObject.put("field", "articleAbstract");
+                    jsonObject.put("standard", annotation.getStandard());
+                    jsonObject.put("sentId", sentId);
+                    jsonObject.put("tokenIds", annotation.getTokenIDs());
+                    jsonObject.put("globalOffset", constructGlobalOffset(sentDocOffset, annotation.getOffset()));
+                    jsonObject.put("isNegated", annotation.getNegated());
 
-                            JSONObject jsonObject = new JSONObject();
-                            jsonObject.put("field","articleAbstract");
-                            jsonObject.put("standard", annotation.getStandard());
-                            jsonObject.put("sentId",sentId);
-                            jsonObject.put("tokenIds", annotation.getTokenIDs());
-                            jsonObject.put("annotationId", ((APPhenotype) (annotation.getEntity())).getHpoID());
-                            jsonObject.put("globalOffset", constructGlobalOffset(sentDocOffset,annotation.getOffet()));
-                            jsonObject.put("isNegated", annotation.getNegated());
-                            phenotypes.add(jsonObject);
+                    if (type.equals(AnnotationType.PHENOTYPE)) {
+                        jsonObject.put("annotationId", ((APPhenotype) (annotation.getEntity())).getHpoID());
+                        phenotypes.add(jsonObject);
 
+                    } else if (type.equals(AnnotationType.DISEASE)) {
+                        jsonObject.put("annotationId", ((APDisease) (annotation.getEntity())).getMondoID());
+                        diseases.add(jsonObject);
                     }
+
+                }
             }
-            returnObject.put("annotations",phenotypes);
-            returnArray.add(returnObject);
+
+            if(phenotypes.size()>0) {
+                JSONObject phenotypeJsonObject = new JSONObject();
+                phenotypeJsonObject.put("pubMedID", Integer.toString(pubMedID));
+                phenotypeJsonObject.put("annotationType", AnnotationType.PHENOTYPE.toString());
+                phenotypeJsonObject.put("annotations", phenotypes);
+                returnArray.add(phenotypeJsonObject);
+
+            }
+            if(diseases.size()>0) {
+                JSONObject diseaseJsonObject = new JSONObject();
+                diseaseJsonObject.put("pubMedID", Integer.toString(pubMedID));
+                diseaseJsonObject.put("annotationType", AnnotationType.DISEASE.toString());
+                diseaseJsonObject.put("annotations", diseases);
+                returnArray.add(diseaseJsonObject);
+            }
+
         }
+
         return returnArray;
 
     }
