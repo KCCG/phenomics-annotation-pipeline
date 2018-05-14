@@ -10,24 +10,29 @@ spring:
       subscriptiontablename: phenomics-subscriptions-dev
       l2cachetablename: phenomics-l2-cache
     graphdb:
-      endpoint: http://52.64.25.182:7474/
+      endpoint: http://neo4j.phenomics.awsinternal.dev.:7474/
       username: neo4j
-      password: neodev
+      password: Neo4j@1Dev
       live:
-        endpoint: bolt://52.63.88.92:7687/
+        endpoint: bolt://neo4j.phenomics.awsinternal.dev.:7687/
         username: neo4j
-        password: neodev
+        password: Neo4j@1Dev
       historical:
         endpoint: bolt://52.63.6.209:7687/
         username: neo4j
         password: Neo4j@1Prod
 
+  notificationconnector:
+    endpoint: http://cluster.phenomics.awsinternal.dev.:9090
+
   affinityconnector:
-    endpoint: http://localhost:9020
+    endpoint: http://cluster.phenomics.awsinternal.dev.:9020
+
+  lambdaconnector:
+    workerfunctionname: pubmed-ingestion-worker-lambda
 
   subscriptionservice:
     subscriptiontime: 2
-
 logging:
   path: ./logs/
   pattern:

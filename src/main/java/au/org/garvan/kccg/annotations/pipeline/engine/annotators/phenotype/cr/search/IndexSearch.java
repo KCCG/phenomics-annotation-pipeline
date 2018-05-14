@@ -42,7 +42,7 @@ public class IndexSearch {
 			
 			for (File dsFile : dsFiles) {
 				if (dsFile.getName().endsWith(".bin")) {
-					IndexDataSource dataSource = new IndexDataSource(dsFile.getAbsolutePath(), maxThreads);
+					IndexDataSource dataSource = new IndexDataSource(resourcesFolder + "/ds_index.bin", maxThreads);
 					boolean valid = dataSource.initialize();
 					if (valid) {
 						this.dataSources.put(dataSource.getMetadata().getMetadata().get(DataSourceMetadata.ACRONYM), dataSource);
