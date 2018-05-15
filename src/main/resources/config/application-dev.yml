@@ -18,7 +18,7 @@ spring:
         username: neo4j
         password: Neo4j@1Dev
       historical:
-        endpoint: bolt://52.63.6.209:7687/
+        endpoint: bolt://52.62.200.154:7687/
         username: neo4j
         password: Neo4j@1Prod
 
