@@ -1,5 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.BaseLexiconHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.cr.LongestMatchSort;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.cr.LongestSameMatchSort;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.cr.beans.ConceptAnnotation;
@@ -37,7 +38,7 @@ import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -46,7 +47,7 @@ import java.util.stream.Collectors;
 public class PhenotypeHandler {
     private static final Logger logger = LoggerFactory.getLogger(PhenotypeHandler.class);
 
-
+    private String phenotypeDefinitionFileName = "HpoDefinition.txt";
     private boolean valid = false;
 
     private int maxThreads;
@@ -63,6 +64,7 @@ public class PhenotypeHandler {
     private Map<String, Double> stats;
 
     private Map<String, DS_ConceptInfo> hpoToPhenotypeConcept;
+    private Map<String, String> hpoToPhenotypeConceptDefinition;
     private Map<String, String> phenotypeLabelToHpo;
 
 
@@ -91,6 +93,14 @@ public class PhenotypeHandler {
                 if (!Strings.isNullOrEmpty(name))
                     phenotypeLabelToHpo.put(name, concept.getUri());
             }
+        }
+
+        try {
+            hpoToPhenotypeConceptDefinition = new HashMap<>();
+            readDefinitionFile();
+        } catch (IOException e) {
+            logger.error(String.format("Issue in reading phenotype definition file. Filename:%s", phenotypeDefinitionFileName));
+            e.printStackTrace();
         }
 
 
@@ -310,5 +320,35 @@ public class PhenotypeHandler {
             return hpoToPhenotypeConcept.get(id).getPreferredLabel();
         }
         else return "";
+    }
+
+    public String getPhenotypeDefinitionWithId(String id){
+        if(hpoToPhenotypeConceptDefinition.containsKey(id)){
+            return hpoToPhenotypeConceptDefinition.get(id);
+        }
+        else return "N/A";
+    }
+
+
+    private void readDefinitionFile() throws IOException {
+        logger.info(String.format("Reading lexicon for phenotype definitions. Filename:%s", phenotypeDefinitionFileName));
+        String path = "lexicons/" + phenotypeDefinitionFileName;
+        InputStream input = getClass().getResourceAsStream("resources/" + path);
+        if (input == null) {
+            // this is how we load file within editor (eg eclipse)
+            input = BaseLexiconHandler.class.getClassLoader().getResourceAsStream(path);
+        }
+        BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+
+        String line;
+        while ((line = reader.readLine()) != null) {
+            String [] splits = line.split("\\|");
+            if(splits.length==2){
+                hpoToPhenotypeConceptDefinition.put(splits[0], splits[1]);
+            }
+        }
+
+        reader.close();
+
     }
 }

@@ -1,11 +1,14 @@
 package au.org.garvan.kccg.annotations.pipeline.model.query;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.Utilities;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Author;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Publication;
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Strings;
 import edu.stanford.nlp.util.Sets;
 import io.swagger.annotations.ApiModel;
 import lombok.AccessLevel;
@@ -129,6 +132,7 @@ public class SearchResultV2 {
 
     public void fillAnnotations(List<JSONObject> jsonAnnotationsObject)
     {
+        Integer descriptionTruncateSize = 70;
         List<dtoAnnotation> convertedAnnotations = new ArrayList<>();
         for(JSONObject annotationGroup: jsonAnnotationsObject){
 
@@ -142,10 +146,12 @@ public class SearchResultV2 {
                         dtoAnnotation tempAnnotation = new dtoAnnotation();
 
                         String text = jsonObject.get("annotationId").toString();
-                        String id = String.valueOf(DocumentPreprocessor.getHGNCGeneHandler().getGene(text).getHGNCID());
+                        //In case of Gene we have Approved symbol stored as ID
+                        APGene thisGene = DocumentPreprocessor.getHGNCGeneHandler().getGene(text);
+                        String id = String.valueOf(thisGene.getHGNCID());
                         String offset = jsonObject.get("globalOffset").toString();
                         String standard = jsonObject.get("standard").toString();
-                        String description = "N/A";
+                        String description = Strings.isNullOrEmpty(thisGene.getApprovedName())?"N/A" : Utilities.getFirstHypotheticalSentence(thisGene.getApprovedName(), descriptionTruncateSize);
                         String link = String.format("https://monarchinitiative.org/gene/HGNC:%s",id);
                         String feedbackId = String.format("%s;%s;%s", pmid, id, offset);
 
@@ -172,7 +178,7 @@ public class SearchResultV2 {
                         String text = label;
                         String offset = jsonObject.get("globalOffset").toString();
                         String standard = jsonObject.get("standard").toString();
-                        String description = "N/A";
+                        String description = Utilities.getFirstHypotheticalSentence( DocumentPreprocessor.getPhenotypeHandler().getPhenotypeDefinitionWithId(id), descriptionTruncateSize);
                         String link = String.format("https://monarchinitiative.org/%s",id);
                         String feedbackId = String.format("%s;%s;%s", pmid, id, offset);
                         Pair offsetPair = constructOffset(offset);
@@ -198,7 +204,7 @@ public class SearchResultV2 {
                         String text = label;
                         String offset = jsonObject.get("globalOffset").toString();
                         String standard = jsonObject.get("standard").toString();
-                        String description = DocumentPreprocessor.getMondoHandler().getMondoDefinitionWithId(id);
+                        String description =Utilities.getFirstHypotheticalSentence(DocumentPreprocessor.getMondoHandler().getMondoDefinitionWithId(id),descriptionTruncateSize);
                         String link = String.format("https://monarchinitiative.org/%s",id);
                         String feedbackId = String.format("%s;%s;%s", pmid, id, offset);
                         Pair offsetPair = constructOffset(offset);
@@ -302,94 +308,6 @@ public class SearchResultV2 {
         return finalAnnotations;
     }
 
-        private List<dtoAnnotation> resolveOverLappingTry(List<dtoAnnotation> convertedAnnotations) {
-        List<dtoAnnotation> finalAnnotations = new ArrayList<>();
-
-
-        List<dtoAnnotation> isolatedAnnotations = new ArrayList<>();
-        //TODO: Reconstruct annotation
-        HashMap<String,dtoAnnotation> processingMap = new HashMap<>();
-        for(dtoAnnotation oid: convertedAnnotations){
-            processingMap.put(oid.getHighlights().get(0).feedbackId, oid);
-        }
-
-        List<String> keys = processingMap.keySet().stream().collect(Collectors.toList());
-        List<Set<String>> overlappedAnnotationIds = new ArrayList<>();
-        for(Integer pivot = 0; pivot<keys.size()-1; pivot ++){
-            boolean isPivotIsolated = true;
-            for(Integer compared = pivot+1; compared<keys.size(); compared++){
-
-                dtoAnnotation pivotAnnotation = processingMap.get(keys.get(pivot));
-                dtoAnnotation comparedAnnotation = processingMap.get(keys.get(compared));
-                Integer coveredSpan = Math.max(pivotAnnotation.endIndex, comparedAnnotation.endIndex) - Math.min(pivotAnnotation.startIndex, comparedAnnotation.startIndex);
-                Integer actualLength = (pivotAnnotation.endIndex - pivotAnnotation.startIndex) + (comparedAnnotation.endIndex-comparedAnnotation.startIndex);
-                if(actualLength>=coveredSpan){
-                 isPivotIsolated = false;
-                 HashSet<String> tempGroup = new HashSet();
-                 tempGroup.add(keys.get(pivot));
-                 tempGroup.add(keys.get(compared));
-                 overlappedAnnotationIds.add(tempGroup);
-                }
-            }
-            if(isPivotIsolated)
-            {
-                isolatedAnnotations.add(processingMap.get(keys.get(pivot)));
-            }
-
-
-        }
-
-        //Point: Now merge overlapped annotations.
-        boolean listChanged = false;
-
-        do {
-            Integer match1 = -1;
-            Integer match2 = -1;
-
-            for (Integer x = 0; !listChanged && x < overlappedAnnotationIds.size() - 1; x++) {
-                for (Integer y = x + 1; listChanged && y < overlappedAnnotationIds.size(); y++) {
-                    if (Sets.intersection(overlappedAnnotationIds.get(x), overlappedAnnotationIds.get(y)).size() > 0) {
-                        listChanged = true;
-                        match1 = x;
-                        match2 = y;
-                    }
-                }
-            }
-            if (listChanged) {
-                Set<String> matchSet1 = overlappedAnnotationIds.get(match1);
-                Set<String> matchSet2 = overlappedAnnotationIds.get(match2);
-                overlappedAnnotationIds.remove(match1);
-                overlappedAnnotationIds.remove(match2);
-                overlappedAnnotationIds.add(Sets.intersection(matchSet1, matchSet2));
-            }
-        }
-        while (listChanged);
-
-
-        List<dtoAnnotation> overLappedAnnotations = new ArrayList<>();
-        for(Set<String> anOverlap: overlappedAnnotationIds)
-        {
-            List<dtoAnnotation> oneSetofAnnotations= new ArrayList<>();
-            for(String id: anOverlap){
-                oneSetofAnnotations.add(processingMap.get(id));
-            }
-
-
-
-        }
-
-
-
-
-
-
-
-
-        return finalAnnotations;
-
-
-
-    }
 
     private Pair<Integer, Integer> constructOffset(String globalOffset){
         String[] offsets =  globalOffset.split(":");
