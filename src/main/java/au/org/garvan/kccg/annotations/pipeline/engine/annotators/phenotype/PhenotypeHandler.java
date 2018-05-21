@@ -102,6 +102,7 @@ public class PhenotypeHandler {
         String path = CRConstants.RESOURCES_PATH;
         String resourcesRoot = System.getenv("PhenotypeResources");
         if(Strings.isNullOrEmpty(resourcesRoot)) {
+            logger.info("Could not find environment variable for phenotype resources. Switching to default.");
             resourcesRoot = "/var/lib/";
         }
         resourcesPath = resourcesRoot + path;

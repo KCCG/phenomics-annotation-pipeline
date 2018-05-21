@@ -35,7 +35,7 @@ public class FeedbackController {
     @CrossOrigin
     public ResponseEntity sendFeedback(@ApiParam("feedback") @RequestBody Feedback feedback, HttpServletRequest request) {
 
-        //TODO: Call appripriate manager and fit it in
+        //TODO: Call appropriate manager and fit it in
         engine.processFeedback(feedback,request.getRemoteAddr().toString());
         return new ResponseEntity(HttpStatus.OK);
     }

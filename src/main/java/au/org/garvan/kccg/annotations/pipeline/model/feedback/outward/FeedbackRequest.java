@@ -1,6 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.model.feedback.outward;
 
 import au.org.garvan.kccg.annotations.pipeline.model.feedback.inward.Feedback;
+import au.org.garvan.kccg.annotations.pipeline.model.feedback.inward.FeedbackAnnotationItem;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
@@ -50,9 +51,14 @@ public class FeedbackRequest {
 
     //Facilitation
     public FeedbackRequest(Feedback input){
-        feedback =  input.getFeedback();
-        pmid = input.getPmid();
-        annotation = new FeedbackAnnotationItemDetailed(input.getAnnotation());
+        String [] splits = input.getFeedbackId().split(";");
+        if(splits.length==3)
+        {
+            pmid = splits[0];
+            annotation = new FeedbackAnnotationItemDetailed( new FeedbackAnnotationItem(splits[1], splits[2]));
+            feedback =  input.getFeedback();
+        }
+
 
     }
 }

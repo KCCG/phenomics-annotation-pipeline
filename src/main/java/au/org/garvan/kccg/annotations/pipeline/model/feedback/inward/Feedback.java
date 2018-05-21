@@ -16,19 +16,15 @@ import lombok.*;
 public class Feedback {
 
     @ApiModelProperty
-    private String pmid;
+    private String feedbackId;
 
     @JsonProperty
     @ApiModelProperty
     private String feedback;
 
-    @JsonProperty
-    @ApiModelProperty
-    private FeedbackAnnotationItem annotation;
 
     @Override
     public String toString(){
-        return String.format("Article ID:%s | FeedBack:%s | AnnotationID:%s",
-                 pmid,feedback,annotation.getId());
+        return String.format("Feedback ID:%s | FeedBack:%s", feedbackId, feedback);
     }
 }
