@@ -55,13 +55,13 @@ public class QueryController {
     @RequestMapping(value = "/query/", method = RequestMethod.POST, produces = "application/json")
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Success", response = PaginatedSearchResult.class),
+            @ApiResponse(code = 200, message = "Success", response = PaginatedSearchResultV2.class),
             @ApiResponse(code = 401, message = "Unauthorized"),
             @ApiResponse(code = 403, message = "Forbidden"),
             @ApiResponse(code = 404, message = "Not Found"),
             @ApiResponse(code = 500, message = "Failure")})
     @CrossOrigin
-    public PaginatedSearchResult searchArticles(@ApiParam("query") @RequestBody SearchQueryV2 query,
+    public PaginatedSearchResultV2 searchArticles(@ApiParam("query") @RequestBody SearchQueryV2 query,
                                                          @RequestParam(value = "pageSize", required = false) @ApiParam Integer pageSize,
                                                          @RequestParam(value = "pageNo", required = false) @ApiParam Integer pageNo,
                                                          @RequestParam(value = "includeHistorical", required = false ) @ApiParam Boolean includeHistorical
