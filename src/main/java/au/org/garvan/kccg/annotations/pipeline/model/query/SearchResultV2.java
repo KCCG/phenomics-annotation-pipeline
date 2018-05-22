@@ -2,6 +2,7 @@ package au.org.garvan.kccg.annotations.pipeline.model.query;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.Utilities;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Author;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Publication;
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
@@ -132,7 +133,7 @@ public class SearchResultV2 {
 
     public void fillAnnotations(List<JSONObject> jsonAnnotationsObject)
     {
-        Integer descriptionTruncateSize = 70;
+        Integer descriptionTruncateSize = 120;
         List<dtoAnnotation> convertedAnnotations = new ArrayList<>();
         for(JSONObject annotationGroup: jsonAnnotationsObject){
 
@@ -174,11 +175,11 @@ public class SearchResultV2 {
                         JSONObject jsonObject = (JSONObject) obj;
                         dtoAnnotation tempAnnotation = new dtoAnnotation();
                         String id = jsonObject.get("annotationId").toString();
-                        String label = DocumentPreprocessor.getPhenotypeHandler().getPhenotypeLabelWithId(id);
+                        String label =  DocumentPreprocessor.getPhenotypeHandler().getPhenotypeLabelWithId(id);
                         String text = label;
                         String offset = jsonObject.get("globalOffset").toString();
                         String standard = jsonObject.get("standard").toString();
-                        String description = Utilities.getFirstHypotheticalSentence( DocumentPreprocessor.getPhenotypeHandler().getPhenotypeDefinitionWithId(id), descriptionTruncateSize);
+                        String description =  Utilities.getFirstHypotheticalSentence( DocumentPreprocessor.getPhenotypeHandler().getPhenotypeDefinitionWithId(id), descriptionTruncateSize);
                         String link = String.format("https://monarchinitiative.org/%s",id);
                         String feedbackId = String.format("%s;%s;%s", pmid, id, offset);
                         Pair offsetPair = constructOffset(offset);

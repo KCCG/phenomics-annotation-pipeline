@@ -45,3 +45,6 @@ logging:
 
 server:
     port: 9080
+
+
+#dev neo 52.63.88.92
