@@ -1,14 +1,23 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.annotators;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.disease.DiseaseHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Disease.APDisease;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.model.query.ConceptFilter;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.analysis.Tokenizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import scala.Char;
 
 public class Utilities {
+    private final static Logger slf4jLogger = LoggerFactory.getLogger(Utilities.class);
+
 
     public static AnnotationType getAnnotationTypeBasedOnId(String id){
 
@@ -36,7 +45,7 @@ public class Utilities {
                 //Phenotype
                 String text = DocumentPreprocessor.getPhenotypeHandler().getPhenotypeLabelWithId(id);
                 conceptFilter.setId(id);
-                conceptFilter.setType(AnnotationType.PHENOTYPE.toString());
+                conceptFilter.setType(type.toString());
                 conceptFilter.setText(text);
                 break;
             case GENE:
@@ -44,13 +53,68 @@ public class Utilities {
                 APGene aGene = DocumentPreprocessor.getHGNCGeneHandler().getGeneWithId(id);
                 if (aGene != null) {
                     conceptFilter.setId(id);
-                    conceptFilter.setType(AnnotationType.GENE.toString());
+                    conceptFilter.setType(type.toString());
                     conceptFilter.setText(aGene.getApprovedSymbol());
+                }
+                break;
+
+            case DISEASE:
+                // Disease
+                APDisease apDisease = DocumentPreprocessor.getMondoHandler().getDisease(id);
+                if (apDisease != null) {
+                    conceptFilter.setId(id);
+                    conceptFilter.setType(type.toString());
+                    conceptFilter.setText(apDisease.getLabel());
                 }
                 break;
         }
 
         return conceptFilter;
+    }
+
+
+    public static String getFirstHypotheticalSentence(String input, Integer maxSize) {
+        if (Strings.isNullOrEmpty(input))
+            return "N/A";
+
+        try {
+            String result;
+            if (input.length() > maxSize) {
+                String[] sents = input.split("\\. ");
+                if (sents.length > 0) {
+                    result = sents[0];
+                } else
+                    result = input;
+
+                //Now result has a single sentence string.
+
+                if (result.length() <= maxSize)
+                    return String.format("%s. ...", result);
+                else {
+                    String builder = "";
+                    boolean logicalBreak = false;
+                    Integer index = 0;
+                    while (!logicalBreak) {
+                        Character ch = result.charAt(index);
+                        builder = builder + Character.toString(ch);
+                        if ((index > maxSize && ch == ' ') || (index == result.length() - 1))
+                            logicalBreak = true;
+                        index ++;
+                    }
+                    return String.format("%s...", builder);
+                }
+
+
+            }
+            else {
+                return input;
+            }
+        } catch (Exception e) {
+            slf4jLogger.error(String.format("Issue in truncating description string : %s", input));
+            return "N/A";
+        }
+
+
     }
 
 }

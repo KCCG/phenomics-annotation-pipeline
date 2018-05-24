@@ -203,6 +203,21 @@ public class DiseaseHandler{
     }
 
 
+    public String getMondoLabelWithId(String id){
+        if(mondoDiseases.containsKey(id)){
+            return mondoDiseases.get(id).getLabel();
+        }
+        else return "";
+    }
+
+    public String getMondoDefinitionWithId(String id){
+        if(mondoDiseases.containsKey(id)){
+            return mondoDiseases.get(id).getDefinition();
+        }
+        else return "";
+    }
+
+
     /***
      * Index is generated and given with artifact
      * @param fileName

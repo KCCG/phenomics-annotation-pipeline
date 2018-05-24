@@ -21,14 +21,18 @@
         {
           "sourceVolume": "springlogs",
           "containerPath": "/logs"
-        }
+        },
+        {
+                  "sourceVolume": "PhenotypeResources",
+                  "containerPath": "/var/lib/phenotypeCR2018/"
+                }
       ],
             "workingDirectory": null,
             "dockerSecurityOptions": null,
             "memory": 4096,
             "memoryReservation": null,
             "volumesFrom": [],
-            "image": "482667004524.dkr.ecr.ap-southeast-2.amazonaws.com/phenomics:pipeline-latest",
+            "image": "254144944163.dkr.ecr.ap-southeast-2.amazonaws.com/phenomics-dev:pipeline-latest",
             "disableNetworking": null,
             "essential": true,
             "links": null,
@@ -38,19 +42,27 @@
             "readonlyRootFilesystem": null,
             "dockerLabels": null,
             "privileged": null,
-            "name": "phenomics-pipeline-dontainer"
+            "name": "phenomics-pipeline-dev-container"
         }
     ],
     "taskRoleArn": null,
-    "family": "phenomics-pipeline-task",
+    "family": "phenomics-pipeline-dev-task",
     "networkMode": null,
     "volumes": [
     {
       "name": "springlogs",
       "host": {
-        "sourcePath": "/var/log/"
+        "sourcePath": "/var/log/pipeline-worker/"
       }
-    }
+
+    },
+     {
+          "name": "PhenotypeResources",
+          "host": {
+            "sourcePath": "/var/lib/phenotypeCR2018/"
+          }
+
+        }
   ],
     "placementConstraints": []
 }

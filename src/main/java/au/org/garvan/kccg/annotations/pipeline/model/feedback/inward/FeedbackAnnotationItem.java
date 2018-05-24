@@ -28,4 +28,15 @@ public class FeedbackAnnotationItem {
     @JsonProperty
     int endIndex;
 
+
+    public FeedbackAnnotationItem(String annotationId, String indexRange){
+        id = annotationId;
+        String [] splits = indexRange.split(":");
+        if(splits.length==2){
+            startIndex = Integer.parseInt(splits[0]);
+            endIndex = Integer.parseInt(splits[1]);
+        }
+
+    }
+
 }

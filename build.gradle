@@ -95,5 +95,17 @@ task buildDockerProd(type: Docker) {
     exposePort(9080)
 }
 
+task buildDockerDev(type: Docker) {
+    baseImage = 'develar/java:latest'
+    push = project.hasProperty('push')
+    tag = 'phenomics-pipepline-dev'
+    addFile {
+        from jar
+        rename {'app.jar'}
+    }
+    entryPoint(['java', '-Djava.security.egd=file:/dev/./urandom', '-Xmx2048m',  '-Dspring.profiles.active=dev', '-jar', '/app.jar' ])
+    exposePort(9080)
+}
+
 buildDocker.dependsOn(build)
 

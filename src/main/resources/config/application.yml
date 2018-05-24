@@ -14,11 +14,11 @@ spring:
       username:
       password:
       live:
-        endpoint: bolt://52.63.88.92:7687/
+        endpoint: bolt://localhost:7687/
         username: neo4j
         password: Neo4j@1Prod
       historical:
-        endpoint: bolt://52.63.6.209:7687/
+        endpoint: bolt://52.62.200.154:7687/
         username: neo4j
         password: Neo4j@1Prod
 
@@ -39,9 +39,12 @@ logging:
     file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %p | stackName=phenomics | appName=annotation-pipepline | source= %c{1.} | %msg%n"
   level:
     root: WARN
-    au.org.garvan.kccg.annotations.pipeline: DEBUG
+    au.org.garvan.kccg.annotations.pipeline: INFO
 
 
 
 server:
     port: 9080
+
+
+#dev neo 52.63.88.92

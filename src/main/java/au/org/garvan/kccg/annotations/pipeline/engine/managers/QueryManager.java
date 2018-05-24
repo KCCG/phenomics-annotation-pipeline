@@ -80,7 +80,7 @@ public class QueryManager {
     }
 
 
-    public PaginatedSearchResult processQueryV2(SearchQueryV2 query, Integer pageSize, Integer pageNo, Boolean isHistorical) {
+    public PaginatedSearchResultV2 processQueryV2(SearchQueryV2 query, Integer pageSize, Integer pageNo, Boolean isHistorical) {
         slf4jLogger.debug(String.format("********************QueryID:%s*********************", query.getQueryId()));
 
         boolean filterCacheHit = false;
@@ -96,7 +96,7 @@ public class QueryManager {
 
 
             FiltersCacheObject cachedFilters = FiltersResponseCache.getFilters(query, qParams.getIncludeHistorical());
-            List<SearchResultV1> results = new ArrayList<>();
+            List<SearchResultV2> results = new ArrayList<>();
             if (cachedFilters != null) {
                 filterCacheHit = true;
                 qParams.setTotalArticles(cachedFilters.getArticlesCount());
@@ -118,7 +118,7 @@ public class QueryManager {
                 resultSet = dbManager.searchArticlesWithFiltersV2(query.getQueryId(), query.getSearchItems(), query.getFilterItems(), qParams, false, cachedFilters);
                 for (RankedArticle entry : resultSet.getRankedArticles()) {
                     if (entry.getArticle() != null)
-                        results.add(constructSearchResult(entry));
+                        results.add(constructSearchResultV2(entry));
                 }
                 resultSet.setConceptCounts(cachedFilters.getFinalFilters());
                 //Cache articles
@@ -137,7 +137,7 @@ public class QueryManager {
                 resultSet = dbManager.searchArticlesWithFiltersV2(query.getQueryId(), query.getSearchItems(), query.getFilterItems(), qParams, true, cachedFilters);
                 for (RankedArticle entry : resultSet.getRankedArticles()) {
                     if (entry.getArticle() != null)
-                        results.add(constructSearchResult(entry));
+                        results.add(constructSearchResultV2(entry));
                 }
                 //Cache result
                 FiltersResponseCache.putFilters(query, qParams.getIncludeHistorical(), cachedFilters);
@@ -152,7 +152,7 @@ public class QueryManager {
 
         }
 
-        return new PaginatedSearchResult();
+        return new PaginatedSearchResultV2();
     }
 
 
@@ -170,8 +170,8 @@ public class QueryManager {
     }
 
 
-    public PaginatedSearchResult constructFinalResultV2(List<SearchResultV1> results, DBManagerResultSet resultSet, PaginationRequestParams qParams, SearchQueryV2 query) {
-        PaginatedSearchResult finalResult = new PaginatedSearchResult();
+    public PaginatedSearchResultV2 constructFinalResultV2(List<SearchResultV2> results, DBManagerResultSet resultSet, PaginationRequestParams qParams, SearchQueryV2 query) {
+        PaginatedSearchResultV2 finalResult = new PaginatedSearchResultV2();
         finalResult.setArticles(results);
         finalResult.setPagination(qParams);
 
@@ -184,8 +184,8 @@ public class QueryManager {
 
     }
 
-    public PaginatedSearchResult constructCachedFinalResultV2(List<SearchResultV1> cachedSearchResult, FiltersCacheObject cachedFilters, PaginationRequestParams qParams, SearchQueryV2 query) {
-        PaginatedSearchResult finalResult = new PaginatedSearchResult();
+    public PaginatedSearchResultV2 constructCachedFinalResultV2(List<SearchResultV2> cachedSearchResult, FiltersCacheObject cachedFilters, PaginationRequestParams qParams, SearchQueryV2 query) {
+        PaginatedSearchResultV2 finalResult = new PaginatedSearchResultV2();
         finalResult.setArticles(cachedSearchResult);
 
         qParams.setTotalArticles(cachedFilters.getArticlesCount());
@@ -307,6 +307,30 @@ public class QueryManager {
     }
 
 
+
+    private SearchResultV2 constructSearchResultV2(RankedArticle rankedArticle) {
+        Article article = rankedArticle.getArticle();
+        List<JSONObject> annotations = rankedArticle.getJsonAnnotations();
+        // ^ This change is made to have one DTO throughout the hierarchy for simplicity of code.
+        SearchResultV2 searchResult = new SearchResultV2();
+        searchResult.setPmid(article.getPubMedID());
+        searchResult.setArticleAbstract(article.getArticleAbstract().getOriginalText());
+        searchResult.setDatePublished(article.getDatePublished().toString());
+        searchResult.setArticleTitle(article.getArticleTitle());
+        searchResult.setLanguage(article.getLanguage());
+        searchResult.setAuthors(article.getAuthors());
+        searchResult.setPublication(article.getPublication());
+
+        if (annotations.size() > 0) {
+            searchResult.setArticleRank(rankedArticle.getRank());
+            searchResult.fillAnnotations(annotations);
+        }
+
+
+        return searchResult;
+    }
+
+
     /***
      * Generic list for auto-complete
      * Currently supports genes and phenotypes
@@ -379,10 +403,10 @@ public class QueryManager {
                     DocumentPreprocessor.getPhenotypeHandler().searchPhenotype(infix));
         }
 
-//        if (!smartSearch || smartQueryType.equals(AnnotationType.DISEASE)) {
-//            shortListedDiseases = AnnotationControl.getControlledMWAnnotations(
-//                    DocumentPreprocessor.getMondoHandler().searchDisease(infix));
-//        }
+        if (!smartSearch || smartQueryType.equals(AnnotationType.DISEASE)) {
+            shortListedDiseases = AnnotationControl.getControlledMWAnnotations(
+                    DocumentPreprocessor.getMondoHandler().searchDisease(infix));
+        }
 
         //Ranking results
         Map<Object, Integer> rankedEntities = new HashMap<>();
@@ -405,18 +429,24 @@ public class QueryManager {
             }
             if (entry.getKey() instanceof APMultiWordAnnotationMapper) {
                 List<String> symbols = Arrays.asList(((APMultiWordAnnotationMapper) entry.getKey()).getText().toUpperCase().split(" "));
-                Integer termNumber = 0;
-                for (String symbol : symbols) {
-                    rank = baseRank;
-                    if (symbol.indexOf(infix) == 0) {
-                        rank = rank * 2 - (symbol.length() - infix.length()) - symbols.size();
-                    } else {
-                        rank = rank - (5 * symbol.indexOf(infix)) - (symbol.length() - infix.length() - symbols.size());
+
+                List<String> infixes = Arrays.asList(infix.toUpperCase().split(" "));
+                for(String anInfix: infixes) {
+                    Integer termNumber = 0;
+                    Integer localRank = 0;
+                    for (String symbol : symbols) {
+                        rank = baseRank;
+                        if (symbol.indexOf(anInfix) == 0) {
+                            rank = rank * 2 - (symbol.length() - anInfix.length()) - symbols.size();
+                        } else {
+                            rank = rank - (5 * symbol.indexOf(anInfix)) - (symbol.length() - anInfix.length() - symbols.size());
+                        }
+                        rank = rank - 10 * termNumber;
+                        if (localRank < rank)
+                            localRank = rank;
+                        termNumber++;
                     }
-                    rank = rank - 10 * termNumber;
-                    if (entry.getValue() < rank)
-                        entry.setValue(rank);
-                    termNumber++;
+                    entry.setValue(entry.getValue()+localRank);
                 }
             }
         }

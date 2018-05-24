@@ -50,7 +50,7 @@ public class IndexDataSource {
 	
 	public boolean initialize() {
 		try {
-			logger.info("Loading index from: " + dsFile);
+			logger.info("Loading index from (hard Coded File): " + dsFile);
 			searchDB = DBMaker.fileDB(new File(dsFile)).encryptionEnable(TAConstants.DICT_PASSWORD).readOnly().closeOnJvmShutdown().make();
 			symbolMap = searchDB.treeMap(IndexConstants.SET_SYMBOL_MAP);
 			conceptInfoMap = searchDB.treeMap(IndexConstants.SET_CONCEPT_INFO);
