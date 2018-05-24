@@ -86,8 +86,8 @@ public class PhenotypeHandler {
         IndexDataSource HpoDS = indexSearch.getIndexDataSource("HPO");
         for (DS_ConceptInfo concept : HpoDS.getConceptInfoMap().values()) {
             hpoToPhenotypeConcept.put(concept.getUri(), concept);
-            List<String> names = concept.getAlternativeLabels().stream().map(x -> x.toLowerCase()).collect(Collectors.toList());
-            names.add(concept.getPreferredLabel().toLowerCase());
+            Set<String> names = concept.getAlternativeLabels().stream().collect(Collectors.toSet());
+            names.add(concept.getPreferredLabel());
 
             for (String name : names) {
                 if (!Strings.isNullOrEmpty(name))
@@ -313,7 +313,7 @@ public class PhenotypeHandler {
     }
 
     public List<APMultiWordAnnotationMapper> searchPhenotype(String infix){
-         return phenotypeLabelToHpo.entrySet().stream().filter(x->x.getKey().contains(infix.toLowerCase())).map(p-> new APMultiWordAnnotationMapper(p.getValue(),p.getKey())).collect(Collectors.toList());
+         return phenotypeLabelToHpo.entrySet().stream().filter(x->x.getKey().toLowerCase().contains(infix.toLowerCase())).map(p-> new APMultiWordAnnotationMapper(p.getValue(),p.getKey())).collect(Collectors.toList());
     }
     public String getPhenotypeLabelWithId(String id){
         if(hpoToPhenotypeConcept.containsKey(id)){

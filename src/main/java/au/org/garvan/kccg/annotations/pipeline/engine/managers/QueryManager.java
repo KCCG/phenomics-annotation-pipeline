@@ -429,18 +429,24 @@ public class QueryManager {
             }
             if (entry.getKey() instanceof APMultiWordAnnotationMapper) {
                 List<String> symbols = Arrays.asList(((APMultiWordAnnotationMapper) entry.getKey()).getText().toUpperCase().split(" "));
-                Integer termNumber = 0;
-                for (String symbol : symbols) {
-                    rank = baseRank;
-                    if (symbol.indexOf(infix) == 0) {
-                        rank = rank * 2 - (symbol.length() - infix.length()) - symbols.size();
-                    } else {
-                        rank = rank - (5 * symbol.indexOf(infix)) - (symbol.length() - infix.length() - symbols.size());
+
+                List<String> infixes = Arrays.asList(infix.toUpperCase().split(" "));
+                for(String anInfix: infixes) {
+                    Integer termNumber = 0;
+                    Integer localRank = 0;
+                    for (String symbol : symbols) {
+                        rank = baseRank;
+                        if (symbol.indexOf(anInfix) == 0) {
+                            rank = rank * 2 - (symbol.length() - anInfix.length()) - symbols.size();
+                        } else {
+                            rank = rank - (5 * symbol.indexOf(anInfix)) - (symbol.length() - anInfix.length() - symbols.size());
+                        }
+                        rank = rank - 10 * termNumber;
+                        if (localRank < rank)
+                            localRank = rank;
+                        termNumber++;
                     }
-                    rank = rank - 10 * termNumber;
-                    if (entry.getValue() < rank)
-                        entry.setValue(rank);
-                    termNumber++;
+                    entry.setValue(entry.getValue()+localRank);
                 }
             }
         }

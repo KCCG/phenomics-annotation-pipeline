@@ -63,12 +63,14 @@ public class GraphDBCachedNatives {
 
         //Switch driver based on caller
         Driver localDriver = isHistorical? historicalDriver: liveDriver;
-
         try (Session session = localDriver.session()) {
             session.readTransaction(new TransactionWork<String>() {
                 @Override
                 public String execute(Transaction tx) {
+                    slf4jLogger.debug("Query for filters is going to be called.");
                     StatementResult result = tx.run(query);
+                    slf4jLogger.debug("Query for filters is completed.");
+
 
                     while (result.hasNext()) {
                         Map map = result.next().asMap();
@@ -77,10 +79,12 @@ public class GraphDBCachedNatives {
                         }
 
                     }
+                    slf4jLogger.debug("Query for filters result processed.");
                     return "";
                 }
             });
         }
+        slf4jLogger.debug("Query for filters result being returned.");
         return foundFilters;
     }
 
