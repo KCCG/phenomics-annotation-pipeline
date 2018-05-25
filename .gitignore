@@ -6,6 +6,8 @@
 
 *.swp
 *.jar
+!gradle/wrapper/gradle-wrapper.jar
+
 *.pyc
 *.json
 !src/main/resources/lexicons/mondoAnnotationIndex.json
