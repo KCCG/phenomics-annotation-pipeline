@@ -1,4 +1,15 @@
-Introduction 
+```
+ ___  _  _  ___  _  _  __  __  __  __  __  ___     __   _  _  _  _  __  ____  __  ____  __  __  _  _
+(  ,\( )( )(  _)( \( )/  \(  \/  )(  )/ _)/ __)   (  ) ( \( )( \( )/  \(_  _)(  )(_  _)(  )/  \( \( )
+ ) _/ )__(  ) _) )  (( () ))    (  )(( (_ \__ \   /__\  )  (  )  (( () ) )(  /__\  )(   )(( () ))  (
+(_)  (_)(_)(___)(_)\_)\__/(_/\/\_)(__)\__)(___/  (_)(_)(_)\_)(_)\_)\__/ (__)(_)(_)(__) (__)\__/(_)\_)
+                           ___  __  ___  ___  __    __  _  _  ___
+                          (  ,\(  )(  ,\(  _)(  )  (  )( \( )(  _)
+                           ) _/ )(  ) _/ ) _) )(__  )(  )  (  ) _)
+                          (_)  (__)(_)  (___)(____)(__)(_)\_)(___)
+```
+
+Introduction
 ============
 Phenmomic-Annotation-Pipeline is a Java8 SpringBoot Application. The core module (Engine) is the backend processing unit enriched with Standford CoreNLP text processing and custom annotators.
 
@@ -13,18 +24,21 @@ Following are key components for this service:
     * Dependency parsing -> Yielding lists of `APDependencyRelation` and `APParseTreeRow` in each sentence.
 * Shortform extraction and linkage with long forms.
 * Annotation Processing
-    * Gene Annotations -> Stored as list of `LexicalEntity` in each sentence.
+    * Gene Annotations -> Stored as list of `LexicalEntity` in each sentence. This is a simple symbol match for HGNC.
+    * Phenotype Annotations -> Concept Recogniser is incorporated. It gives phenotype objects (HPO) which are stored at sentence level.
+    * Disease Annotations -> Affinity Beta is released, which is used to tag text with MONDO diseases.
 * Deduplication (Filter based on already fetched articles using DynamoDB Indexing).
-
 
 **Database Handling**
 
 Being a micro-service pipeline manages its own databases.
-There are 3 storage systems used to persist processed Articles.
+There are 3 storage systems used to persist processed Articles. Efficiency is achieved with 3 levels of cache systems.
 * Graph Database:
     Neo4J has been chosen (After comparing it with Titan, MongoDB) as graph database storage. Here are a few responsibilities it shares:
     * Storing each Article as a mini-graph of relationships. Important relations are PUBLISHED, WROTE, CONTAINS linking an article with Publications, Authors and Annotations respectively.
     * Providing a quick indexed search for interfacing APIs. Search can be a composite query (Publication parameters like date, author, publication or annotations like gene, diseases etc.)
+    * A partition is in place now for segregating historical and live relations.
+
 * DynamoDB:
   Dynamodb stores Article, Annotations and Subscriptions.
 
@@ -44,8 +58,8 @@ There are two interfaces for this service:
 There are multiple (still growing) APIs taking care of processing of Articles, Search and Subscription. The search service is pretty young and will be take out as a separate service in version 2.0.
 
 A few notable points:
-* There are 3 controllers (`AnnotationController`, `QueryController`, `SubscriptionController`)
-* Each controller talks to a manager from engine, it is responsibility of a manger to understand the request and fulfill it.
+* There are 5 controllers (`AnnotationController`, `QueryController`, `SubscriptionController`, `BatchWorkerController`,`FeedbackController` )
+* Each controller talks to a manager from engine, it is responsibility of a manger to understand the request and fulfil it.
 
 Setup
 =====
