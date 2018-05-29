@@ -84,5 +84,5 @@ Creating a profile for the project and enabling it
 
 https://www.jetbrains.com/help/idea/2016.1/configuring-annotation-processing.html
 
-Clean & Rebuild and then you should be good to go.
+Clean & Rebuild and then you should be good to go..
 
