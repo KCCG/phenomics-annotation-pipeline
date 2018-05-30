@@ -192,7 +192,9 @@ public class DiseaseHandler{
      * @return
      */
     public List<APMultiWordAnnotationMapper> searchDisease(String infix){
-        return diseaseLabelToMondo.entrySet().stream().filter(x->x.getKey().toLowerCase().contains(infix.toLowerCase())).map(p-> new APMultiWordAnnotationMapper(p.getValue(),p.getKey())).collect(Collectors.toList());
+        return diseaseLabelToMondo.entrySet().stream()
+                .filter(x->x.getKey().toLowerCase().contains(infix.toLowerCase()) && !x.getKey().toLowerCase().contains("("))
+                        .map(p-> new APMultiWordAnnotationMapper(p.getValue(),p.getKey())).collect(Collectors.toList());
     }
 
     public APDisease getDisease(String key) {
