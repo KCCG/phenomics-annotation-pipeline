@@ -25,7 +25,7 @@ public class CRConstants {
 
 	//CR: Phenotype handler properties.
 
-	public static final String RESOURCES_PATH = "phenotypeCR2018/";
+	public static final String RESOURCES_PATH = "phenotypeCR/";
 
 	public static final Integer MAX_THREADS_COUNT = 1;
 
