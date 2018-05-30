@@ -417,39 +417,53 @@ public class QueryManager {
 
         for (Map.Entry<Object, Integer> entry : rankedEntities.entrySet()) {
             int rank = baseRank;
+//
+//            if (entry.getKey() instanceof APGene) {
+//                String symbol = ((APGene) entry.getKey()).getApprovedSymbol();
+//                if (symbol.indexOf(infix) == 0) {
+//                    rank = rank * 2 - (symbol.length() - infix.length());
+//                } else {
+//                    rank = rank - (5 * symbol.indexOf(infix)) - (symbol.length() - infix.length());
+//                }
+//                entry.setValue(rank);
+//            }
+//            if (entry.getKey() instanceof APMultiWordAnnotationMapper) {
+//                List<String> symbols = Arrays.asList(((APMultiWordAnnotationMapper) entry.getKey()).getText().toUpperCase().split(" "));
+//
+//                List<String> infixes = Arrays.asList(infix.toUpperCase().split(" "));
+//                for(String anInfix: infixes) {
+//                    Integer termNumber = 0;
+//                    Integer localRank = 0;
+//                    for (String symbol : symbols) {
+//                        rank = baseRank;
+//                        if (symbol.indexOf(anInfix) == 0) {
+//                            rank = rank * 2 - (symbol.length() - anInfix.length()) - symbols.size();
+//                        } else {
+//                            rank = rank - (5 * symbol.indexOf(anInfix)) - (symbol.length() - anInfix.length() - symbols.size());
+//                        }
+//                        rank = rank - 10 * termNumber;
+//                        if (localRank < rank)
+//                            localRank = rank;
+//                        termNumber++;
+//                    }
+//                    entry.setValue(entry.getValue()+localRank);
+//                }
+//            }
 
+            String label = "";
             if (entry.getKey() instanceof APGene) {
-                String symbol = ((APGene) entry.getKey()).getApprovedSymbol();
-                if (symbol.indexOf(infix) == 0) {
-                    rank = rank * 2 - (symbol.length() - infix.length());
-                } else {
-                    rank = rank - (5 * symbol.indexOf(infix)) - (symbol.length() - infix.length());
-                }
-                entry.setValue(rank);
+                label = ((APGene) entry.getKey()).getApprovedSymbol();
+            } else if (entry.getKey() instanceof APMultiWordAnnotationMapper) {
+                label = ((APMultiWordAnnotationMapper) entry.getKey()).getText().toUpperCase();
             }
-            if (entry.getKey() instanceof APMultiWordAnnotationMapper) {
-                List<String> symbols = Arrays.asList(((APMultiWordAnnotationMapper) entry.getKey()).getText().toUpperCase().split(" "));
-
-                List<String> infixes = Arrays.asList(infix.toUpperCase().split(" "));
-                for(String anInfix: infixes) {
-                    Integer termNumber = 0;
-                    Integer localRank = 0;
-                    for (String symbol : symbols) {
-                        rank = baseRank;
-                        if (symbol.indexOf(anInfix) == 0) {
-                            rank = rank * 2 - (symbol.length() - anInfix.length()) - symbols.size();
-                        } else {
-                            rank = rank - (5 * symbol.indexOf(anInfix)) - (symbol.length() - anInfix.length() - symbols.size());
-                        }
-                        rank = rank - 10 * termNumber;
-                        if (localRank < rank)
-                            localRank = rank;
-                        termNumber++;
-                    }
-                    entry.setValue(entry.getValue()+localRank);
-                }
+            if (label.indexOf(infix) == 0) {
+                rank = rank * 2 - (label.length() - infix.length());
+            } else {
+                rank = rank - (5 * label.indexOf(infix)) - (label.length() - infix.length());
             }
+            entry.setValue(rank);
         }
+
 
 
         //Show equal number of items from auto-complete list.
