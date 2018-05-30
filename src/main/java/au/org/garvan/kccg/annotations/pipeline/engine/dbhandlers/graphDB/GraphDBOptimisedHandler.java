@@ -1,7 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.graphDB;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManagerResultSet;
-import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.SearchQueryParams;
@@ -13,17 +12,12 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.ArticleW
 
 import au.org.garvan.kccg.annotations.pipeline.model.query.RankedArticle;
 import au.org.garvan.kccg.annotations.pipeline.model.query.RankedArticleComparitor;
-import com.github.jsonldjava.utils.Obj;
-import edu.stanford.nlp.util.ArraySet;
-import edu.stanford.nlp.util.Sets;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.clause.MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.values.*;
-import javafx.beans.binding.ObjectExpression;
-import org.omg.CORBA.INTERNAL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;

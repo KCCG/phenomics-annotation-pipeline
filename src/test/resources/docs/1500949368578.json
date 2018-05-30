@@ -1,0 +1,156 @@
+[
+  {
+    "dateCreatedEpoch": 17271,
+    "articleTitle": "A dominant negative FGFR1 mutation identified in a Kallmann syndrome patient.",
+    "dateCreated": "2017-04-15",
+    "dateRevised": "2017-06-15",
+    "articleDate": "2017-04-11",
+    "language": "eng",
+    "articleAbstract": "Kallmann syndrome (KS) is characterized by isolated hypogonadotropic hypogonadism (IHH) with anosmia. Fibroblast growth factor receptor 1 (FGFR1) is one of KS-associated genes, accounts for approximately 10% of total patients. FGFR1 mutations have also been identified in more severe craniosynostosis syndromes, and a subset of craniosynostosis syndromes-associated FGFR1 mutations show dominant negative effect. In this study, we identified a novel FGFR1 mutation (c.867G>A; p.W289X) in a KS patient. The p.W289X mutation leads premature termination, producing a truncated FGFR1 without the transmembrane and intracellular domains. Indeed, the W289X FGFR1 was secreted into culture medium. Further, W289X FGFR1 interfered with the function of wild type receptor to induce ERK1/2 phosphorylation. We therefore identified a dominant negative FGFR1 mutation in the KS patient, and this mutant FGFR1 may be used to decipher the physiological function of FGFR1.",
+    "PMID": 28411082,
+    "authors": [
+      {
+        "initials": "H",
+        "foreName": "Hunjin",
+        "lastName": "Luo"
+      },
+      {
+        "initials": "R",
+        "foreName": "Ruizhi",
+        "lastName": "Zheng"
+      },
+      {
+        "initials": "Y",
+        "foreName": "Yaguang",
+        "lastName": "Zhao"
+      },
+      {
+        "initials": "J",
+        "foreName": "Jiayu",
+        "lastName": "Wu"
+      },
+      {
+        "initials": "J",
+        "foreName": "Jie",
+        "lastName": "Li"
+      },
+      {
+        "initials": "F",
+        "foreName": "Fang",
+        "lastName": "Jiang"
+      },
+      {
+        "initials": "DN",
+        "foreName": "Dan-Na",
+        "lastName": "Chen"
+      },
+      {
+        "initials": "XT",
+        "foreName": "Xiao-Tao",
+        "lastName": "Zhou"
+      },
+      {
+        "initials": "JD",
+        "foreName": "Jia-Da",
+        "lastName": "Li"
+      }
+    ],
+    "publication": {
+      "title": "title",
+      "isoAbbreviation": "TTL",
+      "issnType": "Internet",
+      "issnNumber": "102-102"
+    }
+  },
+  {
+    "dateCreatedEpoch": 17451,
+    "articleTitle": "Prevalence of fibroblast growth factor receptor 1 (FGFR1) amplification in squamous cell carcinomas of the head and neck.",
+    "dateCreated": "2017-10-12",
+    "dateRevised": "2017-10-12",
+    "articleDate": "2017-10-11",
+    "language": "eng",
+    "articleAbstract": "FGFR1 is a receptor tyrosine kinases involved in tumor growth signaling, survival, and differentiation in many solid cancer types. There is growing evidence that FGFR1 amplification might predict therapy response to FGFR1 inhibitors in squamous cell lung cancers. To estimate the potential applicability of anti FGFR1 therapies in squamous cell carcinomas of the head and neck, we studied patterns of FGFR1 amplification using fluorescence in situ hybridization (FISH).A tissue microarray was constructed from 453 primary treatment-naive squamous cell carcinomas of the head and neck regions with histopathological and clinical follow-up data including oral cavity (n = 222), oropharynx (n = 126), and larynx (n = 105). FGFR1 and centromere 8 copy numbers were assessed by dual-color FISH. FGFR1 amplification was defined as a copy number ratio FGFR1: centromere 8 ≥ 2.0. HPV sequencing and p16 immunohistochemistry (IHC) were applied to FGFR1-amplified cancers.FISH analysis was successful in 297 (66%) of the 453 cancers. FGFR1 amplification was found in 6% of analyzable tumors, and was more frequent in tumors of the oral cavity (13/133 amplified, 10%), than cancers of other localizations (1/79 oropharynx, 4/85 larynx; p = 0.007 and 0.159, respectively). One out of 18 FGFR1 amplified cancers was HPV positive. No associations were found between FGFR1 amplification and tumor phenotype or p16 IHC.Head and neck cancers are recurrently affected by FGFR1 amplification, with a predominance in cancers of the oral cavity. Finding only one HPV positive and FGFR1 amplified cancer argues against a causal relationship between HPV and FGFR1 amplifications.",
+    "PMID": 29022097,
+    "authors": [
+      {
+        "initials": "TS",
+        "foreName": "Till Sebastian",
+        "lastName": "Clauditz"
+      },
+      {
+        "initials": "A",
+        "foreName": "Arne",
+        "lastName": "Böttcher"
+      },
+      {
+        "initials": "H",
+        "foreName": "Henning",
+        "lastName": "Hanken"
+      },
+      {
+        "initials": "K",
+        "foreName": "Kerstin",
+        "lastName": "Borgmann"
+      },
+      {
+        "initials": "G",
+        "foreName": "Guido",
+        "lastName": "Sauter"
+      },
+      {
+        "initials": "W",
+        "foreName": "Waldemar",
+        "lastName": "Wilczak"
+      },
+      {
+        "initials": "T",
+        "foreName": "Tobias",
+        "lastName": "Grob"
+      },
+      {
+        "initials": "A",
+        "foreName": "Adrian",
+        "lastName": "Münscher"
+      }
+    ],
+    "publication": {
+      "title": "title",
+      "isoAbbreviation": "TTL",
+      "issnType": "Internet",
+      "issnNumber": "102-102"
+    }
+  },
+  {
+    "dateCreatedEpoch": 17354,
+    "articleTitle": "FOXC1 Regulates FGFR1 Isoform Switching to Promote Invasion Following TGFβ-induced EMT.",
+    "dateCreated": "2017-07-07",
+    "dateRevised": "2017-07-07",
+    "articleDate": "2017-07-06",
+    "language": "eng",
+    "articleAbstract": "Epithelial-to-mesenchymal transition (EMT) is an important physiological process that drives tissue formation during development, but also contributes to disease pathogenesis including fibrosis and cancer metastasis. Elevated expression of the FOXC1 transcription factor has been detected in several metastatic cancers that have undergone EMT. Therefore, mechanistic insight into the role of FOXC1 in the initiation of the EMT process was sought. It was determined that although Foxc1 transcript expression was elevated following TGF-β1 induced EMT of NMuMG cells, FOXC1 was not required for this induction. RNA sequencing (RNA-seq) revealed that the mRNA levels of FGF receptor 1-isoform IIIc (Fgfr1-IIIc), normally activated upon TGF-β1 treatment, were reduced in Foxc1-knockdown cells and over-expression of Foxc1 was sufficient to induce Fgfr1-IIIc expression, but not EMT. Chromatin immunoprecipitation (ChIP) experiments demonstrated that FOXC1 binds to an Fgfr1 upstream regulatory region and that FOXC1 activates an Fgfr1 promoter element. Furthermore, elevated expression of Foxc1 led to increased Fgfr1-IIIc transcript. Foxc1-knockdown impaired the FGF2-mediated three-dimensional (3D) migratory ability of NMuMG cells, which was rescued by expression of FGFR1. In addition, elevated expression of FOXC1 and FGFR1 was also observed in migratory mesenchymal MDA-MB-231 breast cancer cells. Together these results define a role for FOXC1 in specifying an invasive mesenchymal cell type by promoting FGFR1 isoform switching following induction of TGF-β1 mediated EMT.FOXC1 is required for the induction of FGFR1-IIIc expression in response to TGF-β1 induced EMT.",
+    "PMID": 28684636,
+    "authors": [
+      {
+        "initials": "A",
+        "foreName": "Alexander",
+        "lastName": "Hopkins"
+      },
+      {
+        "initials": "ML",
+        "foreName": "Mackenzie L",
+        "lastName": "Coatham"
+      },
+      {
+        "initials": "FB",
+        "foreName": "Fred B",
+        "lastName": "Berry"
+      }
+    ],
+    "publication": {
+      "title": "title",
+      "isoAbbreviation": "TTL",
+      "issnType": "Internet",
+      "issnNumber": "102-102"
+    }
+  }
+]
