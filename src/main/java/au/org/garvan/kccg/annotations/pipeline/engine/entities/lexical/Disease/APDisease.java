@@ -58,7 +58,6 @@ public class APDisease extends LexicalEntity {
                 label = linkedHashMap.get("lbl").toString();
             }
 
-
         }
         else
             deprecated = true;

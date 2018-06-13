@@ -32,6 +32,9 @@ public class Utilities {
         else if (id.contains("MONDO")){
             return AnnotationType.DISEASE;
         }
+        else if (id.contains("DB")){
+            return AnnotationType.DRUG;
+        }
         return
                 AnnotationType.ENTITY;
 

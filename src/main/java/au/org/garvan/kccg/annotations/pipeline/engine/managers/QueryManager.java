@@ -238,40 +238,6 @@ public class QueryManager {
     }
 
 
-
-
-
-    public List<String> getAutocompleteList(String infix) {
-        int baseRank = 1000;
-        int resultLimit = 15;
-
-        List<String> geneSymbols = DocumentPreprocessor.getHGNCGeneHandler().serchGenes(infix);
-        //Ranking results
-        Map<String, Integer> rankedGenes = geneSymbols.stream().collect(Collectors.toMap(Function.identity(), (a) -> 0));
-
-
-        for (Map.Entry<String, Integer> entry : rankedGenes.entrySet()) {
-            int rank = baseRank;
-            if (entry.getKey().indexOf(infix) == 0) {
-                rank = rank * 2 - (entry.getKey().length() - infix.length());
-            } else {
-                rank = rank - (5 * entry.getKey().indexOf(infix)) - (entry.getKey().length() - infix.length());
-            }
-            entry.setValue(rank);
-        }
-
-        List<String> returnList = rankedGenes.entrySet().stream()
-                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-                .map(m -> m.getKey())
-                .collect(Collectors.toList());
-
-        if (returnList.size() >= resultLimit)
-            returnList = returnList.subList(0, resultLimit);
-
-        return returnList;
-    }
-
-
     private SearchResultV1 constructSearchResult(RankedArticle rankedArticle) {
         Article article = rankedArticle.getArticle();
         List<JSONObject> annotations = rankedArticle.getJsonAnnotations();
@@ -359,11 +325,17 @@ public class QueryManager {
                     case "hgnc":
                         smartQueryType = AnnotationType.GENE;
                         break;
-                    case "d":
+                    case "di":
                         smartQueryType = AnnotationType.DISEASE;
                         break;
                     case "mondo":
                         smartQueryType = AnnotationType.DISEASE;
+                        break;
+                    case "dr":
+                        smartQueryType = AnnotationType.DRUG;
+                        break;
+                    case "db":
+                        smartQueryType = AnnotationType.DRUG;
                         break;
                     case "p":
                         smartQueryType = AnnotationType.PHENOTYPE;

@@ -1,6 +1,5 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.annotators.disease;
 
-import au.org.garvan.kccg.annotations.pipeline.engine.connectors.AffinityConnector;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Disease.APDisease;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.APMultiWordAnnotationMapper;
@@ -31,13 +30,8 @@ import java.util.stream.Collectors;
 
 
 @AllArgsConstructor
-@Component
 public class DiseaseHandler{
     private final Logger slf4jLogger = LoggerFactory.getLogger(DiseaseHandler.class);
-
-    @Autowired
-    private static AffinityConnector affinityServiceConnector;
-
 
     private Map<String, APDisease> mondoDiseases;
     private Map<String, String> diseaseLabelToMondo;
@@ -48,12 +42,10 @@ public class DiseaseHandler{
     /***
      * Init for index reading
      */
-    @Autowired
     public DiseaseHandler(){
         mondoDiseases = new HashMap<>();
         diseaseLabelToMondo = new HashMap<>();
         readFile("mondoAnnotationIndex.json");
-        affinityServiceConnector = new AffinityConnector();
 
     }
 
@@ -61,31 +53,28 @@ public class DiseaseHandler{
     /***
      * Annotation function called from document preprocessor.
      * @param apDocument
-     * @param articleId
+     * @param diseaseHits
      */
 
     //TODO: Split in two functions, one for calling affinity and other to fetch results.
-    public void processAndUpdateDocument(APDocument apDocument, int articleId) {
-
-        //TODO: Call
-        List<AnnotationHit> diseaseHits =   affinityServiceConnector.annotateAbstract(apDocument.getCleanedText(), articleId, "en");
+    public void processAndUpdateDocument(APDocument apDocument, List<AnnotationHit> diseaseHits) {
 
 
         //TODO: Add call and fetch result
-        for(AnnotationHit dHit: diseaseHits){
+        for (AnnotationHit dHit : diseaseHits) {
             APDisease selectedDisease = getDisease(dHit.getAnnotationID());
             List<List<AnnotationTerm>> chainedTerms = chainAnnotationTerms(dHit.getHits());
-            for(List<AnnotationTerm> term : chainedTerms){
-                Pair<Integer,Integer> offsetRange = getOffsetRange(term);
+            for (List<AnnotationTerm> term : chainedTerms) {
+                Pair<Integer, Integer> offsetRange = getOffsetRange(term);
                 Pair<APSentence, List<APToken>> documentMap = apDocument.getSentenceAndTokenWithTokenOffsets(offsetRange.getFirst(), offsetRange.getSecond());
 
-                if(documentMap != null){
+                if (documentMap != null) {
                     boolean validToken = true;
-                    if(documentMap.getSecond().size()==1 ){
-                        validToken= Common.STOPPING_POS.contains(documentMap.getSecond().get(0).getPartOfSpeech()) ? false : true;
+                    if (documentMap.getSecond().size() == 1) {
+                        validToken = Common.STOPPING_POS.contains(documentMap.getSecond().get(0).getPartOfSpeech()) ? false : true;
                     }
 
-                    if(validToken) {
+                    if (validToken) {
                         Annotation annotation = new Annotation();
                         annotation.setStandard(STANDARD);
                         annotation.setVersion(VERSION);

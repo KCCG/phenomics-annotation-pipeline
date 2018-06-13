@@ -1,6 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.annotators.drug;
 
-import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Disease.APDisease;
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.Constants;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Drug.APDrug;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APPhrase;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
@@ -8,9 +9,15 @@ import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPrep
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
+import com.google.common.primitives.Ints;
+import edu.stanford.nlp.util.ArraySet;
+import edu.stanford.nlp.util.StringUtils;
+import io.swagger.models.auth.In;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.json.simple.JSONArray;
@@ -21,6 +28,11 @@ import org.slf4j.LoggerFactory;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.MalformedInputException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -33,75 +45,74 @@ public class IndexGenerator {
 
 
     private final String VERSION = "2018-05-01";
-    private final String STANDARD = "DB";
+    private final String STANDARD = "DrugBank";
     private final String ANNOTATIONS = AnnotationType.DRUG.toString();
 
     private static final List<String> drugIdsControlList = Arrays.asList();
 
     public void generateIndex(String fName) {
         fileName = fName;
-        List<APDisease> rawDiseases = readFile();
-        List<APDisease> filteredDiseases = rawDiseases.stream().filter(d-> !drugIdsControlList.contains(d.getMondoID())).collect(Collectors.toList());
+        List<RawDrug> rawDrugs = readFile();
+        List<RawDrug> filteredDrugs = rawDrugs.stream().filter(d-> !drugIdsControlList.contains(d.drugbankId)).collect(Collectors.toList());
 
-        int tokenLengthThreshold = 4;
+        int tokenLengthThresholdMin = 4;
+        int tokenLengthThresholdMax = 12;
         int tokenNumberThreshold = 8;
         DocumentPreprocessor.init();
 
 
-        List<APDisease> cleanedDiseases = new ArrayList<>();
-        List<APDisease> discardedDiseases = new ArrayList<>();
+        List<APDrug> cleanedDrugs = new ArrayList<>();
+        List<APDrug> discardedDrugs = new ArrayList<>();
 
-        for (APDisease apDisease : filteredDiseases) {
+        HashSet<String> singleValidDictionaryWord = new HashSet<>();
+
+        for (RawDrug rawDrug  : filteredDrugs) {
             //Prepare list for diseases
             slf4jLogger.debug("");
-            slf4jLogger.debug(String.format("========= Starting processing disease:%s ==========", apDisease.getMondoID()));
+            slf4jLogger.debug(String.format("========= Starting processing disease:%s ==========", rawDrug.drugbankId));
 
             //Point:Clean all parenthesis containing word and space items from text
 
-            Stack<String> stackedDiseases = new Stack<>();
-            apDisease.getSynonyms().stream().forEach(s -> stackedDiseases.push(cleanText(s)));
-            stackedDiseases.push(cleanText(apDisease.getLabel()));
+            Stack<String> stackedDrugs = new Stack<>();
+            rawDrug.synonyms.stream().forEach(s -> stackedDrugs.push(cleanText(s)));
+            rawDrug.internationalBrands.stream().forEach(s -> stackedDrugs.push(cleanText(s)));
+//            rawDrug.mixtures.stream().forEach(s -> stackedDrugs.push(cleanText(s.name)));
 
-            List<String> rulesAppliedDisease = new ArrayList<>();
+            stackedDrugs.push(cleanText(cleanText(rawDrug.drugText)));
+
+            List<String> rulesAppliedDrugs = new ArrayList<>();
             boolean discard = false;
             boolean labelDiscarded = false;
             int iterator = 0;
 
-            while (!stackedDiseases.empty()) {
-                String oneForm = stackedDiseases.pop();
+            while (!stackedDrugs.empty()) {
+                String oneForm = stackedDrugs.pop();
+                if(Strings.isNullOrEmpty(oneForm))
+                    continue;
+
 
                 List<String> discardedStrings = new ArrayList<>();
                 APPhrase apPhrase = DocumentPreprocessor.preprocessPhrase(oneForm);
                 List<APToken> tokens = apPhrase.getTokens();
-                TokenAnalysis tokenAnalysis = analyseTokens(tokens);
-
-                //Point Rule 0: If there is a semicolon and it is second last token then consider there is a short form ahead. Split form and out it as abbreviation
-                if (tokens.size() > 2 && tokenAnalysis.getIndexOfSemicolon() == tokens.size() - 2) {
-                    slf4jLogger.debug(String.format("Disease:%s | Found semicolon token at second last index: %s.", apDisease.getMondoID(), oneForm));
-                    List<APToken> initialTokens = tokens.subList(0, tokenAnalysis.getIndexOfSemicolon());
-                    oneForm = initialTokens.stream().map(t -> t.getOriginalText()).collect(Collectors.joining(" "));
-                    stackedDiseases.push(tokens.get(tokens.size() - 1).getOriginalText());
-
-                }
+                TokenAnalysis tokenAnalysis = analyseTokens(tokens, oneForm);
 
 
                 //Point: Rule 1a: Token length. If single then length should be more than 3(tokenLengthThreshold)
                 //Point: Rule 1b: If number of tokens is greater that 6(tokenNumberThreshold) and have 2 commas and threshold then discard
                 if (!discard && !labelDiscarded) {
 
-                    if(tokens.size()==1){
-
-                    }
-
                     if (tokens.size() == 1  ) {
-                        if(tokens.get(0).getOriginalText().length() < tokenLengthThreshold) {
-                            slf4jLogger.debug(String.format("Disease:%s | Found single token and less than length: %s.", apDisease.getMondoID(), oneForm));
+
+
+
+                        if(tokens.get(0).getOriginalText().length() < tokenLengthThresholdMin) {
+                            slf4jLogger.debug(String.format("Drug:%s | Found single token and less than length: %s.", rawDrug.drugbankId, oneForm));
                             discardedStrings.add(oneForm);
                             discard = true;
                             if (iterator == 0)
                                 labelDiscarded = true;
                         }
-                        else if(tokens.get(0).getOriginalText().length()<1.5*tokenLengthThreshold && onlyText(tokens.get(0).getOriginalText())) {
+                        else if(tokens.get(0).getOriginalText().length()<1.5*tokenLengthThresholdMin && onlyText(tokens.get(0).getOriginalText())) {
                             if(tokens.get(0).getPartOfSpeech().equals("JJ")){
                                 discardedStrings.add(oneForm);
                                 discard = true;
@@ -110,8 +121,27 @@ public class IndexGenerator {
                             }
 
                         }
+
+                        else
+                        {
+                            String tokenText = tokens.get(0).getOriginalText().toLowerCase();
+                            List<String> suggestions = DocumentPreprocessor.checkSpellings(tokenText);
+                            if(suggestions.size()>0 && Constants.getDrugFilters().contains(tokenText)) {
+                                    slf4jLogger.debug(String.format("Drug:%s | Found single token in filters: %s.", rawDrug.drugbankId, oneForm));
+                                    discardedStrings.add(oneForm);
+                                    discard = true;
+                                    if (iterator == 0)
+                                        labelDiscarded = true;
+
+                                }
+                            else if (suggestions.size()>0 && tokenText.length()>8)
+                                singleValidDictionaryWord.add(tokenText);
+
+
+                        }
+
                     } else if (tokens.size() > tokenNumberThreshold && (tokenAnalysis.getCountOfComma() > 1 || tokenAnalysis.getCountOfParenthesis() > 0 || tokenAnalysis.getCountOfSlash() > 0)) {
-                        slf4jLogger.debug(String.format("Disease:%s | Found long string with symbols: %s.", apDisease.getMondoID(), oneForm));
+                        slf4jLogger.debug(String.format("Drug:%s | Found long string with symbols: %s.", rawDrug.drugbankId, oneForm));
                         discardedStrings.add(oneForm);
                         discard = true;
                         if (iterator == 0)
@@ -125,24 +155,31 @@ public class IndexGenerator {
                 if (!discard && !labelDiscarded) {
                     if (tokenAnalysis.getCountOfOr() > 0 && tokenAnalysis.getCountOfParenthesis() > 1) {
                         //Point: Step2: Check of or is present in string with parenthesis, if yes remove string
-                        slf4jLogger.debug(String.format("Disease:%s | Found or in string: %s.", apDisease.getMondoID(), oneForm));
+                        slf4jLogger.debug(String.format("Drug:%s | Found or in string: %s.", rawDrug.drugbankId, oneForm));
                         discardedStrings.add(oneForm);
                         discard = true;
                         if (iterator == 0)
                             labelDiscarded = true;
                     }
+                    else if(tokenAnalysis.strHyphens>3 || tokenAnalysis.strCommas>1 || tokenAnalysis.strSquareBracketRight+tokenAnalysis.strSquareBracketLeft>1){
+                        slf4jLogger.debug(String.format("Drug:%s | Found str flags in string: %s.", rawDrug.drugbankId, oneForm));
+                        discardedStrings.add(oneForm);
+                        discard = true;
+                        if (iterator == 0)
+                            labelDiscarded = true;
+                    }
+
                 }
 
 
                 if (!discard && !labelDiscarded) {
                     //Point: Rule3: If count of comma is 1 then swap string. If more than 1 then discard
                     if (tokenAnalysis.getCountOfComma() > 0) {
-                        slf4jLogger.debug(String.format("Disease:%s | Found comma:%s.", apDisease.getMondoID(), oneForm));
+                        slf4jLogger.debug(String.format("Drug:%s | Found comma:%s.", rawDrug.drugbankId, oneForm));
                         if (tokenAnalysis.getCountOfComma() == 1) {
-                            String swappedString = getCommaSwappedString(tokens);
-                            if (swappedString != null) {
-                                oneForm = swappedString;
-                            }
+//                            String swappedString = getCommaSwappedString(tokens);
+//                            if (swappedString != null) {
+//                                oneForm = swappedString;
                         } else {
                             discardedStrings.add(oneForm);
                             discard = true;
@@ -153,7 +190,7 @@ public class IndexGenerator {
 
 
                     if (tokenAnalysis.getCountOfSlash() > 0) {
-                        slf4jLogger.debug(String.format("Disease:%s | Found slash:%s.", apDisease.getMondoID(), oneForm));
+                        slf4jLogger.debug(String.format("Drug:%s | Found slash:%s.", rawDrug.drugbankId, oneForm));
                         discardedStrings.add(oneForm);
                         discard = true;
                         if (iterator == 0)
@@ -162,8 +199,9 @@ public class IndexGenerator {
                 }
 
 
+
                 if (!discard) {
-                    rulesAppliedDisease.add(oneForm);
+                    rulesAppliedDrugs.add(oneForm);
                 }
                 discard = false;
                 iterator++;
@@ -174,45 +212,55 @@ public class IndexGenerator {
             if (labelDiscarded) {
                 slf4jLogger.debug(String.format("Label is discarded"));
 
-                APDisease cleanedDisease = new APDisease(
-                        apDisease.getOboURI(),
-                        apDisease.getMondoID(),
-                        apDisease.getDefinition(),
-                        apDisease.getLabel(),
-                        rulesAppliedDisease,
-                        true
-                );
-                discardedDiseases.add(cleanedDisease);
+                APDrug cleanedDrug = new APDrug("", rawDrug.drugbankId, rawDrug.description, rawDrug.drugText, new ArrayList<>());
+                discardedDrugs.add(cleanedDrug);
             } else {
-                if (rulesAppliedDisease.size() > 0) {
+                if (rulesAppliedDrugs.size() > 0) {
                     Set<String> uniqueLabels = new HashSet<>();
                     List<String> finalSynonyms = new ArrayList<>();
-                    label = rulesAppliedDisease.get(0);
+                    label = rulesAppliedDrugs.get(0);
 
                     uniqueLabels.add(label.toLowerCase());
 
+//                    Collections.sort(rulesAppliedDrugs, Comparator.comparing(String::length).reversed());
 
-                    for (Integer x = 1; x < rulesAppliedDisease.size(); x++) {
-                        if (!uniqueLabels.contains(rulesAppliedDisease.get(x).toLowerCase())) {
-                            uniqueLabels.add(rulesAppliedDisease.get(x).toLowerCase());
-                            finalSynonyms.add(rulesAppliedDisease.get(x));
+                    for (Integer x = 1; x < rulesAppliedDrugs.size(); x++) {
+//                        if(uniqueLabels.stream().filter(u->u.contains(rulesAppliedDrugs.get(x).toLowerCase())).collect(Collectors.toList()).size()==0){
+                        if (!uniqueLabels.contains(rulesAppliedDrugs.get(x).toLowerCase()) && !rulesAppliedDrugs.get(x).toLowerCase().contains(label.toLowerCase())) {
+                            uniqueLabels.add(rulesAppliedDrugs.get(x).toLowerCase());
+                            finalSynonyms.add(rulesAppliedDrugs.get(x));
                         } else
-                            slf4jLogger.debug(String.format("Duplicated by case so discarding: id:%s | string:%s", apDisease.getMondoID(), rulesAppliedDisease.get(x)));
+                            slf4jLogger.debug(String.format("Duplicated by case so discarding: id:%s | string:%s", rawDrug.drugbankId, rulesAppliedDrugs.get(x)));
                     }
 
 
-                    slf4jLogger.debug(String.format("Final Disease: id:%s | label:%s | synonyms:%s", apDisease.getMondoID(), label, uniqueLabels.stream().collect(Collectors.joining("|"))));
+                    slf4jLogger.debug(String.format("Final Drug: id:%s | label:%s | synonyms:%s", rawDrug.drugbankId, label, uniqueLabels.stream().collect(Collectors.joining("|"))));
+                    String drugUrl = String.format("https://www.drugbank.ca/drugs/%s", rawDrug.drugbankId);
+
+                    Collections.sort(finalSynonyms, Comparator.comparing(String::length));
+
+                    if(finalSynonyms.size()>50){
+                        finalSynonyms = finalSynonyms.stream().filter(x-> x.split(" ").length<4).collect(Collectors.toList());
+                    }
 
 
-                    APDisease cleanedDisease = new APDisease(
-                            apDisease.getOboURI(),
-                            apDisease.getMondoID(),
-                            apDisease.getDefinition(),
-                            label,
-                            finalSynonyms,
-                            false
-                    );
-                    cleanedDiseases.add(cleanedDisease);
+
+                    APDrug cleanedDrug = new APDrug(drugUrl, rawDrug.drugbankId, rawDrug.description, rawDrug.drugText, finalSynonyms);
+//                    List<String> selectedSynonyms = cleanedDrug.getSynonyms().stream().map(s->s.toLowerCase()).collect(Collectors.toList());
+//                    Set<String> uniqueMixtures = new HashSet<>();
+//                    for (RawDrug.Mixture mixture:rawDrug.mixtures){
+//                        String [] ingredients = mixture.ingredientsString.split("\\+");
+//                        if (ingredients.length>1){
+//                           if(selectedSynonyms.contains(mixture.name.toLowerCase()) && !uniqueMixtures.contains(mixture.name.toLowerCase()))
+//                        {
+//                            cleanedDrug.addMixture(mixture.name, Arrays.asList(ingredients));
+//                            uniqueMixtures.add(mixture.name.toLowerCase());
+//                        }
+//                        }
+//
+//                    }
+
+                    cleanedDrugs.add(cleanedDrug);
 
 
                 }
@@ -221,8 +269,9 @@ public class IndexGenerator {
             }//Loop
 
         }
-        slf4jLogger.info(String.format("Completed the cleaning process. Total collected diseases:%d | Total discarded diseases:%d", cleanedDiseases.size(), discardedDiseases.size()));
-        writeIndexFiles(cleanedDiseases);
+        slf4jLogger.info(String.format("Completed the cleaning process. Total collected Drug:%d | Total discarded Drug:%d", cleanedDrugs.size(), discardedDrugs.size()));
+        String collectedSingle = String.join("\n", singleValidDictionaryWord);
+        writeIndexFiles(cleanedDrugs);
 
 
     }
@@ -244,15 +293,17 @@ public class IndexGenerator {
         return null;
     }
 
-    private TokenAnalysis analyseTokens(List<APToken> tokens) {
+    private TokenAnalysis analyseTokens(List<APToken> tokens, String input) {
         TokenAnalysis tokenAnalysis = new TokenAnalysis();
         List<String> parenthesis = Arrays.asList("(", ")");
+//        List<String> redFlagWords = Arrays.asList("/mg", "/ml", "(iv)");
+
         Integer index = 0;
         for (APToken t : tokens) {
             if (t.getOriginalText().toLowerCase().equals("or"))
                 tokenAnalysis.incrementOr();
 
-            else if (t.getOriginalText().toLowerCase().equals("/"))
+            else if (t.getOriginalText().toLowerCase().contains("/"))
                 tokenAnalysis.incrementSlash();
 
             else if (t.getOriginalText().toLowerCase().equals(","))
@@ -266,15 +317,29 @@ public class IndexGenerator {
 
             index++;
         }
+
+
+
+
+        tokenAnalysis.strCommas = Ints.checkedCast(input.chars().filter(ch-> ch ==',').count());
+        tokenAnalysis.strHyphens = Ints.checkedCast(input.chars().filter(ch-> ch =='-').count());
+        tokenAnalysis.strSquareBracketLeft = Ints.checkedCast(input.chars().filter(ch-> ch =='[').count());
+        tokenAnalysis.strSquareBracketRight = Ints.checkedCast(input.chars().filter(ch-> ch ==']').count());
+
         return tokenAnalysis;
     }
 
 
+
+
     public String cleanText(String input) {
         String modified;
-        Pattern p = Pattern.compile("\\s\\(([a-zA-Z ]+)\\)");
+        Pattern p = Pattern.compile("\\((.*?)\\)");
         Matcher m = p.matcher(input);
         modified = m.replaceAll("");
+
+        if(Strings.isNullOrEmpty(modified))
+            return modified;
 
         List<Character> puncs = Arrays.asList(';', '.', '-', ':');
 
@@ -289,35 +354,27 @@ public class IndexGenerator {
         return input.matches("[a-zA-Z]+");
     }
 
-    private void writeIndexFiles(List<APDisease> selectedDiseases) {
+    private void writeIndexFiles(List<APDrug> selectedDrugs) {
         slf4jLogger.info("Writing index files for selected disease. ");
 
-        //TODO: Create file for pipeline, needed for annotation, autocomplete etc.
-        JSONObject diseaseAnnotationIndex = new JSONObject();
-        diseaseAnnotationIndex.put("standard", STANDARD);
-        diseaseAnnotationIndex.put("version", VERSION);
+
+        //Engine Index file writing
+        writeAnnotationIndexFile(selectedDrugs, "drugBankAnnotationIndex.txt");
 
 
-        JSONArray jsonDiseasesArray = new JSONArray();
-        selectedDiseases.stream().forEach(d-> jsonDiseasesArray.add(d.getAnnotationJsonForAnnotator()));
+        //Affinity index writing
+        JSONObject drugAffinityIndex = new JSONObject();
+        drugAffinityIndex.put("standard", STANDARD);
+        drugAffinityIndex.put("version", VERSION);
 
-        diseaseAnnotationIndex.put("diseases", jsonDiseasesArray);
-        writeAnnotationIndexFile(diseaseAnnotationIndex, "mondoAnnotationIndex.json");
-
-
-        //TODO: Create file for Affinity
-        JSONObject diseaseAdfinityIndex = new JSONObject();
-        diseaseAdfinityIndex.put("standard", STANDARD);
-        diseaseAdfinityIndex.put("version", VERSION);
-
-        JSONArray jsonDiseasesAffinityArray = new JSONArray();
-        selectedDiseases.stream().forEach(d-> jsonDiseasesAffinityArray.add(d.getAnnotationJsonForAffinity()));
-        diseaseAdfinityIndex.put("diseases", jsonDiseasesAffinityArray);
-        writeAnnotationIndexFile(diseaseAdfinityIndex, "mondoAffinityIndex.json");
+        JSONArray jsonDrugsAffinityArray = new JSONArray();
+        selectedDrugs.stream().forEach(d-> jsonDrugsAffinityArray.add(d.getAnnotationJsonForAffinity()));
+        drugAffinityIndex.put("drugs", jsonDrugsAffinityArray);
+        writeAnnotationIndexFileAffinity(drugAffinityIndex, "drugBankAffinityIndex.json");
 
     }
 
-    public void writeAnnotationIndexFile(JSONObject diseaseIndex,String fileName){
+    public void writeAnnotationIndexFileAffinity(JSONObject diseaseIndex,String fileName){
 
         String localPath =  System.getProperty("user.dir") + "/Analysis/";
         try (FileWriter file = new FileWriter(localPath + fileName )) {
@@ -327,40 +384,90 @@ public class IndexGenerator {
         }
     }
 
+    public void writeAnnotationIndexFile(List<APDrug> selectedDrugs,String fileName){
 
-    public List<APDisease> readFile() {
-        List<APDisease> mondoDiseases = new ArrayList<>();
+        StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.append(String.format("AnnotationType=%s", ANNOTATIONS));
+        stringBuilder.append(System.getProperty("line.separator"));
+
+        stringBuilder.append(String.format("standard=%s", STANDARD));
+        stringBuilder.append(System.getProperty("line.separator"));
+
+        stringBuilder.append(String.format("version=%s", VERSION));
+        stringBuilder.append(System.getProperty("line.separator"));
+
+        for(APDrug drug: selectedDrugs){
+            stringBuilder.append ("[ENTITY]");
+            stringBuilder.append(System.getProperty("line.separator"));
+
+            stringBuilder.append("[ID]");
+            stringBuilder.append(System.getProperty("line.separator"));
+            stringBuilder.append(drug.getDbankID());
+            stringBuilder.append(System.getProperty("line.separator"));
+
+
+            stringBuilder.append("[LBL]");
+            stringBuilder.append(System.getProperty("line.separator"));
+            stringBuilder.append(drug.getLabel());
+            stringBuilder.append(System.getProperty("line.separator"));
+
+            stringBuilder.append("[DEF]");
+            stringBuilder.append(System.getProperty("line.separator"));
+            stringBuilder.append(drug.getDefinition());
+            stringBuilder.append(System.getProperty("line.separator"));
+
+            stringBuilder.append("[URL]");
+            stringBuilder.append(System.getProperty("line.separator"));
+            stringBuilder.append(drug.getDbankUrl());
+            stringBuilder.append(System.getProperty("line.separator"));
+
+
+            if(drug.getSynonyms().size()>0){
+                stringBuilder.append("[SYN]");
+                stringBuilder.append(System.getProperty("line.separator"));
+                for(String syn:drug.getSynonyms()){
+                    stringBuilder.append(syn);
+                    stringBuilder.append(System.getProperty("line.separator"));
+                }
+            }
+            stringBuilder.append("[~ENTITY]");
+            stringBuilder.append(System.getProperty("line.separator"));
+            stringBuilder.append(System.getProperty("line.separator"));
+
+        }
+
+        String localPath =  System.getProperty("user.dir") + "/Analysis/";
+        try (FileWriter file = new FileWriter(localPath + fileName )) {
+            file.write(stringBuilder.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+
+
+
+
+
+    public List<RawDrug> readFile() {
+        List<APDrug> dbDrugs = new ArrayList<>();
         try {
             slf4jLogger.info(String.format("Reading lexicon. Filename:%s", fileName));
             String path = "lexicons/" + fileName;
             InputStream input = getClass().getResourceAsStream("resources/" + path);
             if (input == null) {
                 // this is how we load file within editor (eg eclipse)
-                input = DiseaseHandler.class.getClassLoader().getResourceAsStream(path);
+                input = IndexGenerator.class.getClassLoader().getResourceAsStream(path);
             }
 
             ObjectMapper mapper = new ObjectMapper();
-            MondoJsonFile jsonMondo = mapper.readValue(input, MondoJsonFile.class);
-            ArrayList diseaseNodes = jsonMondo.getDiseaseNodes();
 
-            for (Object object : diseaseNodes) {
-                LinkedHashMap linkedDisease = (LinkedHashMap) object;
-                APDisease tempDisease = new APDisease(linkedDisease);
-                if (!tempDisease.isDeprecated()) {
-                    if (Strings.isNullOrEmpty(tempDisease.getLabel()))
-                        tempDisease.setDeprecated(true);
-                    else {
-                        mondoDiseases.add(tempDisease);
-//                        List<String> names = tempDisease.getSynonyms().stream().map(x -> x.getVal().toLowerCase()).collect(Collectors.toList());
-//                        names.add(tempDisease.getLabel().toLowerCase());
-//                        for (String name : names) {
-//                            if (!Strings.isNullOrEmpty(name))
-//                                diseaseLabelToMondo.put(name, tempDisease.getMondoID());
-//                        }
-                    }
+            List<RawDrug> myObjects = mapper.readValue(input, new TypeReference<List<RawDrug>>(){});
+            return myObjects;
 
-                }
-            }
         } catch (JsonParseException e) {
             e.printStackTrace();
         } catch (JsonMappingException e) {
@@ -368,36 +475,54 @@ public class IndexGenerator {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return mondoDiseases;
 
+        return new ArrayList<>();
 
-//        List<String> allLines = mondoDiseases.values().stream().map(s->s.getStringForFile()).collect(Collectors.toList());
-//        APFileWriter.writeSmallTextFile(allLines, "mondo");
 
     }
 
+
+
     @NoArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class MondoJsonFile {
-
-        @JsonProperty("graphs")
-        JSONArray graphs;
+    public static class RawDrug {
 
 
-        public ArrayList getDiseaseNodes() {
+        @JsonProperty("index")
+        Integer index;
 
-            for (Object obj : graphs) {
-                LinkedHashMap linkedGraph = (LinkedHashMap) obj;
-                if (linkedGraph.containsKey("id") && linkedGraph.get("id").toString().equals("http://purl.obolibrary.org/obo/mondo.owl")) {
-                    return (ArrayList) linkedGraph.get("nodes");
+        @JsonProperty("drugbank_id")
+        String drugbankId;
 
-                }
+        @JsonProperty("description")
+        String description;
+
+        @JsonProperty("drug_text")
+        String drugText;
+
+        @JsonProperty("synonyms")
+        List<String> synonyms;
+
+        @JsonProperty("products")
+        List<String> products;
+
+        @JsonProperty("international_brands")
+        List<String> internationalBrands;
+
+        @JsonProperty("mixtures")
+        List<Mixture> mixtures;
 
 
-            }
+        private static class Mixture{
 
-            return new JSONArray();
+            @JsonProperty("ingredients_string")
+            String ingredientsString;
+
+            @JsonProperty("name")
+            String name;
+
         }
+
 
     }
 
@@ -410,6 +535,11 @@ public class IndexGenerator {
         Integer countOfComma = 0;
         Integer countOfParenthesis = 0;
         Integer indexOfSemicolon = -1;
+        Integer strCommas = 0;
+        Integer strSquareBracketLeft = 0;
+        Integer strSquareBracketRight = 0;
+        Integer strHyphens = 0;
+//        boolean redFlag = false;
 
         public void incrementOr() {
             countOfOr++;

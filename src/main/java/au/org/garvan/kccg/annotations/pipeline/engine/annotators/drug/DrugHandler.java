@@ -1,8 +1,10 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.annotators.drug;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.BaseLexiconHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.connectors.AffinityConnector;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Disease.APDisease;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Drug.APDrug;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.APMultiWordAnnotationMapper;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.AnnotationHit;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.AnnotationTerm;
@@ -14,6 +16,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Common;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
 import lombok.AllArgsConstructor;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -23,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.validation.constraints.Null;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,16 +36,11 @@ import java.util.stream.Collectors;
 
 
 @AllArgsConstructor
-@Component
-public class DiseaseHandler{
-    private final Logger slf4jLogger = LoggerFactory.getLogger(DiseaseHandler.class);
+public class DrugHandler {
+    private final Logger slf4jLogger = LoggerFactory.getLogger(DrugHandler.class);
 
-    @Autowired
-    private static AffinityConnector affinityServiceConnector;
-
-
-    private Map<String, APDisease> mondoDiseases;
-    private Map<String, String> diseaseLabelToMondo;
+    private Map<String, APDrug> drugBankDrugs;
+    private Map<String, String> drugLabelToDrugBank;
 
     private static String STANDARD;
     private static String VERSION;
@@ -49,32 +48,22 @@ public class DiseaseHandler{
     /***
      * Init for index reading
      */
-    @Autowired
-    public DiseaseHandler(){
-        mondoDiseases = new HashMap<>();
-        diseaseLabelToMondo = new HashMap<>();
-        readFile("mondoAnnotationIndex.json");
-        affinityServiceConnector = new AffinityConnector();
-
+    public DrugHandler(){
+        drugBankDrugs = new HashMap<>();
+        drugLabelToDrugBank = new HashMap<>();
+//        readFile("drugBankAnnotationIndex.json");
+        readDIndexFile("drugBankAnnotationIndex.txt");
     }
 
 
-    /***
-     * Annotation function called from document preprocessor.
-     * @param apDocument
-     * @param articleId
-     */
 
     //TODO: Split in two functions, one for calling affinity and other to fetch results.
-    public void processAndUpdateDocument(APDocument apDocument, int articleId) {
-
-        //TODO: Call
-        List<AnnotationHit> diseaseHits =   affinityServiceConnector.annotateAbstract(apDocument.getCleanedText(), articleId, "en");
+    public void processAndUpdateDocument(APDocument apDocument, List<AnnotationHit> drugHits) {
 
 
         //TODO: Add call and fetch result
-        for(AnnotationHit dHit: diseaseHits){
-            APDisease selectedDisease = getDisease(dHit.getAnnotationID());
+        for(AnnotationHit dHit: drugHits){
+            APDrug selectedDrug = getDisease(dHit.getAnnotationID());
             List<List<AnnotationTerm>> chainedTerms = chainAnnotationTerms(dHit.getHits());
             for(List<AnnotationTerm> term : chainedTerms){
                 Pair<Integer,Integer> offsetRange = getOffsetRange(term);
@@ -90,8 +79,8 @@ public class DiseaseHandler{
                         Annotation annotation = new Annotation();
                         annotation.setStandard(STANDARD);
                         annotation.setVersion(VERSION);
-                        annotation.setType(AnnotationType.DISEASE);
-                        annotation.setEntity(selectedDisease);
+                        annotation.setType(AnnotationType.DRUG);
+                        annotation.setEntity(selectedDrug);
                         annotation.setTokenIDs(documentMap.getSecond().stream().map(t -> t.getId()).collect(Collectors.toList()));
                         annotation.setTokenOffsets(documentMap.getSecond().stream().map(t -> t.getSentOffset()).collect(Collectors.toList()));
                         annotation.setNegated(false);
@@ -110,10 +99,10 @@ public class DiseaseHandler{
     }
 
     private void sustainLongestMatch(APDocument apDocument){
-        List<APSentence> apSentences = apDocument.getSentences().stream().filter(s->s.getAnnotations().stream().filter(a->a.getType().equals(AnnotationType.DISEASE)).collect(Collectors.toList()).size()>1).collect(Collectors.toList());
+        List<APSentence> apSentences = apDocument.getSentences().stream().filter(s->s.getAnnotations().stream().filter(a->a.getType().equals(AnnotationType.DRUG)).collect(Collectors.toList()).size()>1).collect(Collectors.toList());
         for (APSentence candidateSentence : apSentences){
 
-            List<Annotation> annotations = candidateSentence.getAnnotations().stream().filter(a->a.getType().equals(AnnotationType.DISEASE)).collect(Collectors.toList());
+            List<Annotation> annotations = candidateSentence.getAnnotations().stream().filter(a->a.getType().equals(AnnotationType.DRUG)).collect(Collectors.toList());
             List<Integer> removals = new ArrayList<>();
             for(Integer x = 0; x< annotations.size(); x++) {
                 for(Integer y = x+1; y<annotations.size(); y++)
@@ -193,27 +182,27 @@ public class DiseaseHandler{
      * @return
      */
     public List<APMultiWordAnnotationMapper> searchDisease(String infix){
-        return diseaseLabelToMondo.entrySet().stream().filter(x->x.getKey().contains(infix.toLowerCase())).map(p-> new APMultiWordAnnotationMapper(p.getValue(),p.getKey())).collect(Collectors.toList());
+        return drugLabelToDrugBank.entrySet().stream().filter(x->x.getKey().contains(infix.toLowerCase())).map(p-> new APMultiWordAnnotationMapper(p.getValue(),p.getKey())).collect(Collectors.toList());
     }
 
-    public APDisease getDisease(String key) {
-        if (mondoDiseases.containsKey(key))
-            return mondoDiseases.get(key);
+    public APDrug getDisease(String key) {
+        if (drugBankDrugs.containsKey(key))
+            return drugBankDrugs.get(key);
         else
             return null;
     }
 
 
     public String getMondoLabelWithId(String id){
-        if(mondoDiseases.containsKey(id)){
-            return mondoDiseases.get(id).getLabel();
+        if(drugBankDrugs.containsKey(id)){
+            return drugBankDrugs.get(id).getLabel();
         }
         else return "";
     }
 
     public String getMondoDefinitionWithId(String id){
-        if(mondoDiseases.containsKey(id)){
-            return mondoDiseases.get(id).getDefinition();
+        if(drugBankDrugs.containsKey(id)){
+            return drugBankDrugs.get(id).getDefinition();
         }
         else return "";
     }
@@ -223,6 +212,7 @@ public class DiseaseHandler{
      * Index is generated and given with artifact
      * @param fileName
      */
+    @Deprecated
     private void readFile(String fileName) {
 
         slf4jLogger.info(String.format("Reading index file. Filename:%s", fileName));
@@ -230,7 +220,7 @@ public class DiseaseHandler{
         InputStream input = getClass().getResourceAsStream("resources/" + path);
         if (input == null) {
             // this is how we load file within editor (eg eclipse)
-            input = DiseaseHandler.class.getClassLoader().getResourceAsStream(path);
+            input = DrugHandler.class.getClassLoader().getResourceAsStream(path);
         }
 
         try {
@@ -245,17 +235,16 @@ public class DiseaseHandler{
             JSONObject jsonObject = (JSONObject) JSONValue.parse(stringBuilder.toString());
             VERSION = jsonObject.get("version").toString();
             STANDARD = jsonObject.get("standard").toString();
-            if(jsonObject.containsKey("diseases")){
-                JSONArray jsonDiseases = (JSONArray) jsonObject.get("diseases");
-
-                for(Object obj: jsonDiseases){
-                    JSONObject jsonDisease = (JSONObject) obj;
-
+            if(jsonObject.containsKey("drugs")){
+                JSONArray jsonDrugs = (JSONArray) jsonObject.get("drugs");
+                for(Object obj: jsonDrugs){
+                    JSONObject jsonDrug = (JSONObject) obj;
                     ObjectMapper mapper = new ObjectMapper();
-                    APDisease apDisease =  mapper.readValue(jsonDisease.toString(), APDisease.class);
-                    mondoDiseases.put(apDisease.getMondoID(), apDisease);
-                    diseaseLabelToMondo.put(apDisease.getLabel(), apDisease.getMondoID());
-                    apDisease.getSynonyms().stream().forEach(s-> diseaseLabelToMondo.put(s, apDisease.getMondoID()));
+                    APDrug apDrug =  mapper.readValue(jsonDrug.toString(), APDrug.class);
+                    apDrug.checkEmptyLists();
+                    drugBankDrugs.put(apDrug.getDbankID(), apDrug);
+                    drugLabelToDrugBank.put(apDrug.getLabel(), apDrug.getDbankID());
+                    apDrug.getSynonyms().stream().forEach(s-> drugLabelToDrugBank.put(s, apDrug.getDbankID()));
 
                 }
             }
@@ -267,9 +256,102 @@ public class DiseaseHandler{
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
+        }catch (NullPointerException e) {
+            e.printStackTrace();
         }
 
     }
+
+    private void readDIndexFile(String fileName) {
+        slf4jLogger.info(String.format("Reading index file. Filename:%s", fileName));
+        String path =  "lexicons/"+ fileName;
+        InputStream input = getClass().getResourceAsStream("resources/" + path);
+        if (input == null) {
+            // this is how we load file within editor (eg eclipse)
+            input = DrugHandler.class.getClassLoader().getResourceAsStream(path);
+        }
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+        String line;
+        List<String> drugLines = new ArrayList<>();
+
+        try {
+            while ((line = reader.readLine()) != null) {
+                if(!Strings.isNullOrEmpty(line))
+                    drugLines.add(line);
+            }
+            reader.close();
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        if(drugLines.size()>3 && drugLines.get(0).contains("DRUG")){
+
+            STANDARD = drugLines.get(1).split("=")[1];
+            VERSION = drugLines.get(2).split("=")[1];
+
+            APDrug tempDrug = new APDrug();
+            boolean synonym=false;
+            for(Integer index= 3; index<drugLines.size(); index++ ){
+
+                String entry = drugLines.get(index);
+                switch(entry){
+                    case "[ENTITY]":
+                        synonym=false;
+                        tempDrug = new APDrug();
+                        tempDrug.checkEmptyLists();
+                        break;
+                    case "[ID]":
+                        synonym=false;
+                        index ++;
+                        tempDrug.setDbankID(drugLines.get(index));
+                        break;
+                    case "[LBL]":
+                        synonym=false;
+                        index ++;
+                        tempDrug.setLabel(drugLines.get(index));
+                        break;
+                    case "[DEF]":
+                        index ++;
+                        tempDrug.setDefinition(drugLines.get(index));
+                        synonym=false;
+                        break;
+                    case "[URL]":
+                        index ++;
+                        tempDrug.setDbankUrl(drugLines.get(index));
+                        synonym=false;
+                        break;
+                    case "[SYN]":
+                        synonym=true;
+                        break;
+                    case "[~ENTITY]":
+                        synonym=false;
+                        final String id = tempDrug.getDbankID();
+                        drugBankDrugs.put(id, tempDrug);
+                        drugLabelToDrugBank.put(tempDrug.getLabel(), id);
+                        tempDrug.getSynonyms().stream().forEach(s-> drugLabelToDrugBank.put(s, id));
+                        break;
+                    default:
+                        if(synonym)
+                            tempDrug.getSynonyms().add(drugLines.get(index));
+
+
+                }
+
+
+
+
+
+            }
+
+
+        }
+
+
+    }
+
 
 
 

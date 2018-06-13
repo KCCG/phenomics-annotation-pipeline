@@ -4,6 +4,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.connectors.lambda.WorkerLa
 import au.org.garvan.kccg.annotations.pipeline.engine.managers.ArticleManager;
 import au.org.garvan.kccg.annotations.pipeline.engine.managers.QueryManager;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.EngineEnvironment;
+import au.org.garvan.kccg.annotations.pipeline.engine.utilities.config.ConfigLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,10 @@ public class ApplicationInitializer {
 
     @Autowired
     private QueryManager queryManager;
+
+    @Autowired
+    ConfigLoader configLoader;
+
 
 
     @EventListener({ContextRefreshedEvent.class})
@@ -56,6 +61,7 @@ public class ApplicationInitializer {
         else{
             log.info("Self Ingestion is disabled. ");
         }
+
 
     }
 }

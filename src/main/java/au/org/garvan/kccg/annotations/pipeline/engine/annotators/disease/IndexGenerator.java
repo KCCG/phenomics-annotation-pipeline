@@ -94,9 +94,6 @@ public class IndexGenerator {
                 //Point: Rule 1b: If number of tokens is greater that 6(tokenNumberThreshold) and have 2 commas and threshold then discard
                 if (!discard && !labelDiscarded) {
 
-                    if(tokens.size()==1){
-
-                    }
 
                     if (tokens.size() == 1  ) {
                         if(tokens.get(0).getOriginalText().length() < tokenLengthThreshold) {
