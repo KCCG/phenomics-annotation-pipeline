@@ -76,6 +76,7 @@ public class IndexGenerator {
             Stack<String> stackedDrugs = new Stack<>();
             rawDrug.synonyms.stream().forEach(s -> stackedDrugs.push(cleanText(s)));
             rawDrug.internationalBrands.stream().forEach(s -> stackedDrugs.push(cleanText(s)));
+//            rawDrug.products.stream().forEach(s -> stackedDrugs.push(cleanText(s)));
 //            rawDrug.mixtures.stream().forEach(s -> stackedDrugs.push(cleanText(s.name)));
 
             stackedDrugs.push(cleanText(cleanText(rawDrug.drugText)));
@@ -112,13 +113,13 @@ public class IndexGenerator {
                             if (iterator == 0)
                                 labelDiscarded = true;
                         }
-                        else if(tokens.get(0).getOriginalText().length()<1.5*tokenLengthThresholdMin && onlyText(tokens.get(0).getOriginalText())) {
-                            if(tokens.get(0).getPartOfSpeech().equals("JJ")){
+                        else if(tokens.get(0).getOriginalText().length()<1.5*tokenLengthThresholdMin
+                                && onlyText(tokens.get(0).getOriginalText())
+                                && tokens.get(0).getPartOfSpeech().equals("JJ")) {
                                 discardedStrings.add(oneForm);
                                 discard = true;
                                 if (iterator == 0)
                                     labelDiscarded = true;
-                            }
 
                         }
 
@@ -134,13 +135,13 @@ public class IndexGenerator {
                                         labelDiscarded = true;
 
                                 }
-                            else if (suggestions.size()>0 && tokenText.length()>8)
+                            else if (suggestions.size()>0)
                                 singleValidDictionaryWord.add(tokenText);
 
 
                         }
 
-                    } else if (tokens.size() > tokenNumberThreshold && (tokenAnalysis.getCountOfComma() > 1 || tokenAnalysis.getCountOfParenthesis() > 0 || tokenAnalysis.getCountOfSlash() > 0)) {
+                    }  else if (tokens.size() > tokenNumberThreshold && (tokenAnalysis.getCountOfComma() > 1 || tokenAnalysis.getCountOfParenthesis() > 0 || tokenAnalysis.getCountOfSlash() > 0)) {
                         slf4jLogger.debug(String.format("Drug:%s | Found long string with symbols: %s.", rawDrug.drugbankId, oneForm));
                         discardedStrings.add(oneForm);
                         discard = true;
@@ -220,17 +221,25 @@ public class IndexGenerator {
                     List<String> finalSynonyms = new ArrayList<>();
                     label = rulesAppliedDrugs.get(0);
 
-                    uniqueLabels.add(label.toLowerCase());
+                    uniqueLabels.add(getAlphaPattern(label.toLowerCase()));
 
 //                    Collections.sort(rulesAppliedDrugs, Comparator.comparing(String::length).reversed());
 
                     for (Integer x = 1; x < rulesAppliedDrugs.size(); x++) {
-//                        if(uniqueLabels.stream().filter(u->u.contains(rulesAppliedDrugs.get(x).toLowerCase())).collect(Collectors.toList()).size()==0){
-                        if (!uniqueLabels.contains(rulesAppliedDrugs.get(x).toLowerCase()) && !rulesAppliedDrugs.get(x).toLowerCase().contains(label.toLowerCase())) {
+
+
+                        if(getAlphaPattern(rulesAppliedDrugs.get(x)).toLowerCase().contains(getAlphaPattern(label.toLowerCase()))){
+                            slf4jLogger.debug(String.format("Duplicated by alpha pattern so discarding: id:%s | string:%s", rawDrug.drugbankId, rulesAppliedDrugs.get(x)));
+                        }
+
+                        if(uniqueLabels.contains(getAlphaPattern(rulesAppliedDrugs.get(x).toLowerCase()))){
+                            slf4jLogger.debug(String.format("Duplicated by alpha pattern so discarding: id:%s | string:%s", rawDrug.drugbankId, rulesAppliedDrugs.get(x)));
+                        }
+
+                        if (!uniqueLabels.contains(getAlphaPattern(rulesAppliedDrugs.get(x).toLowerCase()))) {
                             uniqueLabels.add(rulesAppliedDrugs.get(x).toLowerCase());
                             finalSynonyms.add(rulesAppliedDrugs.get(x));
-                        } else
-                            slf4jLogger.debug(String.format("Duplicated by case so discarding: id:%s | string:%s", rawDrug.drugbankId, rulesAppliedDrugs.get(x)));
+                        }
                     }
 
 
@@ -240,7 +249,9 @@ public class IndexGenerator {
                     Collections.sort(finalSynonyms, Comparator.comparing(String::length));
 
                     if(finalSynonyms.size()>50){
-                        finalSynonyms = finalSynonyms.stream().filter(x-> x.split(" ").length<4).collect(Collectors.toList());
+                        finalSynonyms = finalSynonyms.stream().filter(x-> x.split(" ").length<3).collect(Collectors.toList());
+                        if(finalSynonyms.size()>50)
+                            finalSynonyms = finalSynonyms.subList(0,50);
                     }
 
 
@@ -276,22 +287,6 @@ public class IndexGenerator {
 
     }
 
-    private String getCommaSwappedString(List<APToken> tokens) {
-        Integer commaIndex = -1;
-        for (APToken token : tokens) {
-            commaIndex++;
-            if (token.getOriginalText().equals(","))
-                break;
-        }
-        List<APToken> swappedList = new ArrayList<>();
-        if (commaIndex > 0 && commaIndex < tokens.size() - 1) {
-            swappedList.addAll(tokens.subList(commaIndex + 1, tokens.size()));
-            swappedList.addAll(tokens.subList(0, commaIndex));
-            return swappedList.stream().map(t -> t.getOriginalText()).collect(Collectors.joining(" "));
-
-        }
-        return null;
-    }
 
     private TokenAnalysis analyseTokens(List<APToken> tokens, String input) {
         TokenAnalysis tokenAnalysis = new TokenAnalysis();
@@ -303,13 +298,13 @@ public class IndexGenerator {
             if (t.getOriginalText().toLowerCase().equals("or"))
                 tokenAnalysis.incrementOr();
 
-            else if (t.getOriginalText().toLowerCase().contains("/"))
-                tokenAnalysis.incrementSlash();
-
             else if (t.getOriginalText().toLowerCase().equals(","))
                 tokenAnalysis.incrementComma();
 
             else if (t.getOriginalText().toLowerCase().equals(";"))
+                tokenAnalysis.setIndexOfSemicolon(index);
+
+            else if (t.getOriginalText().toLowerCase().equals(":"))
                 tokenAnalysis.setIndexOfSemicolon(index);
 
             else if (parenthesis.contains(t.getOriginalText()))
@@ -320,7 +315,7 @@ public class IndexGenerator {
 
 
 
-
+        tokenAnalysis.countOfSlash = Ints.checkedCast(input.chars().filter(ch-> ch =='/').count());
         tokenAnalysis.strCommas = Ints.checkedCast(input.chars().filter(ch-> ch ==',').count());
         tokenAnalysis.strHyphens = Ints.checkedCast(input.chars().filter(ch-> ch =='-').count());
         tokenAnalysis.strSquareBracketLeft = Ints.checkedCast(input.chars().filter(ch-> ch =='[').count());
@@ -329,7 +324,10 @@ public class IndexGenerator {
         return tokenAnalysis;
     }
 
-
+    public String getAlphaPattern(String input){
+        String newstr = input.replaceAll("\\P{L}+", "");
+        return newstr;
+    }
 
 
     public String cleanText(String input) {
@@ -340,6 +338,9 @@ public class IndexGenerator {
 
         if(Strings.isNullOrEmpty(modified))
             return modified;
+
+        if(modified.contains("%"))
+            return "";
 
         List<Character> puncs = Arrays.asList(';', '.', '-', ':');
 
@@ -445,18 +446,10 @@ public class IndexGenerator {
         }
     }
 
-
-
-
-
-
-
-
     public List<RawDrug> readFile() {
-        List<APDrug> dbDrugs = new ArrayList<>();
         try {
             slf4jLogger.info(String.format("Reading lexicon. Filename:%s", fileName));
-            String path = "lexicons/" + fileName;
+            String path = "indexingFiles/" + fileName;
             InputStream input = getClass().getResourceAsStream("resources/" + path);
             if (input == null) {
                 // this is how we load file within editor (eg eclipse)
@@ -526,8 +519,6 @@ public class IndexGenerator {
 
     }
 
-
-
     @Data
     private class TokenAnalysis {
         Integer countOfOr = 0;
@@ -539,14 +530,9 @@ public class IndexGenerator {
         Integer strSquareBracketLeft = 0;
         Integer strSquareBracketRight = 0;
         Integer strHyphens = 0;
-//        boolean redFlag = false;
 
         public void incrementOr() {
             countOfOr++;
-        }
-
-        public void incrementSlash() {
-            countOfSlash++;
         }
 
         public void incrementComma() {

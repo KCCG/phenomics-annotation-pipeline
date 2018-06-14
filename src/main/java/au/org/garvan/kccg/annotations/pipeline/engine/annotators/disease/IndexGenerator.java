@@ -334,7 +334,7 @@ public class IndexGenerator {
         List<APDisease> mondoDiseases = new ArrayList<>();
         try {
             slf4jLogger.info(String.format("Reading lexicon. Filename:%s", fileName));
-            String path = "lexicons/" + fileName;
+            String path = "indexingFiles/" + fileName;
             InputStream input = getClass().getResourceAsStream("resources/" + path);
             if (input == null) {
                 // this is how we load file within editor (eg eclipse)
@@ -353,12 +353,6 @@ public class IndexGenerator {
                         tempDisease.setDeprecated(true);
                     else {
                         mondoDiseases.add(tempDisease);
-//                        List<String> names = tempDisease.getSynonyms().stream().map(x -> x.getVal().toLowerCase()).collect(Collectors.toList());
-//                        names.add(tempDisease.getLabel().toLowerCase());
-//                        for (String name : names) {
-//                            if (!Strings.isNullOrEmpty(name))
-//                                diseaseLabelToMondo.put(name, tempDisease.getMondoID());
-//                        }
                     }
 
                 }
@@ -373,8 +367,6 @@ public class IndexGenerator {
         return mondoDiseases;
 
 
-//        List<String> allLines = mondoDiseases.values().stream().map(s->s.getStringForFile()).collect(Collectors.toList());
-//        APFileWriter.writeSmallTextFile(allLines, "mondo");
 
     }
 

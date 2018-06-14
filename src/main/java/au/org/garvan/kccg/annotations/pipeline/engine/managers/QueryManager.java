@@ -306,7 +306,7 @@ public class QueryManager {
      */
     public List<RankedAutoCompleteEntity> getAutocompleteGenericList(String infix) {
         int baseRank = 1000;
-        int resultLimit = 15;
+        int resultLimit = 20;
         boolean smartSearch = false;
         AnnotationType smartQueryType = AnnotationType.ENTITY;
         List<RankedAutoCompleteEntity> returnList = new ArrayList<>();
@@ -364,6 +364,7 @@ public class QueryManager {
         List<APGene> shortlistedGenes = new ArrayList<>();
         List<APMultiWordAnnotationMapper> shortListedPhenotypes = new ArrayList<>();
         List<APMultiWordAnnotationMapper> shortListedDiseases = new ArrayList<>();
+        List<APMultiWordAnnotationMapper> shortListedDrugs = new ArrayList<>();
 
         if (!smartSearch || smartQueryType.equals(AnnotationType.GENE)) {
             shortlistedGenes =  AnnotationControl.getControlledGeneAnnotations(
@@ -380,12 +381,17 @@ public class QueryManager {
                     DocumentPreprocessor.getMondoHandler().searchDisease(infix));
         }
 
+        if (!smartSearch || smartQueryType.equals(AnnotationType.DRUG)) {
+            shortListedDrugs = AnnotationControl.getControlledMWAnnotations(
+                    DocumentPreprocessor.getDrugBankHandler().searchDisease(infix));
+        }
+
         //Ranking results
         Map<Object, Integer> rankedEntities = new HashMap<>();
         shortListedPhenotypes.stream().forEach(x -> rankedEntities.put(x, 0));
         shortlistedGenes.stream().forEach(x -> rankedEntities.put(x, 0));
         shortListedDiseases.stream().forEach(x -> rankedEntities.put(x, 0));
-
+        shortListedDrugs.stream().forEach(x -> rankedEntities.put(x, 0));
 
         for (Map.Entry<Object, Integer> entry : rankedEntities.entrySet()) {
             int rank = baseRank;
@@ -439,11 +445,23 @@ public class QueryManager {
 
 
         //Show equal number of items from auto-complete list.
-        Integer collectedGeneSize = Math.min(smartQueryType.equals(AnnotationType.GENE) ? resultLimit : resultLimit / 3, shortlistedGenes.size());
+        Integer collectedGeneSize = Math.min(smartQueryType.equals(AnnotationType.GENE) ? resultLimit : resultLimit / 4, shortlistedGenes.size());
         Integer remainingBucket = resultLimit - collectedGeneSize;
-        Integer collectedPhenotypeSize = Math.min(smartQueryType.equals(AnnotationType.PHENOTYPE) ? resultLimit : remainingBucket / 2, shortListedPhenotypes.size());
+        Integer collectedPhenotypeSize = Math.min(smartQueryType.equals(AnnotationType.PHENOTYPE) ? resultLimit : remainingBucket / 3, shortListedPhenotypes.size());
         remainingBucket = resultLimit - (collectedGeneSize + collectedPhenotypeSize);
-        Integer collectedDiseaseSize = Math.min(smartQueryType.equals(AnnotationType.DISEASE) ? resultLimit : remainingBucket, shortListedDiseases.size());
+        Integer collectedDiseaseSize = Math.min(smartQueryType.equals(AnnotationType.DISEASE) ? resultLimit : remainingBucket/2, shortListedDiseases.size());
+        remainingBucket = resultLimit - (collectedGeneSize + collectedPhenotypeSize +collectedDiseaseSize);
+        Integer collectedDrugSize = Math.min(smartQueryType.equals(AnnotationType.DRUG) ? resultLimit : remainingBucket, shortListedDrugs.size());
+
+
+        Map<Object, Integer> topRankedDrugs =
+                rankedEntities.entrySet().stream().filter(x -> x.getKey() instanceof APMultiWordAnnotationMapper)
+                        .filter(y -> ((APMultiWordAnnotationMapper) y.getKey()).getId().contains("DB"))
+                        .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                        .limit(collectedDrugSize)
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+
 
         Map<Object, Integer> topRankedDiseases =
                 rankedEntities.entrySet().stream().filter(x -> x.getKey() instanceof APMultiWordAnnotationMapper)
@@ -500,6 +518,18 @@ public class QueryManager {
             entity.setId(String.valueOf(disease.getId()));
             entity.setText(disease.getText());
             entity.setType(AnnotationType.DISEASE.toString());
+            entity.setRank(entry.getValue());
+            returnList.add(entity);
+        }
+
+        //Fill Drugs
+        for (Map.Entry<Object, Integer> entry : topRankedDrugs.entrySet()) {
+            Object object = entry.getKey();
+            RankedAutoCompleteEntity entity = new RankedAutoCompleteEntity();
+            APMultiWordAnnotationMapper drug = (APMultiWordAnnotationMapper) object;
+            entity.setId(String.valueOf(drug.getId()));
+            entity.setText(drug.getText());
+            entity.setType(AnnotationType.DRUG.toString());
             entity.setRank(entry.getValue());
             returnList.add(entity);
         }

@@ -1,9 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.annotators.drug;
 
-import au.org.garvan.kccg.annotations.pipeline.engine.annotators.BaseLexiconHandler;
-import au.org.garvan.kccg.annotations.pipeline.engine.connectors.AffinityConnector;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
-import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Disease.APDisease;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Drug.APDrug;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.APMultiWordAnnotationMapper;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.AnnotationHit;
@@ -23,10 +20,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-import javax.validation.constraints.Null;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -63,7 +57,7 @@ public class DrugHandler {
 
         //TODO: Add call and fetch result
         for(AnnotationHit dHit: drugHits){
-            APDrug selectedDrug = getDisease(dHit.getAnnotationID());
+            APDrug selectedDrug = getDrug(dHit.getAnnotationID());
             List<List<AnnotationTerm>> chainedTerms = chainAnnotationTerms(dHit.getHits());
             for(List<AnnotationTerm> term : chainedTerms){
                 Pair<Integer,Integer> offsetRange = getOffsetRange(term);
@@ -182,10 +176,10 @@ public class DrugHandler {
      * @return
      */
     public List<APMultiWordAnnotationMapper> searchDisease(String infix){
-        return drugLabelToDrugBank.entrySet().stream().filter(x->x.getKey().contains(infix.toLowerCase())).map(p-> new APMultiWordAnnotationMapper(p.getValue(),p.getKey())).collect(Collectors.toList());
+        return drugLabelToDrugBank.entrySet().stream().filter(x->x.getKey().toLowerCase().contains(infix.toLowerCase())).map(p-> new APMultiWordAnnotationMapper(p.getValue(),p.getKey())).collect(Collectors.toList());
     }
 
-    public APDrug getDisease(String key) {
+    public APDrug getDrug(String key) {
         if (drugBankDrugs.containsKey(key))
             return drugBankDrugs.get(key);
         else
@@ -193,14 +187,14 @@ public class DrugHandler {
     }
 
 
-    public String getMondoLabelWithId(String id){
+    public String getDrugBankWithId(String id){
         if(drugBankDrugs.containsKey(id)){
             return drugBankDrugs.get(id).getLabel();
         }
         else return "";
     }
 
-    public String getMondoDefinitionWithId(String id){
+    public String getDrugBankDefinitionWithId(String id){
         if(drugBankDrugs.containsKey(id)){
             return drugBankDrugs.get(id).getDefinition();
         }
