@@ -45,7 +45,6 @@ public class DrugHandler {
     public DrugHandler(){
         drugBankDrugs = new HashMap<>();
         drugLabelToDrugBank = new HashMap<>();
-//        readFile("drugBankAnnotationIndex.json");
         readDIndexFile("drugBankAnnotationIndex.txt");
     }
 
@@ -187,9 +186,16 @@ public class DrugHandler {
     }
 
 
-    public String getDrugBankWithId(String id){
+    public String getDrugBankLabelWithId(String id){
         if(drugBankDrugs.containsKey(id)){
             return drugBankDrugs.get(id).getLabel();
+        }
+        else return "";
+    }
+
+    public String getDrugBankUrlWithId(String id){
+        if(drugBankDrugs.containsKey(id)){
+            return drugBankDrugs.get(id).getDrugBankUrl();
         }
         else return "";
     }
@@ -236,9 +242,9 @@ public class DrugHandler {
                     ObjectMapper mapper = new ObjectMapper();
                     APDrug apDrug =  mapper.readValue(jsonDrug.toString(), APDrug.class);
                     apDrug.checkEmptyLists();
-                    drugBankDrugs.put(apDrug.getDbankID(), apDrug);
-                    drugLabelToDrugBank.put(apDrug.getLabel(), apDrug.getDbankID());
-                    apDrug.getSynonyms().stream().forEach(s-> drugLabelToDrugBank.put(s, apDrug.getDbankID()));
+                    drugBankDrugs.put(apDrug.getDrugBankID(), apDrug);
+                    drugLabelToDrugBank.put(apDrug.getLabel(), apDrug.getDrugBankID());
+                    apDrug.getSynonyms().stream().forEach(s-> drugLabelToDrugBank.put(s, apDrug.getDrugBankID()));
 
                 }
             }
@@ -300,7 +306,7 @@ public class DrugHandler {
                     case "[ID]":
                         synonym=false;
                         index ++;
-                        tempDrug.setDbankID(drugLines.get(index));
+                        tempDrug.setDrugBankID(drugLines.get(index));
                         break;
                     case "[LBL]":
                         synonym=false;
@@ -314,7 +320,7 @@ public class DrugHandler {
                         break;
                     case "[URL]":
                         index ++;
-                        tempDrug.setDbankUrl(drugLines.get(index));
+                        tempDrug.setDrugBankUrl(drugLines.get(index));
                         synonym=false;
                         break;
                     case "[SYN]":
@@ -322,7 +328,7 @@ public class DrugHandler {
                         break;
                     case "[~ENTITY]":
                         synonym=false;
-                        final String id = tempDrug.getDbankID();
+                        final String id = tempDrug.getDrugBankID();
                         drugBankDrugs.put(id, tempDrug);
                         drugLabelToDrugBank.put(tempDrug.getLabel(), id);
                         tempDrug.getSynonyms().stream().forEach(s-> drugLabelToDrugBank.put(s, id));

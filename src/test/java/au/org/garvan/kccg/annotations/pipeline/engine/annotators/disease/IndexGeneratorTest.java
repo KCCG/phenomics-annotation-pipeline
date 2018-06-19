@@ -6,8 +6,8 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class IndexGeneratorTest {
-
-//    IndexGenerator diseaseIndexGenerator = new IndexGenerator();
+//
+    IndexGenerator diseaseIndexGenerator = new IndexGenerator();
 //
 //    @Test
 //    public void generateIndex() {

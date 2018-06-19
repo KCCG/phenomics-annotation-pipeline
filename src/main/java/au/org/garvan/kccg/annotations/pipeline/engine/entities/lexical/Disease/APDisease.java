@@ -5,6 +5,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import com.google.common.base.Strings;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.json.simple.JSONObject;
 
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
  */
 
 @AllArgsConstructor
+@NoArgsConstructor
 @Data
 public class APDisease extends LexicalEntity {
 
@@ -64,6 +66,11 @@ public class APDisease extends LexicalEntity {
 
 
 
+    }
+
+    public void checkEmptyLists(){
+        if(synonyms ==null)
+            synonyms = new ArrayList<>();
     }
 
 

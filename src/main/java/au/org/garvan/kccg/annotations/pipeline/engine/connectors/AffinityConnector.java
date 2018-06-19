@@ -56,6 +56,7 @@ public class AffinityConnector {
         jsonArticle.put("articleAbstract", text);
         jsonArticle.put("language", lang);
 
+
         try {
             String jsonString = jsonArticle.toString();
 

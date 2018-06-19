@@ -16,7 +16,7 @@ public class PaginationRequestParams {
 
 
     public PaginationRequestParams(Integer pSize, Integer pNo){
-        pageSize = pSize==null? 50: pSize;
+        pageSize = pSize==null? 10: pSize;
         pageNo = pNo==null? 1: pNo;
         totalArticles =0;
         totalPages=0;

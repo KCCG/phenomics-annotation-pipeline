@@ -175,9 +175,9 @@ public class QueryManager {
         finalResult.setArticles(results);
         finalResult.setPagination(qParams);
 
-        List<ConceptFilter> lstGeneFilter = resultSet.getConceptCounts();
-        List<ConceptFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
-        finalResult.setFilters(AnnotationControl.getControlledFilters(sortedLstGeneFilter));
+        List<ConceptFilter> lstAnnotationFilter = resultSet.getConceptCounts();
+        List<ConceptFilter> sortedLstAnnotationFilter = lstAnnotationFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
+        finalResult.setFilters(AnnotationControl.getControlledFilters(sortedLstAnnotationFilter));
 
         finalResult.setQuery(getQueryEcho(query));
         return finalResult;

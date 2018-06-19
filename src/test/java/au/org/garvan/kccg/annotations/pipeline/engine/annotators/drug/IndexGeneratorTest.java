@@ -8,9 +8,9 @@ public class IndexGeneratorTest {
 
     IndexGenerator drugIndexGenerator = new IndexGenerator();
 
-    @Test
-    public void generateIndex() {
-
-        drugIndexGenerator.generateIndex("DrugBankCleansed201805.json");
-    }
+//    @Test
+//    public void generateIndex() {
+//
+//        drugIndexGenerator.generateIndex("DrugBankCleansed201805.json");
+//    }
 }

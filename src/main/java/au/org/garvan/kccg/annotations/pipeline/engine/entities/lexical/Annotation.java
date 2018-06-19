@@ -43,7 +43,7 @@ public class Annotation {
                 case DISEASE:
                     return ((APDisease)entity).getMondoID();
                 case DRUG:
-                    return ((APDrug)entity).getDbankID();
+                    return ((APDrug)entity).getDrugBankID();
 
             }
         }

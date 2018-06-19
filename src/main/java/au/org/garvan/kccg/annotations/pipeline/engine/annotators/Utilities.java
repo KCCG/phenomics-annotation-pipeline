@@ -19,11 +19,9 @@ public class Utilities {
 
         if (id.contains("HP")) {
             return AnnotationType.PHENOTYPE;
-
         }
         else if (StringUtils.isNumeric(id)){
             return AnnotationType.GENE;
-
         }
         else if (id.contains("MONDO")){
             return AnnotationType.DISEASE;
@@ -68,7 +66,7 @@ public class Utilities {
                 break;
 
             case DRUG:
-                // Disease
+                // Drug
                 APDrug apDrug = DocumentPreprocessor.getDrugBankHandler().getDrug(id);
                 if (apDrug != null) {
                     conceptFilter.setId(id);
@@ -124,6 +122,11 @@ public class Utilities {
         }
 
 
+    }
+
+    public static String getAlphaPattern(String input){
+        String newstr = input.replaceAll("\\P{L}+", "");
+        return newstr;
     }
 
 }
