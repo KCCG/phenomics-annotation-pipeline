@@ -24,7 +24,7 @@
         },
         {
                   "sourceVolume": "PhenotypeResources",
-                  "containerPath": "/var/lib/phenotypeCR2018/"
+                  "containerPath": "/var/lib/phenotypeCR/"
                 }
       ],
             "workingDirectory": null,
@@ -59,7 +59,7 @@
      {
           "name": "PhenotypeResources",
           "host": {
-            "sourcePath": "/var/lib/phenotypeCR2018/"
+            "sourcePath": "/var/lib/phenotypeCR/"
           }
 
         }
