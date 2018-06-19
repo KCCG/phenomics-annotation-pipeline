@@ -1,8 +1,12 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.preprocessors;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.Utilities;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.disease.DiseaseHandler;
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.drug.DrugHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.PhenotypeHandler;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.connectors.AffinityConnector;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.AnnotationHit;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APPhrase;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.profiles.ProcessingProfile;
@@ -22,18 +26,23 @@ import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Created by ahmed on 1/8/17.
  */
 @Component
+@Service
 public class DocumentPreprocessor {
     private static final Logger slf4jLogger = LoggerFactory.getLogger(DocumentPreprocessor.class);
     private static List<Character> spaceRiders = Arrays.asList('(',')',';',':','_','[',']','{','}','/' , '"', '-');
@@ -48,9 +57,12 @@ public class DocumentPreprocessor {
     @Getter
     private static DiseaseHandler mondoHandler;
 
+    @Getter
+    private static DrugHandler drugBankHandler;
 
 
-    //    private static NormalizationHandler LVGNormalizationHandler;
+    private  static AffinityConnector affinityServiceConnector;
+
 
     static {
 
@@ -60,8 +72,15 @@ public class DocumentPreprocessor {
         slf4jLogger.info(String.format("Phenotype Handler init() called."));
         phenotypeHandler = new PhenotypeHandler();
 
-
+        slf4jLogger.info(String.format("Mondo Handler init() called."));
         mondoHandler = new DiseaseHandler();
+
+        slf4jLogger.info(String.format("DrugBank Handler init() called."));
+        drugBankHandler = new DrugHandler();
+
+
+        slf4jLogger.info(String.format("Affinity init() called."));
+        affinityServiceConnector = new AffinityConnector();
 
 
         if(!CoreNLPManager.isInitialized())
@@ -69,11 +88,18 @@ public class DocumentPreprocessor {
 
     }
 
+
+
     public static void main(String[] args) {
 
     }
 
     public static void init(){
+
+
+    }
+
+    private void call(){
 
     }
 
@@ -132,7 +158,7 @@ public class DocumentPreprocessor {
                 id++;
             }
 //            if(docProfile.isProcessDependencies())
-//                sent.generateDependencies();
+//                sent.generateDependencies();.
 //            if(docProfile.isProcessParseTree())
 //                sent.generateParseTree();
 
@@ -145,12 +171,35 @@ public class DocumentPreprocessor {
             slf4jLogger.info(String.format("Hatching Article ID: %s Phenotype Annotation is done. ", articleId));
 
         }
-        if(docProfile.getAnnotationRequests().contains(AnnotationType.DISEASE))
+        if(docProfile.getAnnotationRequests().contains(AnnotationType.DISEASE) || docProfile.getAnnotationRequests().contains(AnnotationType.DRUG))
         {
-            mondoHandler.processAndUpdateDocument(doc, articleId);
-            slf4jLogger.info(String.format("Hatching Article ID: %s Disease Annotation is done. ", articleId));
+            //TODO: Call
+            List<AnnotationHit> affinityHits =   affinityServiceConnector.annotateAbstract(doc.getCleanedText(), articleId, "en");
+            List<AnnotationHit> diseaseHits = affinityHits.stream().filter(h-> Utilities.getAnnotationTypeBasedOnId(h.getAnnotationID()).equals(AnnotationType.DISEASE)).collect(Collectors.toList());
+            List<AnnotationHit> drugsHits = affinityHits.stream().filter(h-> Utilities.getAnnotationTypeBasedOnId(h.getAnnotationID()).equals(AnnotationType.DRUG)).collect(Collectors.toList());
+
+            if(docProfile.getAnnotationRequests().contains(AnnotationType.DISEASE))
+            {
+                slf4jLogger.info(String.format("Hatching Article ID: %s Disease Annotation is requested. Prospects found by Affinity:%d ", articleId, diseaseHits.size()));
+                mondoHandler.processAndUpdateDocument(doc, diseaseHits);
+                slf4jLogger.info(String.format("Hatching Article ID: %s Disease Annotation is done. ", articleId));
+
+            }
+              if(docProfile.getAnnotationRequests().contains(AnnotationType.DRUG))
+            {
+                slf4jLogger.info(String.format("Hatching Article ID: %s Drug Annotation is requested. Prospects found by Affinity:%d ", articleId, drugsHits.size()));
+                drugBankHandler.processAndUpdateDocument(doc, drugsHits);
+                slf4jLogger.info(String.format("Hatching Article ID: %s Disease Annotation is done. ", articleId));
+
+            }
+
+
+
 
         }
+
+
+
         slf4jLogger.info(String.format("Hatching Article ID: %s  Annotations are completed. ", articleId));
 
 
@@ -371,6 +420,13 @@ public class DocumentPreprocessor {
 
 
     }
+
+
+    public static List<String>checkSpellings(String item) {
+
+        return phenotypeHandler.foreignSpellCheckHelper(item);
+    }
+
 
 
 }

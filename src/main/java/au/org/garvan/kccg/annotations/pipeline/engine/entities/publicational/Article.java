@@ -4,6 +4,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Disease.APDisease;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Drug.APDrug;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.LexicalEntity;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
@@ -300,6 +301,7 @@ public class Article {
         if(genericAnnotations.size()>0){
             JSONArray phenotypes = new JSONArray();
             JSONArray diseases = new JSONArray();
+            JSONArray drugs = new JSONArray();
             for (Map.Entry<APSentence, List<Annotation>> entry : genericAnnotations.entrySet()) {
                 int sentId = entry.getKey().getId();
                 Point sentDocOffset = entry.getKey().getDocOffset();
@@ -320,7 +322,11 @@ public class Article {
                     } else if (type.equals(AnnotationType.DISEASE)) {
                         jsonObject.put("annotationId", ((APDisease) (annotation.getEntity())).getMondoID());
                         diseases.add(jsonObject);
+                    } else if (type.equals(AnnotationType.DRUG)) {
+                        jsonObject.put("annotationId", ((APDrug) (annotation.getEntity())).getDrugBankID());
+                        drugs.add(jsonObject);
                     }
+
 
                 }
             }
@@ -339,6 +345,13 @@ public class Article {
                 diseaseJsonObject.put("annotationType", AnnotationType.DISEASE.toString());
                 diseaseJsonObject.put("annotations", diseases);
                 returnArray.add(diseaseJsonObject);
+            }
+            if(drugs.size()>0) {
+                JSONObject drugJsonObject = new JSONObject();
+                drugJsonObject.put("pubMedID", Integer.toString(pubMedID));
+                drugJsonObject.put("annotationType", AnnotationType.DRUG.toString());
+                drugJsonObject.put("annotations", drugs);
+                returnArray.add(drugJsonObject);
             }
 
         }

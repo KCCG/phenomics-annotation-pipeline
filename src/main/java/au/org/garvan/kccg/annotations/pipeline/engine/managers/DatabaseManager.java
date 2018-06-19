@@ -7,6 +7,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.graphDB.GraphDB
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.cache.FiltersCacheObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManagerResultSet;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DynamoDBObject;
+import au.org.garvan.kccg.annotations.pipeline.engine.utilities.AnnotationLog;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
 import au.org.garvan.kccg.annotations.pipeline.model.query.*;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Article;
@@ -52,7 +53,9 @@ public class DatabaseManager {
         try {
             slf4jLogger.info(String.format("Persistence initialized. Article ID: %d", article.getPubMedID()));
 
-            dynamoDBHandler.insertItem(article.constructJson(), article.getAbstractEntities());
+            JSONArray abstractEntities = article.getAbstractEntities();
+//            AnnotationLog.logAnnotations(abstractEntities, article.getArticleAbstract().getCleanedText());
+            dynamoDBHandler.insertItem(article.constructJson(), abstractEntities);
             slf4jLogger.info(String.format("Persistence locked - Dynomodb. Article ID: %d", article.getPubMedID()));
 
             s3Handler.storeAbstract(article);
@@ -86,6 +89,7 @@ public class DatabaseManager {
                 JSONObject genes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE);
                 JSONObject phenotypes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.PHENOTYPE);
                 JSONObject diseases =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.DISEASE);
+                JSONObject drugs =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.DRUG);
 
                 if(genes.containsKey("annotationType"))
                     jsonAnnotations.add(genes);
@@ -93,6 +97,8 @@ public class DatabaseManager {
                     jsonAnnotations.add(phenotypes);
                 if(diseases.containsKey("annotationType"))
                     jsonAnnotations.add(diseases);
+                if(drugs.containsKey("annotationType"))
+                    jsonAnnotations.add(drugs);
 
                 anArticle.setJsonAnnotations(jsonAnnotations);
 
@@ -128,6 +134,7 @@ public class DatabaseManager {
                 JSONObject genes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.GENE);
                 JSONObject phenotypes =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.PHENOTYPE);
                 JSONObject diseases =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.DISEASE);
+                JSONObject drugs =  dynamoDBHandler.getAnnotations(Integer.parseInt(anArticle.getPMID()), AnnotationType.DRUG);
 
                 if(genes.containsKey("annotationType"))
                     jsonAnnotations.add(genes);
@@ -135,6 +142,8 @@ public class DatabaseManager {
                     jsonAnnotations.add(phenotypes);
                 if(diseases.containsKey("annotationType"))
                     jsonAnnotations.add(diseases);
+                if(drugs.containsKey("annotationType"))
+                    jsonAnnotations.add(drugs);
 
                 anArticle.setJsonAnnotations(jsonAnnotations);
 

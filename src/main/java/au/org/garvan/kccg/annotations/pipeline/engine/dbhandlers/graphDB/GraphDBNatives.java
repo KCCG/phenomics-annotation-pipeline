@@ -5,6 +5,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Disease.APDisease;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Drug.APDrug;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.LexicalEntity;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APSentence;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
@@ -158,7 +159,6 @@ public class GraphDBNatives {
                 IClause publicationClause = MERGE.node(nodePublication).label(GraphDBConstants.PUBLICATION_NODE_LABEL)
                         .property(GraphDBConstants.PUBLICATION_NODE_TITLE).value(article.getPublication().getTitle())
                         .property(GraphDBConstants.PUBLICATION_NODE_ISO_ABBREVIATION).value(article.getPublication().getIsoAbbreviation())
-//                        .property(GraphDBConstants.PUBLICATION_NODE_ISSN_TYPE).value(article.getPublication().getIssnType())
                         .property(GraphDBConstants.PUBLICATION_NODE_ISSN_NUMBER).value(article.getPublication().getIssnNumber());
                 IClause publicationLinkClause = MERGE.node(nodeArticle).relation().out().type(GraphDBConstants.PUBLICATION_EDGE_TYPE)
                         .property(GraphDBConstants.PUBLICATION_EDGE_DATE_PUBLISHED)
@@ -168,9 +168,9 @@ public class GraphDBNatives {
                 queryClauses.add(publicationLinkClause);
             }
 
-            fillEntitiesGraphData(queryClauses, article, nodeArticle);
+//            fillEntitiesGraphData(queryClauses, article, nodeArticle);
             //Point: Changing logic to unique edge between an entity and article.
-            //smartFillEntitiesGraphData(queryClauses, article, nodeArticle);
+            smartFillEntitiesGraphData(queryClauses, article, nodeArticle);
 
             JcQueryResult result = executeQueryClauses(queryClauses);
 
@@ -247,6 +247,10 @@ public class GraphDBNatives {
                     } else if (annotation.getType().equals(AnnotationType.DISEASE)) {
                         entityID = ((APDisease) annotation.getEntity()).getMondoID();
                         entityLabel = ((APDisease) annotation.getEntity()).getLabel();
+                    }
+                    else if (annotation.getType().equals(AnnotationType.DRUG)) {
+                        entityID = ((APDrug) annotation.getEntity()).getDrugBankID();
+                        entityLabel = ((APDrug) annotation.getEntity()).getLabel();
                     }
 
                     JcNode nodePhenotype = new JcNode(String.format("nodeEntity%d_%d_%s_%s", sentId, annotation.getOffset().x + annotation.getOffset().y, annotation.getType().toString(), entityID.replace(":", "_")));

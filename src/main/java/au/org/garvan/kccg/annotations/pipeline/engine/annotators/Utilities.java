@@ -1,19 +1,15 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.annotators;
 
-import au.org.garvan.kccg.annotations.pipeline.engine.annotators.disease.DiseaseHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
-import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Disease.APDisease;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Drug.APDrug;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
 import au.org.garvan.kccg.annotations.pipeline.model.query.ConceptFilter;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.analysis.Tokenizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.Char;
 
 public class Utilities {
     private final static Logger slf4jLogger = LoggerFactory.getLogger(Utilities.class);
@@ -23,14 +19,15 @@ public class Utilities {
 
         if (id.contains("HP")) {
             return AnnotationType.PHENOTYPE;
-
         }
         else if (StringUtils.isNumeric(id)){
             return AnnotationType.GENE;
-
         }
         else if (id.contains("MONDO")){
             return AnnotationType.DISEASE;
+        }
+        else if (id.contains("DB")){
+            return AnnotationType.DRUG;
         }
         return
                 AnnotationType.ENTITY;
@@ -65,6 +62,16 @@ public class Utilities {
                     conceptFilter.setId(id);
                     conceptFilter.setType(type.toString());
                     conceptFilter.setText(apDisease.getLabel());
+                }
+                break;
+
+            case DRUG:
+                // Drug
+                APDrug apDrug = DocumentPreprocessor.getDrugBankHandler().getDrug(id);
+                if (apDrug != null) {
+                    conceptFilter.setId(id);
+                    conceptFilter.setType(type.toString());
+                    conceptFilter.setText(apDrug.getLabel());
                 }
                 break;
         }
@@ -115,6 +122,11 @@ public class Utilities {
         }
 
 
+    }
+
+    public static String getAlphaPattern(String input){
+        String newstr = input.replaceAll("\\P{L}+", "");
+        return newstr;
     }
 
 }

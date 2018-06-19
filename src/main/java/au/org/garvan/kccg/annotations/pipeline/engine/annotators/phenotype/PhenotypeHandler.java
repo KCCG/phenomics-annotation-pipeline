@@ -17,6 +17,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.cr.in
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.cr.input.relations.RelationDetection;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.cr.input.spellcheck.CRSpellCheck;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.cr.input.spellcheck.SpellCheckThread;
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.cr.input.spellcheck.SpellCheckThreadPipeline;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.cr.search.IndexDataSource;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.cr.search.IndexSearch;
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.phenotype.index.datasource.config.DataSourceMetadata;
@@ -350,5 +351,22 @@ public class PhenotypeHandler {
 
         reader.close();
 
+    }
+
+
+
+
+
+    public List<String> foreignSpellCheckHelper(String item) {
+        List<String> spellCheckedMap = Collections.synchronizedList(new ArrayList<>());
+        ExecutorService executor = Executors.newFixedThreadPool(maxThreads);
+        executor.execute(new SpellCheckThreadPipeline(item, spellCheck, spellCheckedMap));
+        executor.shutdown();
+        while (!executor.isTerminated()) {
+        }
+
+        logger.debug("Spell checked map: " + spellCheckedMap);
+
+        return spellCheckedMap;
     }
 }

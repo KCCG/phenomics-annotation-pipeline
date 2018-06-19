@@ -1,7 +1,9 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.annotators.disease;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.annotators.Constants;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Disease.APDisease;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Drug.APDrug;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APPhrase;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
@@ -30,6 +32,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static au.org.garvan.kccg.annotations.pipeline.engine.annotators.Utilities.getAlphaPattern;
 
 public class IndexGenerator {
 
@@ -74,29 +78,48 @@ public class IndexGenerator {
 
             while (!stackedDiseases.empty()) {
                 String oneForm = stackedDiseases.pop();
-
                 List<String> discardedStrings = new ArrayList<>();
-                APPhrase apPhrase = DocumentPreprocessor.preprocessPhrase(oneForm);
-                List<APToken> tokens = apPhrase.getTokens();
-                TokenAnalysis tokenAnalysis = analyseTokens(tokens);
 
-                //Point Rule 0: If there is a semicolon and it is second last token then consider there is a short form ahead. Split form and out it as abbreviation
-                if (tokens.size() > 2 && tokenAnalysis.getIndexOfSemicolon() == tokens.size() - 2) {
-                    slf4jLogger.debug(String.format("Disease:%s | Found semicolon token at second last index: %s.", apDisease.getMondoID(), oneForm));
-                    List<APToken> initialTokens = tokens.subList(0, tokenAnalysis.getIndexOfSemicolon());
-                    oneForm = initialTokens.stream().map(t -> t.getOriginalText()).collect(Collectors.joining(" "));
-                    stackedDiseases.push(tokens.get(tokens.size() - 1).getOriginalText());
+                {
+                    String tokenText = oneForm.toLowerCase();
+                    if(Constants.getCommonFilterWords().contains(tokenText)) {
+                        slf4jLogger.debug(String.format("Disease:%s | Found text in filters: %s.", apDisease.getMondoID(), oneForm));
+                        discardedStrings.add(oneForm);
+                        discard = true;
+                        if (iterator == 0)
+                            labelDiscarded = true;
+
+                    }
 
                 }
 
+                if (!discard && !labelDiscarded &&  getAlphaPattern(oneForm).length()<tokenLengthThreshold){
+                    slf4jLogger.debug(String.format("Disease:%s | Found very short one form: %s.", apDisease.getMondoID(), oneForm));
+                    discardedStrings.add(oneForm);
+                    discard = true;
+                    if (iterator == 0)
+                        labelDiscarded = true;
+                }
+
+
+
+                APPhrase apPhrase = DocumentPreprocessor.preprocessPhrase(oneForm);
+                List<APToken> tokens = apPhrase.getTokens();
+                TokenAnalysis tokenAnalysis = analyseTokens(tokens);
 
                 //Point: Rule 1a: Token length. If single then length should be more than 3(tokenLengthThreshold)
                 //Point: Rule 1b: If number of tokens is greater that 6(tokenNumberThreshold) and have 2 commas and threshold then discard
                 if (!discard && !labelDiscarded) {
 
-                    if(tokens.size()==1){
+                    //Point Rule 0: If there is a semicolon and it is second last token then consider there is a short form ahead. Split form and out it as abbreviation
+                    if (tokens.size() > 2 && tokenAnalysis.getIndexOfSemicolon() == tokens.size() - 2) {
+                        slf4jLogger.debug(String.format("Disease:%s | Found semicolon token at second last index: %s.", apDisease.getMondoID(), oneForm));
+                        List<APToken> initialTokens = tokens.subList(0, tokenAnalysis.getIndexOfSemicolon());
+                        oneForm = initialTokens.stream().map(t -> t.getOriginalText()).collect(Collectors.joining(" "));
+                        stackedDiseases.push(tokens.get(tokens.size() - 1).getOriginalText());
 
                     }
+
 
                     if (tokens.size() == 1  ) {
                         if(tokens.get(0).getOriginalText().length() < tokenLengthThreshold) {
@@ -157,8 +180,8 @@ public class IndexGenerator {
                     }
 
 
-                    if (tokenAnalysis.getCountOfSlash() > 0) {
-                        slf4jLogger.debug(String.format("Disease:%s | Found slash:%s.", apDisease.getMondoID(), oneForm));
+                    if (tokenAnalysis.getCountOfSlash() > 0 || tokenAnalysis.getCountOfParenthesis() > 0)  {
+                        slf4jLogger.debug(String.format("Disease:%s | Found slash or parenthesis:%s.", apDisease.getMondoID(), oneForm));
                         discardedStrings.add(oneForm);
                         discard = true;
                         if (iterator == 0)
@@ -298,17 +321,17 @@ public class IndexGenerator {
         slf4jLogger.info("Writing index files for selected disease. ");
 
         //TODO: Create file for pipeline, needed for annotation, autocomplete etc.
-        JSONObject diseaseAnnotationIndex = new JSONObject();
-        diseaseAnnotationIndex.put("standard", STANDARD);
-        diseaseAnnotationIndex.put("version", VERSION);
-
-
-        JSONArray jsonDiseasesArray = new JSONArray();
-        selectedDiseases.stream().forEach(d-> jsonDiseasesArray.add(d.getAnnotationJsonForAnnotator()));
-
-        diseaseAnnotationIndex.put("diseases", jsonDiseasesArray);
-        writeAnnotationIndexFile(diseaseAnnotationIndex, "mondoAnnotationIndex.json");
-
+//        JSONObject diseaseAnnotationIndex = new JSONObject();
+//        diseaseAnnotationIndex.put("standard", STANDARD);
+//        diseaseAnnotationIndex.put("version", VERSION);
+//
+//
+//        JSONArray jsonDiseasesArray = new JSONArray();
+//        selectedDiseases.stream().forEach(d-> jsonDiseasesArray.add(d.getAnnotationJsonForAnnotator()));
+//
+//        diseaseAnnotationIndex.put("diseases", jsonDiseasesArray);
+//        writeAnnotationIndexFile(diseaseAnnotationIndex, "mondoAnnotationIndex.json");
+        writeAnnotationIndexFile(selectedDiseases,"mondoAnnotationIndex.txt");
 
         //TODO: Create file for Affinity
         JSONObject diseaseAdfinityIndex = new JSONObject();
@@ -332,12 +355,81 @@ public class IndexGenerator {
         }
     }
 
+    public void writeAnnotationIndexFile(List<APDisease> selectedDiseases, String fileName){
+
+        StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.append(String.format("AnnotationType=%s", ANNOTATIONS));
+        stringBuilder.append(System.getProperty("line.separator"));
+
+        stringBuilder.append(String.format("standard=%s", STANDARD));
+        stringBuilder.append(System.getProperty("line.separator"));
+
+        stringBuilder.append(String.format("version=%s", VERSION));
+        stringBuilder.append(System.getProperty("line.separator"));
+
+        for(APDisease diseases: selectedDiseases){
+
+            if ((!Strings.isNullOrEmpty(diseases.getMondoID())) && (!Strings.isNullOrEmpty(diseases.getLabel()))) {
+                stringBuilder.append("[ENTITY]");
+                stringBuilder.append(System.getProperty("line.separator"));
+
+                stringBuilder.append("[ID]");
+                stringBuilder.append(System.getProperty("line.separator"));
+                stringBuilder.append(diseases.getMondoID());
+                stringBuilder.append(System.getProperty("line.separator"));
+
+                stringBuilder.append("[LBL]");
+                stringBuilder.append(System.getProperty("line.separator"));
+                stringBuilder.append(diseases.getLabel());
+                stringBuilder.append(System.getProperty("line.separator"));
+
+                stringBuilder.append("[DEF]");
+                stringBuilder.append(System.getProperty("line.separator"));
+                if(Strings.isNullOrEmpty(diseases.getDefinition()))
+                    stringBuilder.append("N/A");
+                else
+                    stringBuilder.append(diseases.getDefinition());
+                stringBuilder.append(System.getProperty("line.separator"));
+
+                stringBuilder.append("[URL]");
+                stringBuilder.append(System.getProperty("line.separator"));
+                if(Strings.isNullOrEmpty(diseases.getOboURI()))
+                    stringBuilder.append("N/A");
+                else
+                    stringBuilder.append(diseases.getOboURI());
+                stringBuilder.append(System.getProperty("line.separator"));
+
+
+                if (diseases.getSynonyms().size() > 0) {
+                    stringBuilder.append("[SYN]");
+                    stringBuilder.append(System.getProperty("line.separator"));
+                    for (String syn : diseases.getSynonyms()) {
+                        stringBuilder.append(syn);
+                        stringBuilder.append(System.getProperty("line.separator"));
+                    }
+                }
+                stringBuilder.append("[~ENTITY]");
+                stringBuilder.append(System.getProperty("line.separator"));
+                stringBuilder.append(System.getProperty("line.separator"));
+            }
+
+        }
+
+        String localPath =  System.getProperty("user.dir") + "/Analysis/";
+        try (FileWriter file = new FileWriter(localPath + fileName )) {
+            file.write(stringBuilder.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public List<APDisease> readFile() {
         List<APDisease> mondoDiseases = new ArrayList<>();
         try {
             slf4jLogger.info(String.format("Reading lexicon. Filename:%s", fileName));
-            String path = "lexicons/" + fileName;
+            String path = "indexingFiles/" + fileName;
             InputStream input = getClass().getResourceAsStream("resources/" + path);
             if (input == null) {
                 // this is how we load file within editor (eg eclipse)
@@ -356,12 +448,6 @@ public class IndexGenerator {
                         tempDisease.setDeprecated(true);
                     else {
                         mondoDiseases.add(tempDisease);
-//                        List<String> names = tempDisease.getSynonyms().stream().map(x -> x.getVal().toLowerCase()).collect(Collectors.toList());
-//                        names.add(tempDisease.getLabel().toLowerCase());
-//                        for (String name : names) {
-//                            if (!Strings.isNullOrEmpty(name))
-//                                diseaseLabelToMondo.put(name, tempDisease.getMondoID());
-//                        }
                     }
 
                 }
@@ -376,8 +462,6 @@ public class IndexGenerator {
         return mondoDiseases;
 
 
-//        List<String> allLines = mondoDiseases.values().stream().map(s->s.getStringForFile()).collect(Collectors.toList());
-//        APFileWriter.writeSmallTextFile(allLines, "mondo");
 
     }
 

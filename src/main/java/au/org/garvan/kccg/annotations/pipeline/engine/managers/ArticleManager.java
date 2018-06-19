@@ -49,7 +49,9 @@ public class ArticleManager {
             try {
                 slf4jLogger.info(String.format("Processing started for article ID: %d", article.getPubMedID()));
 
-                if (!isDuplicate(article)) {
+                if (true)
+//                if (!isDuplicate(article))
+                {
                     slf4jLogger.info(String.format("Article is identified as unique. ID: %d", article.getPubMedID()));
                     article.getArticleAbstract().hatch(article.getPubMedID());
 

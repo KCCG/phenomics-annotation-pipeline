@@ -175,9 +175,9 @@ public class QueryManager {
         finalResult.setArticles(results);
         finalResult.setPagination(qParams);
 
-        List<ConceptFilter> lstGeneFilter = resultSet.getConceptCounts();
-        List<ConceptFilter> sortedLstGeneFilter = lstGeneFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
-        finalResult.setFilters(AnnotationControl.getControlledFilters(sortedLstGeneFilter));
+        List<ConceptFilter> lstAnnotationFilter = resultSet.getConceptCounts();
+        List<ConceptFilter> sortedLstAnnotationFilter = lstAnnotationFilter.stream().sorted(Comparator.comparing(ConceptFilter::getRank).reversed()).collect(Collectors.toList());
+        finalResult.setFilters(AnnotationControl.getControlledFilters(sortedLstAnnotationFilter));
 
         finalResult.setQuery(getQueryEcho(query));
         return finalResult;
@@ -235,40 +235,6 @@ public class QueryManager {
 
         return searchQueryEcho;
 
-    }
-
-
-
-
-
-    public List<String> getAutocompleteList(String infix) {
-        int baseRank = 1000;
-        int resultLimit = 15;
-
-        List<String> geneSymbols = DocumentPreprocessor.getHGNCGeneHandler().serchGenes(infix);
-        //Ranking results
-        Map<String, Integer> rankedGenes = geneSymbols.stream().collect(Collectors.toMap(Function.identity(), (a) -> 0));
-
-
-        for (Map.Entry<String, Integer> entry : rankedGenes.entrySet()) {
-            int rank = baseRank;
-            if (entry.getKey().indexOf(infix) == 0) {
-                rank = rank * 2 - (entry.getKey().length() - infix.length());
-            } else {
-                rank = rank - (5 * entry.getKey().indexOf(infix)) - (entry.getKey().length() - infix.length());
-            }
-            entry.setValue(rank);
-        }
-
-        List<String> returnList = rankedGenes.entrySet().stream()
-                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-                .map(m -> m.getKey())
-                .collect(Collectors.toList());
-
-        if (returnList.size() >= resultLimit)
-            returnList = returnList.subList(0, resultLimit);
-
-        return returnList;
     }
 
 
@@ -340,7 +306,7 @@ public class QueryManager {
      */
     public List<RankedAutoCompleteEntity> getAutocompleteGenericList(String infix) {
         int baseRank = 1000;
-        int resultLimit = 15;
+        int resultLimit = 20;
         boolean smartSearch = false;
         AnnotationType smartQueryType = AnnotationType.ENTITY;
         List<RankedAutoCompleteEntity> returnList = new ArrayList<>();
@@ -359,11 +325,17 @@ public class QueryManager {
                     case "hgnc":
                         smartQueryType = AnnotationType.GENE;
                         break;
-                    case "d":
+                    case "di":
                         smartQueryType = AnnotationType.DISEASE;
                         break;
                     case "mondo":
                         smartQueryType = AnnotationType.DISEASE;
+                        break;
+                    case "dr":
+                        smartQueryType = AnnotationType.DRUG;
+                        break;
+                    case "db":
+                        smartQueryType = AnnotationType.DRUG;
                         break;
                     case "p":
                         smartQueryType = AnnotationType.PHENOTYPE;
@@ -392,6 +364,7 @@ public class QueryManager {
         List<APGene> shortlistedGenes = new ArrayList<>();
         List<APMultiWordAnnotationMapper> shortListedPhenotypes = new ArrayList<>();
         List<APMultiWordAnnotationMapper> shortListedDiseases = new ArrayList<>();
+        List<APMultiWordAnnotationMapper> shortListedDrugs = new ArrayList<>();
 
         if (!smartSearch || smartQueryType.equals(AnnotationType.GENE)) {
             shortlistedGenes =  AnnotationControl.getControlledGeneAnnotations(
@@ -408,12 +381,17 @@ public class QueryManager {
                     DocumentPreprocessor.getMondoHandler().searchDisease(infix));
         }
 
+        if (!smartSearch || smartQueryType.equals(AnnotationType.DRUG)) {
+            shortListedDrugs = AnnotationControl.getControlledMWAnnotations(
+                    DocumentPreprocessor.getDrugBankHandler().searchDisease(infix));
+        }
+
         //Ranking results
         Map<Object, Integer> rankedEntities = new HashMap<>();
         shortListedPhenotypes.stream().forEach(x -> rankedEntities.put(x, 0));
         shortlistedGenes.stream().forEach(x -> rankedEntities.put(x, 0));
         shortListedDiseases.stream().forEach(x -> rankedEntities.put(x, 0));
-
+        shortListedDrugs.stream().forEach(x -> rankedEntities.put(x, 0));
 
         for (Map.Entry<Object, Integer> entry : rankedEntities.entrySet()) {
             int rank = baseRank;
@@ -467,11 +445,23 @@ public class QueryManager {
 
 
         //Show equal number of items from auto-complete list.
-        Integer collectedGeneSize = Math.min(smartQueryType.equals(AnnotationType.GENE) ? resultLimit : resultLimit / 3, shortlistedGenes.size());
+        Integer collectedGeneSize = Math.min(smartQueryType.equals(AnnotationType.GENE) ? resultLimit : resultLimit / 4, shortlistedGenes.size());
         Integer remainingBucket = resultLimit - collectedGeneSize;
-        Integer collectedPhenotypeSize = Math.min(smartQueryType.equals(AnnotationType.PHENOTYPE) ? resultLimit : remainingBucket / 2, shortListedPhenotypes.size());
+        Integer collectedPhenotypeSize = Math.min(smartQueryType.equals(AnnotationType.PHENOTYPE) ? resultLimit : remainingBucket / 3, shortListedPhenotypes.size());
         remainingBucket = resultLimit - (collectedGeneSize + collectedPhenotypeSize);
-        Integer collectedDiseaseSize = Math.min(smartQueryType.equals(AnnotationType.DISEASE) ? resultLimit : remainingBucket, shortListedDiseases.size());
+        Integer collectedDiseaseSize = Math.min(smartQueryType.equals(AnnotationType.DISEASE) ? resultLimit : remainingBucket/2, shortListedDiseases.size());
+        remainingBucket = resultLimit - (collectedGeneSize + collectedPhenotypeSize +collectedDiseaseSize);
+        Integer collectedDrugSize = Math.min(smartQueryType.equals(AnnotationType.DRUG) ? resultLimit : remainingBucket, shortListedDrugs.size());
+
+
+        Map<Object, Integer> topRankedDrugs =
+                rankedEntities.entrySet().stream().filter(x -> x.getKey() instanceof APMultiWordAnnotationMapper)
+                        .filter(y -> ((APMultiWordAnnotationMapper) y.getKey()).getId().contains("DB"))
+                        .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                        .limit(collectedDrugSize)
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+
 
         Map<Object, Integer> topRankedDiseases =
                 rankedEntities.entrySet().stream().filter(x -> x.getKey() instanceof APMultiWordAnnotationMapper)
@@ -528,6 +518,18 @@ public class QueryManager {
             entity.setId(String.valueOf(disease.getId()));
             entity.setText(disease.getText());
             entity.setType(AnnotationType.DISEASE.toString());
+            entity.setRank(entry.getValue());
+            returnList.add(entity);
+        }
+
+        //Fill Drugs
+        for (Map.Entry<Object, Integer> entry : topRankedDrugs.entrySet()) {
+            Object object = entry.getKey();
+            RankedAutoCompleteEntity entity = new RankedAutoCompleteEntity();
+            APMultiWordAnnotationMapper drug = (APMultiWordAnnotationMapper) object;
+            entity.setId(String.valueOf(drug.getId()));
+            entity.setText(drug.getText());
+            entity.setType(AnnotationType.DRUG.toString());
             entity.setRank(entry.getValue());
             returnList.add(entity);
         }

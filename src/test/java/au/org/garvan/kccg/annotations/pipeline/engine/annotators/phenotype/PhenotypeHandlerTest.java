@@ -5,6 +5,8 @@ import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocu
 import au.org.garvan.kccg.annotations.pipeline.engine.preprocessors.DocumentPreprocessor;
 import org.junit.Test;
 
+import java.util.List;
+
 public class PhenotypeHandlerTest {
 
     @Test
@@ -33,6 +35,16 @@ public class PhenotypeHandlerTest {
         DocumentPreprocessor.preprocessDocument(testDoc, testDoc.getId());
         PhenotypeHandler phenotypeHandler = new PhenotypeHandler();
         phenotypeHandler.processAndUpdateDocument(testDoc);
+        int x = 0;
+
+    }
+
+
+
+    @Test
+    public void process4() {
+        PhenotypeHandler phenotypeHandler = new PhenotypeHandler();
+        List<String> suggestions = phenotypeHandler.foreignSpellCheckHelper("leuprorelin");
         int x = 0;
 
     }

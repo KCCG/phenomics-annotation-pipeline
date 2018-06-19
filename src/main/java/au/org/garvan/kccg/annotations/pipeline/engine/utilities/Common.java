@@ -71,7 +71,7 @@ public final class Common {
 
     public static ProcessingProfile getStandardProfile(){
 
-        ProcessingProfile profile = new ProcessingProfile(false,false,false,false, Arrays.asList(AnnotationType.GENE, AnnotationType.PHENOTYPE, AnnotationType.DISEASE));
+        ProcessingProfile profile = new ProcessingProfile(false,false,false,false, Arrays.asList(AnnotationType.GENE, AnnotationType.PHENOTYPE, AnnotationType.DISEASE, AnnotationType.DRUG));
         return profile;
 
 

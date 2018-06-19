@@ -9,11 +9,14 @@
 //import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
 //import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 //import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Disease.APDisease;
+//import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Drug.APDrug;
 //import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
 //import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 //import au.org.garvan.kccg.annotations.pipeline.engine.enums.CommonParams;
 //import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
 //import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APSentence;
+//import au.org.garvan.kccg.annotations.pipeline.engine.utilities.config.ConfigLoader;
+//import au.org.garvan.kccg.annotations.pipeline.engine.utilities.config.EngineConfig;
 //import javafx.application.Application;
 //import javafx.collections.FXCollections;
 //import javafx.collections.ObservableList;
@@ -28,6 +31,7 @@
 //import javafx.stage.Screen;
 //import javafx.stage.Stage;
 //import javafx.util.Callback;
+//import org.springframework.beans.factory.annotation.Autowired;
 //
 //import java.io.IOException;
 //import java.time.LocalDate;
@@ -36,6 +40,8 @@
 //import java.util.stream.Collectors;
 //
 //public class BaseUI extends Application {
+//
+//    ConfigLoader configLoader = new ConfigLoader();
 //
 //    private final int SENTENCES_INDEX = 0;
 //    private final int TOKENS_INDEX = 1;
@@ -60,9 +66,10 @@
 //    private static SolrConnector instSolrConnector = new SolrConnector();
 //
 //
+//
 //    @Override
 //    public void start(Stage primaryStage) {
-//
+//        configLoader.init();
 //        width = Screen.getPrimary().getVisualBounds().getWidth();
 //        height = Screen.getPrimary().getVisualBounds().getHeight();
 //
@@ -241,6 +248,7 @@
 //                    currentDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.GENE);
 //                    currentDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.PHENOTYPE);
 //                    currentDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.DISEASE);
+//                    currentDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.DRUG);
 //
 //                    currentDoc.hatch(currentDocIndex);
 //                }
@@ -289,12 +297,16 @@
 ////        boolean hasAnnotations = sentAnnotations.size()>0;
 //        List<Integer> phenotypeTokens = new ArrayList<>();
 //        List<Integer> diseaseTokens = new ArrayList<>();
+//        List<Integer> drugTokens = new ArrayList<>();
 //
 //        if(sentAnnotations.size()>0) {
 //            sentAnnotations.stream().filter(a->a.getType()==AnnotationType.PHENOTYPE).forEach(a-> phenotypeTokens.addAll(a.getTokenIDs()));
 //        }
 //        if(sentAnnotations.size()>0) {
 //            sentAnnotations.stream().filter(a->a.getType()==AnnotationType.DISEASE).forEach(a-> diseaseTokens.addAll(a.getTokenIDs()));
+//        }
+//        if(sentAnnotations.size()>0) {
+//            sentAnnotations.stream().filter(a->a.getType()==AnnotationType.DRUG).forEach(a-> drugTokens.addAll(a.getTokenIDs()));
 //        }
 //        activeSent.getTokens().stream().forEach(tok ->
 //                {
@@ -326,17 +338,14 @@
 //                    }
 //                    else if (phenotypeTokens.contains(tok.getId())) {
 //                        buttonStyle = buttonStyle + "-fx-base: #FF8C00;";
-////                        buttonStyle = buttonStyle + "-fx-font-weight: bold;";
+//
+//                    }
+//                    else if (drugTokens.contains(tok.getId())) {
+//                        buttonStyle = buttonStyle + "-fx-base: #99FF33;";
 //
 //                    }
 //
-//
-////                    if (!tok.getNormalizedText().isEmpty()) {
-////                        buttonStyle = buttonStyle + "-fx-underline: true;";
-////                        btnToken.setTooltip(new Tooltip(String.format("%s:%s -> %s", tok.getLemma(), tok.getPartOfSpeech(), tok.getNormalizedText() )));
-////                    }
-////                    else
-//                    {
+//                                        {
 //                        btnToken.setTooltip(new Tooltip(String.format("%s:%s", tok.getLemma(), tok.getPartOfSpeech())));
 //                    }
 //                    btnToken.setStyle(buttonStyle);
@@ -417,6 +426,7 @@
 //            ListView<String> geneList = new ListView<String>();
 //            ListView<String> phenotypeList = new ListView<String>();
 //            ListView<String> diseaseList = new ListView<String>();
+//            ListView<String> drugList = new ListView<String>();
 //
 //            if(!tok.getLexicalEntityList().isEmpty()){
 //                geneList.setItems(FXCollections.observableArrayList(((APGene) tok.getLexicalEntityList().get(0)).stringList()));
@@ -439,13 +449,22 @@
 //
 //            }
 //
+//            if(!sent.getAnnotations().stream().filter(x->x.getType().equals(AnnotationType.DRUG)).collect(Collectors.toList()).isEmpty()){
+//                List<Annotation> tokenAnnotations = sent.getAnnotations().stream().filter(m->m.getType().equals(AnnotationType.DRUG)).filter(a-> a.getTokenIDs().contains(tok.getId())).collect(Collectors.toList());
+//                for(Annotation annotation:tokenAnnotations)
+//                {
+//                    diseaseList.getItems().addAll(FXCollections.observableArrayList(((APDrug)annotation.getEntity()).stringList()));
+//                }
+//
+//            }
+//
 //
 //            HBox depLexHolder = new HBox();
-//            geneList.setPrefWidth(450);
-//            diseaseList.setPrefWidth(450);
-//            phenotypeList.setPrefWidth(450);
-//            geneList.setPrefWidth(450);
-//            depLexHolder.getChildren().addAll(geneList, phenotypeList,diseaseList);
+//            geneList.setPrefWidth(350);
+//            diseaseList.setPrefWidth(350);
+//            phenotypeList.setPrefWidth(350);
+//            drugList.setPrefWidth(350);
+//            depLexHolder.getChildren().addAll(geneList, phenotypeList,diseaseList, drugList);
 //            GPSentences.addRow(ANNOTATION_INDEX, depLexHolder);
 //        }
 //// else {

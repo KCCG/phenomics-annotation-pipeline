@@ -222,6 +222,31 @@ public class SearchResultV2 {
                     }
 
                     break;
+
+                case "DRUG":
+                    for (Object obj:jsonAnnotations) {
+                        JSONObject jsonObject = (JSONObject) obj;
+                        dtoAnnotation tempAnnotation = new dtoAnnotation();
+                        String id = jsonObject.get("annotationId").toString();
+                        String label = DocumentPreprocessor.getDrugBankHandler().getDrugBankLabelWithId(id);
+                        String text = label;
+                        String offset = jsonObject.get("globalOffset").toString();
+                        String standard = jsonObject.get("standard").toString();
+                        String description =Utilities.getFirstHypotheticalSentence(DocumentPreprocessor.getDrugBankHandler().getDrugBankDefinitionWithId(id),descriptionTruncateSize);
+                        String link = DocumentPreprocessor.getDrugBankHandler().getDrugBankUrlWithId(id);
+                        String feedbackId = String.format("%s;%s;%s", pmid, id, offset);
+                        Pair offsetPair = constructOffset(offset);
+                        tempAnnotation.startIndex = (Integer)offsetPair.getFirst();
+                        tempAnnotation.endIndex = (Integer)offsetPair.getSecond();
+
+                        dtoHighlight highlight = new dtoHighlight(
+                                id, type, text, description, standard, link, feedbackId
+                        );
+                        tempAnnotation.highlights = Arrays.asList( highlight);
+                        convertedAnnotations.add(tempAnnotation);
+                    }
+
+                    break;
             }
         }
 
