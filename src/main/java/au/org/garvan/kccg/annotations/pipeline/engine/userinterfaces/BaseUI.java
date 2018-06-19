@@ -1,531 +1,531 @@
-package au.org.garvan.kccg.annotations.pipeline.engine.userinterfaces;
-
-/**
- * Created by ahmed on 26/7/17.
- */
-
-import au.org.garvan.kccg.annotations.pipeline.engine.connectors.SolrConnector;
-import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
-import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
-import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
-import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Disease.APDisease;
-import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Drug.APDrug;
-import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
-import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
-import au.org.garvan.kccg.annotations.pipeline.engine.enums.CommonParams;
-import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
-import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APSentence;
-import au.org.garvan.kccg.annotations.pipeline.engine.utilities.config.ConfigLoader;
-import au.org.garvan.kccg.annotations.pipeline.engine.utilities.config.EngineConfig;
-import javafx.application.Application;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.*;
-import javafx.scene.text.Text;
-import javafx.stage.Screen;
-import javafx.stage.Stage;
-import javafx.util.Callback;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.stream.Collectors;
-
-public class BaseUI extends Application {
-
-    ConfigLoader configLoader = new ConfigLoader();
-
-    private final int SENTENCES_INDEX = 0;
-    private final int TOKENS_INDEX = 1;
-    private final int PARSE_TREE_INDEX = 2;
-    private final int DEPENDENCIES_INDEX = 3;
-
-    private final int ANNOTATION_INDEX = 2;
-
-    private APDocument currentDoc = null;
-    private GridPane root;
-    private GridPane GPSentences;
-    private List<APDocument> allDocs;
-    private int currentDocIndex;
-    private int currentSentId;
-    private int totalDocs;
-    private double height;
-    private double width;
-
-    public static void main(String[] args) {
-        launch(args);
-    }
-    private static SolrConnector instSolrConnector = new SolrConnector();
-
-
-
-    @Override
-    public void start(Stage primaryStage) {
-        configLoader.init();
-        width = Screen.getPrimary().getVisualBounds().getWidth();
-        height = Screen.getPrimary().getVisualBounds().getHeight();
-
-
-        root = new GridPane();
-        GPSentences = new GridPane();
-
-        root.setAlignment(Pos.TOP_LEFT);
-        root.setHgap(10);
-        root.setVgap(10);
-        root.setPadding(new Insets(25, 25, 25, 25));
-        Button btnProcess = new Button("Fetch Articles");
-        btnProcess.setOnAction(e -> {
-            try {
-                fetchDocuments();
-            } catch (IOException e1) {
-                e1.printStackTrace();
-            }
-        });
-
-        Label lblDate = new Label("Date:");
-        TextField txtDate = new TextField("21/03/2018");
-        txtDate.setId("txtDate");
-
-        Label lblTotalDocs = new Label("Total Articles:");
-        Text txtTotalDocs = new Text("0");
-        txtTotalDocs.setId("txtTotalDocs");
-
-        Label lblCurrentDocIndex = new Label("Current Article:");
-        Text txtCurrentDocIndex = new Text("0");
-        txtCurrentDocIndex.setId("txtCurrentDocsIndex");
-
-
-        Button btnPrevious = new Button("<");
-        btnPrevious.setOnAction(e -> prevDocument());
-
-        Button btnNext = new Button(">");
-        btnNext.setOnAction(e -> nextDocument());
-
-
-        Button btnGoToIndex = new Button("Go To:");
-        btnGoToIndex.setOnAction(e -> goToDocument());
-        TextField txtGoToIndex = new TextField("0");
-        txtGoToIndex.setId("txtGoToIndex");
-
-
-        Button btnProcessPMID = new Button("Fetch Article");
-        btnProcessPMID.setOnAction(e -> {
-            try {
-                fetchDocumentBySearch();
-            } catch (IOException e1) {
-                e1.printStackTrace();
-            }
-        });
-
-        Label lblPMID = new Label("Search by PMID/Query:");
-        TextField txtPMID = new TextField("");
-        txtPMID.setId("txtPMID");
-
-        root.add(lblDate, 1, 1);
-        root.add(txtDate, 2, 1);
-        root.add(btnProcess, 3, 1);
-
-
-        root.add(lblTotalDocs, 4, 1);
-        root.add(txtTotalDocs, 5, 1);
-        root.add(lblCurrentDocIndex, 6, 1);
-        root.add(txtCurrentDocIndex, 7, 1);
-        root.add(btnPrevious, 8, 1);
-        root.add(btnNext, 9, 1);
-        root.add(btnGoToIndex, 10, 1);
-        root.add(txtGoToIndex, 11, 1);
-
-        root.add(lblPMID, 1, 2);
-        root.add(txtPMID, 2, 2);
-        root.add(btnProcessPMID, 3, 2);
-
-
-        VBox verticleBox = new VBox();
-        verticleBox.getChildren().addAll(root, GPSentences);
-
-        Scene scene = new Scene(verticleBox, width, height);
-        primaryStage.setTitle("Document Analyzer");
-        primaryStage.setScene(scene);
-        primaryStage.show();
-    }
-
-    private void goToDocument() {
-
-        int goToID = Integer.parseInt(((TextField) root.lookup("#txtGoToIndex")).getText());
-        if (goToID >= 0 && goToID < totalDocs) {
-            currentDocIndex = goToID;
-            try {
-                processDocument();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private void nextDocument() {
-        if (currentDocIndex < totalDocs - 1) {
-            currentDocIndex++;
-            try {
-                processDocument();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private void prevDocument() {
-
-        if (currentDocIndex > 0) {
-            currentDocIndex--;
-            try {
-                processDocument();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-    }
-
-    private void fetchDocuments() throws IOException {
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d/MM/yyyy");
-        String strDate = ((TextField) root.lookup("#txtDate")).getText();
-
-        LocalDate localDate = LocalDate.parse(strDate, formatter);
-//        allDocs = DocumentProcessor.processDocuments(localDate);
-        allDocs = instSolrConnector.getDocuments(localDate);
-        allDocs.sort(Comparator.comparing(APDocument::getId));
-        currentDocIndex = 0;
-        totalDocs = allDocs.size();
-        processDocument();
-
-
-    }
-
-    private void fetchDocumentBySearch() throws IOException {
-
-        allDocs = new ArrayList<>();
-        String strSearch = ((TextField) root.lookup("#txtPMID")).getText();
-
-        try {
-            Integer PMID = Integer.parseInt(strSearch);
-            allDocs.add(instSolrConnector.getDocument(strSearch));
-//            allDocs.add(DocumentProcessor.processDocument(strSearch));
-        } catch (NumberFormatException e) {
-            allDocs = instSolrConnector.getDocuments(strSearch, CommonParams.QUERY);
-//            allDocs = DocumentProcessor.processDocuments(strSearch);
-        }
-
-        currentDocIndex = 0;
-        totalDocs = allDocs.size();
-        processDocument();
-
-
-    }
-
-    private void processDocument() throws IOException {
-        if (totalDocs > 0) {
-            currentDoc = allDocs.get(currentDocIndex);
-            textUpdate("txtTotalDocs", Integer.toString(totalDocs));
-            textUpdate("txtCurrentDocsIndex", Integer.toString(currentDocIndex));
-
-            clearGPSentences(SENTENCES_INDEX, true);
-
-            List<LinguisticCellContent> list = new ArrayList<>();
-            if (currentDoc != null) {
-
-                if (currentDoc.getSentences().size() == 0) {
-//                    currentDoc.getProcessingProfile().setProcessDependencies(true);
-//                    currentDoc.getProcessingProfile().setProcessDependencies(true);
-                    currentDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.GENE);
-                    currentDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.PHENOTYPE);
-                    currentDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.DISEASE);
-                    currentDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.DRUG);
-
-                    currentDoc.hatch(currentDocIndex);
-                }
-                for (APSentence sent : currentDoc.getSentences()) {
-                    list.add(new LinguisticCellContent(sent.getId(), sent.getOriginalText()));
-                }
-
-                ObservableList<LinguisticCellContent> ObList = FXCollections.observableList(list);
-                ListView<LinguisticCellContent> lv = new ListView<>(ObList);
-                lv.setCellFactory(new Callback<ListView<LinguisticCellContent>, ListCell<LinguisticCellContent>>() {
-                    @Override
-                    public ListCell<LinguisticCellContent> call(ListView<LinguisticCellContent> param) {
-                        return new XCell();
-                    }
-                });
-                lv.setMinWidth(width);
-                lv.setMaxHeight(height * .4);
-                GPSentences.addRow(SENTENCES_INDEX, lv);
-            }
-        }
-
-
-    }
-
-
-    private void fillCurrentDocument() throws IOException {
-
-        String PMID = ((TextField) root.lookup("#txtDate")).getText();
-//        currentDoc = DocumentProcessor.processDocument(PMID);
-        currentDoc = instSolrConnector.getDocument(PMID);
-
-
-    }
-
-    private void processSentence(int id) {
-
-        APSentence activeSent = currentDoc.getSentenceWithID(id);
-        FlowPane tokenPane = new FlowPane();
-
-
-        //Flatten map structure to collect IDs of long forms; This is not meant to link anything but just for highlighting
-
-        List<Integer> longFormTokenIndices = activeSent.getSfLfLink()==null? new ArrayList<>():activeSent.getSfLfLink().values().stream().filter(x -> x.length > 0).flatMap(Arrays::stream).map(x -> x.getId()).collect(Collectors.toList());
-
-        List<Annotation> sentAnnotations = activeSent.getAnnotations();
-//        boolean hasAnnotations = sentAnnotations.size()>0;
-        List<Integer> phenotypeTokens = new ArrayList<>();
-        List<Integer> diseaseTokens = new ArrayList<>();
-        List<Integer> drugTokens = new ArrayList<>();
-
-        if(sentAnnotations.size()>0) {
-            sentAnnotations.stream().filter(a->a.getType()==AnnotationType.PHENOTYPE).forEach(a-> phenotypeTokens.addAll(a.getTokenIDs()));
-        }
-        if(sentAnnotations.size()>0) {
-            sentAnnotations.stream().filter(a->a.getType()==AnnotationType.DISEASE).forEach(a-> diseaseTokens.addAll(a.getTokenIDs()));
-        }
-        if(sentAnnotations.size()>0) {
-            sentAnnotations.stream().filter(a->a.getType()==AnnotationType.DRUG).forEach(a-> drugTokens.addAll(a.getTokenIDs()));
-        }
-        activeSent.getTokens().stream().forEach(tok ->
-                {
-                    Button btnToken = new Button();
-                    btnToken.setId(Integer.toString(tok.getId()));
-
-                    btnToken.setText(tok.getOriginalText());
-
-                    String buttonStyle = "";
+//package au.org.garvan.kccg.annotations.pipeline.engine.userinterfaces;
 //
-//                    if (tok.isShortForm()) {
-//                        buttonStyle = buttonStyle + "-fx-base: #b6e7c9;";
-
-//                    } else
-
-
-                    if (!tok.getLexicalEntityList().isEmpty()) {
-                        buttonStyle = buttonStyle + "-fx-underline: true;";
-//                        buttonStyle = buttonStyle + "-fx-text-fill: #0000ff;";
-
-                    }
-
-                    if (diseaseTokens.contains(tok.getId()) && phenotypeTokens.contains(tok.getId())){
-                        buttonStyle = buttonStyle + "-fx-base: #800080;";
-                    }
-
-                    else if (diseaseTokens.contains(tok.getId())) {
-                        buttonStyle = buttonStyle + "-fx-base: #FF0000;";
-                    }
-                    else if (phenotypeTokens.contains(tok.getId())) {
-                        buttonStyle = buttonStyle + "-fx-base: #FF8C00;";
-
-                    }
-                    else if (drugTokens.contains(tok.getId())) {
-                        buttonStyle = buttonStyle + "-fx-base: #99FF33;";
-
-                    }
-
-                                        {
-                        btnToken.setTooltip(new Tooltip(String.format("%s:%s", tok.getLemma(), tok.getPartOfSpeech())));
-                    }
-                    btnToken.setStyle(buttonStyle);
-
-
-                    btnToken.setOnAction(new EventHandler<ActionEvent>() {
-
-                        @Override
-                        public void handle(ActionEvent e) {
-                            updateDependenciesAndAnnotations(((Button) e.getSource()).getId());
-                        }
-                    });
-                    tokenPane.getChildren().add(btnToken);
-
-                }
-        );
-
-//        activeSent.generateDependencies();
-//        activeSent.generateParseTree();
-
-//        ListView<String> dependencyList = new ListView<String>();
-//        ObservableList<String> items = FXCollections.observableArrayList(activeSent.getDependencyRelations().stream().map(d -> d.toString()).collect(Collectors.toList()));
-//        dependencyList.setItems(items);
-//        dependencyList.setPrefWidth(300);
-
-//        Text parseTree = new Text();
-//        parseTree.setText(activeSent.getAnnotatedTree().toString());
-//        parseTree.setWrappingWidth(width * .98);
-
-        clearGPSentences(TOKENS_INDEX, true);
-        GPSentences.addRow(TOKENS_INDEX, tokenPane);
-//        GPSentences.addRow(PARSE_TREE_INDEX, parseTree);
-//        GPSentences.addRow(DEPENDENCIES_INDEX, dependencyList);
-        GPSentences.setVgap(5);
-        GPSentences.setMargin(tokenPane, new Insets(10, 5, 10, 5));
-
-    }
-
-
-    private void clearGPSentences(int index, boolean isAll) {
-        if (isAll) {
-            while (GPSentences.getChildren().size() > index) {
-                GPSentences.getChildren().remove(index);
-            }
-        } else {
-            GPSentences.getChildren().remove(index);
-        }
-
-    }
-
-    private void updateDependenciesAndAnnotations(String textId) {
-
-        System.out.println("Update dependencies called with token text: " + textId);
-        int id = Integer.parseInt(textId);
-
-        APSentence sent = currentDoc.getSentenceWithID(currentSentId);
-
-//        ListView<String> dependencyList = new ListView<String>();
-//        ObservableList<String> items = FXCollections.observableArrayList(sent.getDependencyRelations()
-//                .stream()
-//                .filter(g -> (g.getDependent().getId() == id || g.getGovernor().getId() == id))
-//                .map(d -> d.toString()).collect(Collectors.toList()));
-//        dependencyList.setItems(items);
-
-
-        //Point: Get token and see if Lexical Entities are there
-        APToken tok = sent.getTokens().stream().filter(x -> x.getId() == id).collect(Collectors.toList()).get(0);
-
-        try {
-            GPSentences.getChildren().remove(ANNOTATION_INDEX);
-
-        }
-        catch (Exception e){
-            System.out.println("Cannot remove annotation panel.");
-        }
-
-        if (!tok.getLexicalEntityList().isEmpty() || !sent.getAnnotations().isEmpty()) {
-            ListView<String> geneList = new ListView<String>();
-            ListView<String> phenotypeList = new ListView<String>();
-            ListView<String> diseaseList = new ListView<String>();
-            ListView<String> drugList = new ListView<String>();
-
-            if(!tok.getLexicalEntityList().isEmpty()){
-                geneList.setItems(FXCollections.observableArrayList(((APGene) tok.getLexicalEntityList().get(0)).stringList()));
-            }
-
-            if(!sent.getAnnotations().stream().filter(x->x.getType().equals(AnnotationType.PHENOTYPE)).collect(Collectors.toList()).isEmpty()){
-                List<Annotation> tokenAnnotations = sent.getAnnotations().stream().filter(m->m.getType().equals(AnnotationType.PHENOTYPE)).filter(a-> a.getTokenIDs().contains(tok.getId())).collect(Collectors.toList());
-                for(Annotation annotation:tokenAnnotations)
-                {
-                    phenotypeList.getItems().addAll(FXCollections.observableArrayList(((APPhenotype)annotation.getEntity()).stringList()));
-                }
-
-            }
-            if(!sent.getAnnotations().stream().filter(x->x.getType().equals(AnnotationType.DISEASE)).collect(Collectors.toList()).isEmpty()){
-                List<Annotation> tokenAnnotations = sent.getAnnotations().stream().filter(m->m.getType().equals(AnnotationType.DISEASE)).filter(a-> a.getTokenIDs().contains(tok.getId())).collect(Collectors.toList());
-                for(Annotation annotation:tokenAnnotations)
-                {
-                    diseaseList.getItems().addAll(FXCollections.observableArrayList(((APDisease)annotation.getEntity()).stringList()));
-                }
-
-            }
-
-            if(!sent.getAnnotations().stream().filter(x->x.getType().equals(AnnotationType.DRUG)).collect(Collectors.toList()).isEmpty()){
-                List<Annotation> tokenAnnotations = sent.getAnnotations().stream().filter(m->m.getType().equals(AnnotationType.DRUG)).filter(a-> a.getTokenIDs().contains(tok.getId())).collect(Collectors.toList());
-                for(Annotation annotation:tokenAnnotations)
-                {
-                    diseaseList.getItems().addAll(FXCollections.observableArrayList(((APDrug)annotation.getEntity()).stringList()));
-                }
-
-            }
-
-
-            HBox depLexHolder = new HBox();
-            geneList.setPrefWidth(350);
-            diseaseList.setPrefWidth(350);
-            phenotypeList.setPrefWidth(350);
-            drugList.setPrefWidth(350);
-            depLexHolder.getChildren().addAll(geneList, phenotypeList,diseaseList, drugList);
-            GPSentences.addRow(ANNOTATION_INDEX, depLexHolder);
-        }
-// else {
-//            GPSentences.addRow(DEPENDENCIES_INDEX, dependencyList);
+///**
+// * Created by ahmed on 26/7/17.
+// */
+//
+//import au.org.garvan.kccg.annotations.pipeline.engine.connectors.SolrConnector;
+//import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
+//import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
+//import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
+//import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Disease.APDisease;
+//import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Drug.APDrug;
+//import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APToken;
+//import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
+//import au.org.garvan.kccg.annotations.pipeline.engine.enums.CommonParams;
+//import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APDocument;
+//import au.org.garvan.kccg.annotations.pipeline.engine.entities.linguistic.APSentence;
+//import au.org.garvan.kccg.annotations.pipeline.engine.utilities.config.ConfigLoader;
+//import au.org.garvan.kccg.annotations.pipeline.engine.utilities.config.EngineConfig;
+//import javafx.application.Application;
+//import javafx.collections.FXCollections;
+//import javafx.collections.ObservableList;
+//import javafx.event.ActionEvent;
+//import javafx.event.EventHandler;
+//import javafx.geometry.Insets;
+//import javafx.geometry.Pos;
+//import javafx.scene.Scene;
+//import javafx.scene.control.*;
+//import javafx.scene.layout.*;
+//import javafx.scene.text.Text;
+//import javafx.stage.Screen;
+//import javafx.stage.Stage;
+//import javafx.util.Callback;
+//import org.springframework.beans.factory.annotation.Autowired;
+//
+//import java.io.IOException;
+//import java.time.LocalDate;
+//import java.time.format.DateTimeFormatter;
+//import java.util.*;
+//import java.util.stream.Collectors;
+//
+//public class BaseUI extends Application {
+//
+//    ConfigLoader configLoader = new ConfigLoader();
+//
+//    private final int SENTENCES_INDEX = 0;
+//    private final int TOKENS_INDEX = 1;
+//    private final int PARSE_TREE_INDEX = 2;
+//    private final int DEPENDENCIES_INDEX = 3;
+//
+//    private final int ANNOTATION_INDEX = 2;
+//
+//    private APDocument currentDoc = null;
+//    private GridPane root;
+//    private GridPane GPSentences;
+//    private List<APDocument> allDocs;
+//    private int currentDocIndex;
+//    private int currentSentId;
+//    private int totalDocs;
+//    private double height;
+//    private double width;
+//
+//    public static void main(String[] args) {
+//        launch(args);
+//    }
+//    private static SolrConnector instSolrConnector = new SolrConnector();
+//
+//
+//
+//    @Override
+//    public void start(Stage primaryStage) {
+//        configLoader.init();
+//        width = Screen.getPrimary().getVisualBounds().getWidth();
+//        height = Screen.getPrimary().getVisualBounds().getHeight();
+//
+//
+//        root = new GridPane();
+//        GPSentences = new GridPane();
+//
+//        root.setAlignment(Pos.TOP_LEFT);
+//        root.setHgap(10);
+//        root.setVgap(10);
+//        root.setPadding(new Insets(25, 25, 25, 25));
+//        Button btnProcess = new Button("Fetch Articles");
+//        btnProcess.setOnAction(e -> {
+//            try {
+//                fetchDocuments();
+//            } catch (IOException e1) {
+//                e1.printStackTrace();
+//            }
+//        });
+//
+//        Label lblDate = new Label("Date:");
+//        TextField txtDate = new TextField("21/03/2018");
+//        txtDate.setId("txtDate");
+//
+//        Label lblTotalDocs = new Label("Total Articles:");
+//        Text txtTotalDocs = new Text("0");
+//        txtTotalDocs.setId("txtTotalDocs");
+//
+//        Label lblCurrentDocIndex = new Label("Current Article:");
+//        Text txtCurrentDocIndex = new Text("0");
+//        txtCurrentDocIndex.setId("txtCurrentDocsIndex");
+//
+//
+//        Button btnPrevious = new Button("<");
+//        btnPrevious.setOnAction(e -> prevDocument());
+//
+//        Button btnNext = new Button(">");
+//        btnNext.setOnAction(e -> nextDocument());
+//
+//
+//        Button btnGoToIndex = new Button("Go To:");
+//        btnGoToIndex.setOnAction(e -> goToDocument());
+//        TextField txtGoToIndex = new TextField("0");
+//        txtGoToIndex.setId("txtGoToIndex");
+//
+//
+//        Button btnProcessPMID = new Button("Fetch Article");
+//        btnProcessPMID.setOnAction(e -> {
+//            try {
+//                fetchDocumentBySearch();
+//            } catch (IOException e1) {
+//                e1.printStackTrace();
+//            }
+//        });
+//
+//        Label lblPMID = new Label("Search by PMID/Query:");
+//        TextField txtPMID = new TextField("");
+//        txtPMID.setId("txtPMID");
+//
+//        root.add(lblDate, 1, 1);
+//        root.add(txtDate, 2, 1);
+//        root.add(btnProcess, 3, 1);
+//
+//
+//        root.add(lblTotalDocs, 4, 1);
+//        root.add(txtTotalDocs, 5, 1);
+//        root.add(lblCurrentDocIndex, 6, 1);
+//        root.add(txtCurrentDocIndex, 7, 1);
+//        root.add(btnPrevious, 8, 1);
+//        root.add(btnNext, 9, 1);
+//        root.add(btnGoToIndex, 10, 1);
+//        root.add(txtGoToIndex, 11, 1);
+//
+//        root.add(lblPMID, 1, 2);
+//        root.add(txtPMID, 2, 2);
+//        root.add(btnProcessPMID, 3, 2);
+//
+//
+//        VBox verticleBox = new VBox();
+//        verticleBox.getChildren().addAll(root, GPSentences);
+//
+//        Scene scene = new Scene(verticleBox, width, height);
+//        primaryStage.setTitle("Document Analyzer");
+//        primaryStage.setScene(scene);
+//        primaryStage.show();
+//    }
+//
+//    private void goToDocument() {
+//
+//        int goToID = Integer.parseInt(((TextField) root.lookup("#txtGoToIndex")).getText());
+//        if (goToID >= 0 && goToID < totalDocs) {
+//            currentDocIndex = goToID;
+//            try {
+//                processDocument();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
 //        }
-
-    }
-
-
-    public void textUpdate(String titleId, String value) {
-        Object obj = root.lookup("#" + titleId);
-
-
-        if (obj instanceof Label) {
-            ((Label) obj).setText(value);
-
-        } else if (obj instanceof Text) {
-            ((Text) obj).setText(value);
-        } else if (obj instanceof TextField) {
-            ((TextField) obj).setText(value);
-        }
-
-    }
-
-
-    class XCell extends ListCell<LinguisticCellContent> {
-        HBox hbox = new HBox();
-        Label label = new Label("(empty)");
-        Pane pane = new Pane();
-        Button button = new Button("(>)");
-        LinguisticCellContent content;
-
-        public XCell() {
-            super();
-            label.setWrapText(true);
-            label.setMaxWidth(width * .8);
-            hbox.getChildren().addAll(label, pane, button);
-            HBox.setHgrow(pane, Priority.ALWAYS);
-
-            button.setOnAction(new EventHandler<ActionEvent>() {
-                @Override
-                public void handle(ActionEvent event) {
-                    System.out.println(content.getId() + " : " + currentDoc.getSentenceWithID(content.getId()).getTokens().size() + ":" + event);
-                    currentSentId = content.getId();
-                    processSentence(content.getId());
-                }
-            });
-        }
-
-        @Override
-        protected void updateItem(LinguisticCellContent item, boolean empty) {
-            super.updateItem(item, empty);
-            setText(null);  // No originalText in label of super class
-            if (empty) {
-                content = null;
-                setGraphic(null);
-            } else {
-                content = item;
-                label.setText(item != null ? item.getOriginalText() : "<null>");
-                setGraphic(hbox);
-            }
-        }
-    }
-}
+//    }
+//
+//    private void nextDocument() {
+//        if (currentDocIndex < totalDocs - 1) {
+//            currentDocIndex++;
+//            try {
+//                processDocument();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//    }
+//
+//    private void prevDocument() {
+//
+//        if (currentDocIndex > 0) {
+//            currentDocIndex--;
+//            try {
+//                processDocument();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//
+//    }
+//
+//    private void fetchDocuments() throws IOException {
+//
+//        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d/MM/yyyy");
+//        String strDate = ((TextField) root.lookup("#txtDate")).getText();
+//
+//        LocalDate localDate = LocalDate.parse(strDate, formatter);
+////        allDocs = DocumentProcessor.processDocuments(localDate);
+//        allDocs = instSolrConnector.getDocuments(localDate);
+//        allDocs.sort(Comparator.comparing(APDocument::getId));
+//        currentDocIndex = 0;
+//        totalDocs = allDocs.size();
+//        processDocument();
+//
+//
+//    }
+//
+//    private void fetchDocumentBySearch() throws IOException {
+//
+//        allDocs = new ArrayList<>();
+//        String strSearch = ((TextField) root.lookup("#txtPMID")).getText();
+//
+//        try {
+//            Integer PMID = Integer.parseInt(strSearch);
+//            allDocs.add(instSolrConnector.getDocument(strSearch));
+////            allDocs.add(DocumentProcessor.processDocument(strSearch));
+//        } catch (NumberFormatException e) {
+//            allDocs = instSolrConnector.getDocuments(strSearch, CommonParams.QUERY);
+////            allDocs = DocumentProcessor.processDocuments(strSearch);
+//        }
+//
+//        currentDocIndex = 0;
+//        totalDocs = allDocs.size();
+//        processDocument();
+//
+//
+//    }
+//
+//    private void processDocument() throws IOException {
+//        if (totalDocs > 0) {
+//            currentDoc = allDocs.get(currentDocIndex);
+//            textUpdate("txtTotalDocs", Integer.toString(totalDocs));
+//            textUpdate("txtCurrentDocsIndex", Integer.toString(currentDocIndex));
+//
+//            clearGPSentences(SENTENCES_INDEX, true);
+//
+//            List<LinguisticCellContent> list = new ArrayList<>();
+//            if (currentDoc != null) {
+//
+//                if (currentDoc.getSentences().size() == 0) {
+////                    currentDoc.getProcessingProfile().setProcessDependencies(true);
+////                    currentDoc.getProcessingProfile().setProcessDependencies(true);
+//                    currentDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.GENE);
+//                    currentDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.PHENOTYPE);
+//                    currentDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.DISEASE);
+//                    currentDoc.getProcessingProfile().getAnnotationRequests().add(AnnotationType.DRUG);
+//
+//                    currentDoc.hatch(currentDocIndex);
+//                }
+//                for (APSentence sent : currentDoc.getSentences()) {
+//                    list.add(new LinguisticCellContent(sent.getId(), sent.getOriginalText()));
+//                }
+//
+//                ObservableList<LinguisticCellContent> ObList = FXCollections.observableList(list);
+//                ListView<LinguisticCellContent> lv = new ListView<>(ObList);
+//                lv.setCellFactory(new Callback<ListView<LinguisticCellContent>, ListCell<LinguisticCellContent>>() {
+//                    @Override
+//                    public ListCell<LinguisticCellContent> call(ListView<LinguisticCellContent> param) {
+//                        return new XCell();
+//                    }
+//                });
+//                lv.setMinWidth(width);
+//                lv.setMaxHeight(height * .4);
+//                GPSentences.addRow(SENTENCES_INDEX, lv);
+//            }
+//        }
+//
+//
+//    }
+//
+//
+//    private void fillCurrentDocument() throws IOException {
+//
+//        String PMID = ((TextField) root.lookup("#txtDate")).getText();
+////        currentDoc = DocumentProcessor.processDocument(PMID);
+//        currentDoc = instSolrConnector.getDocument(PMID);
+//
+//
+//    }
+//
+//    private void processSentence(int id) {
+//
+//        APSentence activeSent = currentDoc.getSentenceWithID(id);
+//        FlowPane tokenPane = new FlowPane();
+//
+//
+//        //Flatten map structure to collect IDs of long forms; This is not meant to link anything but just for highlighting
+//
+//        List<Integer> longFormTokenIndices = activeSent.getSfLfLink()==null? new ArrayList<>():activeSent.getSfLfLink().values().stream().filter(x -> x.length > 0).flatMap(Arrays::stream).map(x -> x.getId()).collect(Collectors.toList());
+//
+//        List<Annotation> sentAnnotations = activeSent.getAnnotations();
+////        boolean hasAnnotations = sentAnnotations.size()>0;
+//        List<Integer> phenotypeTokens = new ArrayList<>();
+//        List<Integer> diseaseTokens = new ArrayList<>();
+//        List<Integer> drugTokens = new ArrayList<>();
+//
+//        if(sentAnnotations.size()>0) {
+//            sentAnnotations.stream().filter(a->a.getType()==AnnotationType.PHENOTYPE).forEach(a-> phenotypeTokens.addAll(a.getTokenIDs()));
+//        }
+//        if(sentAnnotations.size()>0) {
+//            sentAnnotations.stream().filter(a->a.getType()==AnnotationType.DISEASE).forEach(a-> diseaseTokens.addAll(a.getTokenIDs()));
+//        }
+//        if(sentAnnotations.size()>0) {
+//            sentAnnotations.stream().filter(a->a.getType()==AnnotationType.DRUG).forEach(a-> drugTokens.addAll(a.getTokenIDs()));
+//        }
+//        activeSent.getTokens().stream().forEach(tok ->
+//                {
+//                    Button btnToken = new Button();
+//                    btnToken.setId(Integer.toString(tok.getId()));
+//
+//                    btnToken.setText(tok.getOriginalText());
+//
+//                    String buttonStyle = "";
+////
+////                    if (tok.isShortForm()) {
+////                        buttonStyle = buttonStyle + "-fx-base: #b6e7c9;";
+//
+////                    } else
+//
+//
+//                    if (!tok.getLexicalEntityList().isEmpty()) {
+//                        buttonStyle = buttonStyle + "-fx-underline: true;";
+////                        buttonStyle = buttonStyle + "-fx-text-fill: #0000ff;";
+//
+//                    }
+//
+//                    if (diseaseTokens.contains(tok.getId()) && phenotypeTokens.contains(tok.getId())){
+//                        buttonStyle = buttonStyle + "-fx-base: #800080;";
+//                    }
+//
+//                    else if (diseaseTokens.contains(tok.getId())) {
+//                        buttonStyle = buttonStyle + "-fx-base: #FF0000;";
+//                    }
+//                    else if (phenotypeTokens.contains(tok.getId())) {
+//                        buttonStyle = buttonStyle + "-fx-base: #FF8C00;";
+//
+//                    }
+//                    else if (drugTokens.contains(tok.getId())) {
+//                        buttonStyle = buttonStyle + "-fx-base: #99FF33;";
+//
+//                    }
+//
+//                                        {
+//                        btnToken.setTooltip(new Tooltip(String.format("%s:%s", tok.getLemma(), tok.getPartOfSpeech())));
+//                    }
+//                    btnToken.setStyle(buttonStyle);
+//
+//
+//                    btnToken.setOnAction(new EventHandler<ActionEvent>() {
+//
+//                        @Override
+//                        public void handle(ActionEvent e) {
+//                            updateDependenciesAndAnnotations(((Button) e.getSource()).getId());
+//                        }
+//                    });
+//                    tokenPane.getChildren().add(btnToken);
+//
+//                }
+//        );
+//
+////        activeSent.generateDependencies();
+////        activeSent.generateParseTree();
+//
+////        ListView<String> dependencyList = new ListView<String>();
+////        ObservableList<String> items = FXCollections.observableArrayList(activeSent.getDependencyRelations().stream().map(d -> d.toString()).collect(Collectors.toList()));
+////        dependencyList.setItems(items);
+////        dependencyList.setPrefWidth(300);
+//
+////        Text parseTree = new Text();
+////        parseTree.setText(activeSent.getAnnotatedTree().toString());
+////        parseTree.setWrappingWidth(width * .98);
+//
+//        clearGPSentences(TOKENS_INDEX, true);
+//        GPSentences.addRow(TOKENS_INDEX, tokenPane);
+////        GPSentences.addRow(PARSE_TREE_INDEX, parseTree);
+////        GPSentences.addRow(DEPENDENCIES_INDEX, dependencyList);
+//        GPSentences.setVgap(5);
+//        GPSentences.setMargin(tokenPane, new Insets(10, 5, 10, 5));
+//
+//    }
+//
+//
+//    private void clearGPSentences(int index, boolean isAll) {
+//        if (isAll) {
+//            while (GPSentences.getChildren().size() > index) {
+//                GPSentences.getChildren().remove(index);
+//            }
+//        } else {
+//            GPSentences.getChildren().remove(index);
+//        }
+//
+//    }
+//
+//    private void updateDependenciesAndAnnotations(String textId) {
+//
+//        System.out.println("Update dependencies called with token text: " + textId);
+//        int id = Integer.parseInt(textId);
+//
+//        APSentence sent = currentDoc.getSentenceWithID(currentSentId);
+//
+////        ListView<String> dependencyList = new ListView<String>();
+////        ObservableList<String> items = FXCollections.observableArrayList(sent.getDependencyRelations()
+////                .stream()
+////                .filter(g -> (g.getDependent().getId() == id || g.getGovernor().getId() == id))
+////                .map(d -> d.toString()).collect(Collectors.toList()));
+////        dependencyList.setItems(items);
+//
+//
+//        //Point: Get token and see if Lexical Entities are there
+//        APToken tok = sent.getTokens().stream().filter(x -> x.getId() == id).collect(Collectors.toList()).get(0);
+//
+//        try {
+//            GPSentences.getChildren().remove(ANNOTATION_INDEX);
+//
+//        }
+//        catch (Exception e){
+//            System.out.println("Cannot remove annotation panel.");
+//        }
+//
+//        if (!tok.getLexicalEntityList().isEmpty() || !sent.getAnnotations().isEmpty()) {
+//            ListView<String> geneList = new ListView<String>();
+//            ListView<String> phenotypeList = new ListView<String>();
+//            ListView<String> diseaseList = new ListView<String>();
+//            ListView<String> drugList = new ListView<String>();
+//
+//            if(!tok.getLexicalEntityList().isEmpty()){
+//                geneList.setItems(FXCollections.observableArrayList(((APGene) tok.getLexicalEntityList().get(0)).stringList()));
+//            }
+//
+//            if(!sent.getAnnotations().stream().filter(x->x.getType().equals(AnnotationType.PHENOTYPE)).collect(Collectors.toList()).isEmpty()){
+//                List<Annotation> tokenAnnotations = sent.getAnnotations().stream().filter(m->m.getType().equals(AnnotationType.PHENOTYPE)).filter(a-> a.getTokenIDs().contains(tok.getId())).collect(Collectors.toList());
+//                for(Annotation annotation:tokenAnnotations)
+//                {
+//                    phenotypeList.getItems().addAll(FXCollections.observableArrayList(((APPhenotype)annotation.getEntity()).stringList()));
+//                }
+//
+//            }
+//            if(!sent.getAnnotations().stream().filter(x->x.getType().equals(AnnotationType.DISEASE)).collect(Collectors.toList()).isEmpty()){
+//                List<Annotation> tokenAnnotations = sent.getAnnotations().stream().filter(m->m.getType().equals(AnnotationType.DISEASE)).filter(a-> a.getTokenIDs().contains(tok.getId())).collect(Collectors.toList());
+//                for(Annotation annotation:tokenAnnotations)
+//                {
+//                    diseaseList.getItems().addAll(FXCollections.observableArrayList(((APDisease)annotation.getEntity()).stringList()));
+//                }
+//
+//            }
+//
+//            if(!sent.getAnnotations().stream().filter(x->x.getType().equals(AnnotationType.DRUG)).collect(Collectors.toList()).isEmpty()){
+//                List<Annotation> tokenAnnotations = sent.getAnnotations().stream().filter(m->m.getType().equals(AnnotationType.DRUG)).filter(a-> a.getTokenIDs().contains(tok.getId())).collect(Collectors.toList());
+//                for(Annotation annotation:tokenAnnotations)
+//                {
+//                    diseaseList.getItems().addAll(FXCollections.observableArrayList(((APDrug)annotation.getEntity()).stringList()));
+//                }
+//
+//            }
+//
+//
+//            HBox depLexHolder = new HBox();
+//            geneList.setPrefWidth(350);
+//            diseaseList.setPrefWidth(350);
+//            phenotypeList.setPrefWidth(350);
+//            drugList.setPrefWidth(350);
+//            depLexHolder.getChildren().addAll(geneList, phenotypeList,diseaseList, drugList);
+//            GPSentences.addRow(ANNOTATION_INDEX, depLexHolder);
+//        }
+//// else {
+////            GPSentences.addRow(DEPENDENCIES_INDEX, dependencyList);
+////        }
+//
+//    }
+//
+//
+//    public void textUpdate(String titleId, String value) {
+//        Object obj = root.lookup("#" + titleId);
+//
+//
+//        if (obj instanceof Label) {
+//            ((Label) obj).setText(value);
+//
+//        } else if (obj instanceof Text) {
+//            ((Text) obj).setText(value);
+//        } else if (obj instanceof TextField) {
+//            ((TextField) obj).setText(value);
+//        }
+//
+//    }
+//
+//
+//    class XCell extends ListCell<LinguisticCellContent> {
+//        HBox hbox = new HBox();
+//        Label label = new Label("(empty)");
+//        Pane pane = new Pane();
+//        Button button = new Button("(>)");
+//        LinguisticCellContent content;
+//
+//        public XCell() {
+//            super();
+//            label.setWrapText(true);
+//            label.setMaxWidth(width * .8);
+//            hbox.getChildren().addAll(label, pane, button);
+//            HBox.setHgrow(pane, Priority.ALWAYS);
+//
+//            button.setOnAction(new EventHandler<ActionEvent>() {
+//                @Override
+//                public void handle(ActionEvent event) {
+//                    System.out.println(content.getId() + " : " + currentDoc.getSentenceWithID(content.getId()).getTokens().size() + ":" + event);
+//                    currentSentId = content.getId();
+//                    processSentence(content.getId());
+//                }
+//            });
+//        }
+//
+//        @Override
+//        protected void updateItem(LinguisticCellContent item, boolean empty) {
+//            super.updateItem(item, empty);
+//            setText(null);  // No originalText in label of super class
+//            if (empty) {
+//                content = null;
+//                setGraphic(null);
+//            } else {
+//                content = item;
+//                label.setText(item != null ? item.getOriginalText() : "<null>");
+//                setGraphic(hbox);
+//            }
+//        }
+//    }
+//}
