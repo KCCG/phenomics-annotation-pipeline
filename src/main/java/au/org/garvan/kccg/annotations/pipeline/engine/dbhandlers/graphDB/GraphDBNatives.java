@@ -49,7 +49,7 @@ public class GraphDBNatives {
 
     private static Properties props = new Properties();
     private static IDBAccess remote;
-    private static boolean ENABLE_PRINTING = true;
+    private static boolean ENABLE_PRINTING = false;
 
     @Autowired
     public GraphDBNatives(@Value("${spring.dbhandlers.graphdb.endpoint}") String neo4jDbEndpoint,
@@ -202,7 +202,7 @@ public class GraphDBNatives {
                                     .property(GraphDBConstants.ENTITY_NODE_ID).value(String.valueOf(gene.getHGNCID()))
                                     .property(GraphDBConstants.ENTITY_NODE_TEXT).value(gene.getApprovedSymbol())
                                     .property(GraphDBConstants.ENTITY_NODE_STANDARD).value("HGNC")
-                                    .property(GraphDBConstants.ENTITY_NODE_VERSION).value("2017")
+                                    .property(GraphDBConstants.ENTITY_NODE_VERSION).value("2018-06-18")
                                     .property(GraphDBConstants.ENTITY_NODE_TYPE).value("GENE");
                             IClause geneLinkClause =
                                     MERGE.node(nodeArticle).relation().out().type(GraphDBConstants.ENTITY_EDGE_TYPE)
@@ -303,7 +303,7 @@ public class GraphDBNatives {
                                 geneEntity = new GraphEntity();
                                 geneEntity.setEntityId(String.valueOf(gene.getHGNCID()));
                                 geneEntity.setEntityLabel(gene.getApprovedSymbol());
-                                geneEntity.setVersion("2017");
+                                geneEntity.setVersion("2018-06-18");
                                 geneEntity.setStandard("HGNC");
                                 geneEntity.setType(AnnotationType.GENE);
                                 finalEntities.put(geneEntity.getEntityId(), geneEntity);

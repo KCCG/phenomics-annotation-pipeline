@@ -72,15 +72,15 @@ bootRun {
 
 }
 
-task buildDocker(type: Docker) {
+task buildDockerWorker(type: Docker) {
     baseImage = 'develar/java:latest'
     push = project.hasProperty('push')
-    tag = 'phenomics-pipepline'
+    tag = 'phenomics-pipepline-wroker'
     addFile {
         from jar
         rename {'app.jar'}
     }
-    entryPoint(['java', '-Djava.security.egd=file:/dev/./urandom',  '-Dspring.profiles.active=docker', '-jar', '/app.jar' ])
+    entryPoint(['java', '-Djava.security.egd=file:/dev/./urandom', '-Xmx5500m', '-Dspring.profiles.active=worker', '-jar', '/app.jar' ])
     exposePort(9080)
 }
 task buildDockerProd(type: Docker) {
@@ -107,5 +107,5 @@ task buildDockerDev(type: Docker) {
     exposePort(9080)
 }
 
-buildDocker.dependsOn(build)
+
 

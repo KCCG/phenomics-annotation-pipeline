@@ -7,7 +7,7 @@
             "entryPoint": null,
             "portMappings": [
                 {
-                    "hostPort": 9000,
+                    "hostPort": 9008,
                     "protocol": "tcp",
                     "containerPort": 9080
                 }
@@ -18,7 +18,7 @@
             "environment": [
                 {
                     "name": "WORKER_ID",
-                    "value": "0"
+                    "value": "8"
                 },
                 {
                     "name": "SELF_INGESTION_ENABLED",
@@ -55,12 +55,12 @@
             "readonlyRootFilesystem": null,
             "dockerLabels": null,
             "privileged": null,
-            "name": "phenomics-pipeline-container-w-0"
+            "name": "phenomics-pipeline-container-w-8"
         }
     ],
     "memory": null,
     "taskRoleArn": null,
-    "family": "phenomics-pipeline-task-worker0",
+    "family": "phenomics-pipeline-task-worker8",
     "requiresCompatibilities": null,
     "networkMode": null,
     "cpu": null,
@@ -68,7 +68,7 @@
         {
             "name": "springlogs",
             "host": {
-                "sourcePath": "/var/log/worker0/"
+                "sourcePath": "/var/log/worker8/"
             }
         },
         {

@@ -66,7 +66,7 @@ public class DocumentPreprocessor {
 
     static {
 
-        HGNCGeneHandler = new GenesHandler("genes.txt");
+        HGNCGeneHandler = new GenesHandler("Genes2018.txt");
         HGNCGeneHandler.loadGenes();
 
         slf4jLogger.info(String.format("Phenotype Handler init() called."));
@@ -106,6 +106,11 @@ public class DocumentPreprocessor {
     public static void preprocessDocument(APDocument doc, Integer articleId) {
         ProcessingProfile docProfile = doc.getProcessingProfile();
         doc.setCleanedText(addSpaceAfterFullStop(doc.getOriginalText()));
+        if(docProfile.getAnnotationRequests().contains(AnnotationType.DISEASE) || docProfile.getAnnotationRequests().contains(AnnotationType.DRUG))
+        {
+            slf4jLogger.info(String.format("Hatching Article ID: %s Disease|Drug Annotation is requested. Calling Affinity Asynchronously.", articleId));
+            affinityServiceConnector.annotateAbstractAsync(doc.getCleanedText(), articleId, "en");
+        }
 
         String textToBeProcessed = doc.getCleanedText().replace("-"," ");
         textToBeProcessed = textToBeProcessed.replace("‑"," ");
@@ -174,7 +179,7 @@ public class DocumentPreprocessor {
         if(docProfile.getAnnotationRequests().contains(AnnotationType.DISEASE) || docProfile.getAnnotationRequests().contains(AnnotationType.DRUG))
         {
             //TODO: Call
-            List<AnnotationHit> affinityHits =   affinityServiceConnector.annotateAbstract(doc.getCleanedText(), articleId, "en");
+            List<AnnotationHit> affinityHits =   affinityServiceConnector.annotateAbstractResult(doc.getCleanedText(), articleId, "en");
             List<AnnotationHit> diseaseHits = affinityHits.stream().filter(h-> Utilities.getAnnotationTypeBasedOnId(h.getAnnotationID()).equals(AnnotationType.DISEASE)).collect(Collectors.toList());
             List<AnnotationHit> drugsHits = affinityHits.stream().filter(h-> Utilities.getAnnotationTypeBasedOnId(h.getAnnotationID()).equals(AnnotationType.DRUG)).collect(Collectors.toList());
 
@@ -189,7 +194,7 @@ public class DocumentPreprocessor {
             {
                 slf4jLogger.info(String.format("Hatching Article ID: %s Drug Annotation is requested. Prospects found by Affinity:%d ", articleId, drugsHits.size()));
                 drugBankHandler.processAndUpdateDocument(doc, drugsHits);
-                slf4jLogger.info(String.format("Hatching Article ID: %s Disease Annotation is done. ", articleId));
+                slf4jLogger.info(String.format("Hatching Article ID: %s Drug Annotation is done. ", articleId));
 
             }
 

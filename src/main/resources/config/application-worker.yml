@@ -1,0 +1,47 @@
+spring:
+  dbhandlers:
+    S3:
+      abstractbucket: phenomics-article-abstracts-prod
+      l2cachefiltersbucket: phenomics-graph-l2cache-filters
+      l2cachearticlesbucket: phenomics-graph-l2cache-articles
+    dynamodb:
+      articletablename: phenomics-articles-prod-b2
+      annotationtablename: phenomics-annotations-prod-b2
+      subscriptiontablename: phenomics-subscriptions-prod-b2
+      l2cachetablename: phenomics-l2-cache-b2
+    graphdb:
+      endpoint: http://13.236.244.82:7474/
+      username: neo4j
+      password: Neo4j@1Prod
+      live:
+        endpoint: bolt://13.236.244.82:7687/
+        username: neo4j
+        password: Neo4j@1Prod
+      historical:
+        endpoint: bolt://13.236.244.82:7687/
+        username: neo4j
+        password: Neo4j@1Prod
+
+  notificationconnector:
+    endpoint: http://cluster.phenomics.awsinternal.prod.:9090
+
+  affinityconnector:
+    endpoint: http://13.54.51.247
+
+  lambdaconnector:
+    workerfunctionname: pubmed-ingestion-worker-lambda
+
+  subscriptionservice:
+    subscriptiontime: 2
+
+logging:
+  path: ./logs/
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %p | source= %c{1.} | %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} %p | stackName=phenomics | appName=annotation-pipepline | source= %c{1.} | %msg%n"
+  level:
+    root: WARN
+    au.org.garvan.kccg.annotations.pipeline: INFO
+
+server:
+    port: 9080

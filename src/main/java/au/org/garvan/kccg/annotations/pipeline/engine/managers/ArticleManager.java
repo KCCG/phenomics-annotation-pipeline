@@ -63,7 +63,7 @@ public class ArticleManager {
                 }
             }
             catch (Exception e){
-                slf4jLogger.error(String.format("Error in processing article with ID: %d. Exception:%s", article.getPubMedID(),e.getMessage()));
+                slf4jLogger.error(String.format("Error in processing article with ID: %d. Exception:%s", article.getPubMedID(),e.toString()));
             }
 
 

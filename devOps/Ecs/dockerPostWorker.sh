@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo 'Tagging docker image'
-docker tag phenomics-pipepline-prod:1.0 254144944163.dkr.ecr.ap-southeast-2.amazonaws.com/phenomics-prod:pipeline-worker
+docker tag phenomics-pipepline-wroker:1.0 254144944163.dkr.ecr.ap-southeast-2.amazonaws.com/phenomics-prod:pipeline-worker
 echo 'Tagging completed for docker image'
 
 
