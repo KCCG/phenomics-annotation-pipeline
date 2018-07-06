@@ -5,10 +5,10 @@ spring:
       l2cachefiltersbucket: phenomics-graph-l2cache-filters
       l2cachearticlesbucket: phenomics-graph-l2cache-articles
     dynamodb:
-      articletablename: phenomics-articles-prod
-      annotationtablename: phenomics-annotations-prod
-      subscriptiontablename: phenomics-subscriptions-prod
-      l2cachetablename: phenomics-l2-cache
+      articletablename: phenomics-articles-prod-b2
+      annotationtablename: phenomics-annotations-prod-b2
+      subscriptiontablename: phenomics-subscriptions-prod-b2
+      l2cachetablename: phenomics-l2-cache-b2
     graphdb:
       endpoint: http://neo4j.phenomics.awsinternal.prod.:7474/
       username: neo4j
