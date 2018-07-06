@@ -25,7 +25,7 @@ spring:
   notificationconnector:
     endpoint:  http://localhost:9090
   affinityconnector:
-    endpoint: http://localhost
+    endpoint: http://localhost:9020
   lambdaconnector:
       workerfunctionname: pubmed-ingestion-worker-lambda
 

@@ -58,8 +58,9 @@ public class DatabaseManager {
             dynamoDBHandler.insertItem(article.constructJson(), abstractEntities);
             slf4jLogger.info(String.format("Persistence locked - Dynomodb. Article ID: %d", article.getPubMedID()));
 
-            s3Handler.storeAbstract(article);
-            slf4jLogger.info(String.format("Persistence locked - S3. Article ID: %d", article.getPubMedID()));
+            //Point: Linguistic storage is paused for time being
+//            s3Handler.storeAbstract(article);
+//            slf4jLogger.info(String.format("Persistence locked - S3. Article ID: %d", article.getPubMedID()));
 
             graphDBOptimisedHandler.createArticleQuery(article);
             slf4jLogger.info(String.format("Persistence locked - GraphDB. Article ID: %d", article.getPubMedID()));

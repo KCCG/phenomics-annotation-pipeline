@@ -14,10 +14,10 @@
             ],
             "command": null,
             "linuxParameters": null,
-            "cpu": 2000,
+            "cpu": 1500,
             "environment": [
                 {
-                    "name": "workerID",
+                    "name": "WORKER_ID",
                     "value": "4"
                 },
                 {
@@ -41,7 +41,7 @@
             ],
             "workingDirectory": null,
             "dockerSecurityOptions": null,
-            "memory": 7168,
+            "memory": 5888,
             "memoryReservation": null,
             "volumesFrom": [],
             "image": "254144944163.dkr.ecr.ap-southeast-2.amazonaws.com/phenomics-prod:pipeline-worker",

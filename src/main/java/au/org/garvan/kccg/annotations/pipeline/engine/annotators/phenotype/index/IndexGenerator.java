@@ -18,15 +18,15 @@ public class IndexGenerator {
     public static void main(String[] args) {
         //CR: Clean this mess.
 
-        String path = "";
+        String path = "/Users/ahmed/code/CR/hpo_cr/resources";
 
-        try {
-            File folder = new ClassPathResource(CRConstants.RESOURCES_PATH).getFile();
-            logger.info(folder.getAbsolutePath());
-            path = folder.getAbsolutePath()+"/";
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            File folder = new ClassPathResource(CRConstants.RESOURCES_PATH).getFile();
+//            logger.info(folder.getAbsolutePath());
+//            path = folder.getAbsolutePath()+"/";
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
 
         PseudoTA.init(path);
         String propFile = "/Users/ahmed/code/CR/hpo_cr/index.properties";// args[0];
