@@ -14,7 +14,7 @@ import static java.util.stream.Collectors.minBy;
 @Component
 public class AnnotationControl {
     private static Integer filtersCount = 200;
-    private static final List<String> controlList = Arrays.asList("HP:0002664", "11515", "HP:0012531");
+    private static final List<String> controlList = Arrays.asList("HP:0002664", "11515", "HP:0012531","MONDO:0005070","MONDO:0004992");
 
 
     public static List<ConceptFilter> getControlledFilters(List<ConceptFilter> input){
