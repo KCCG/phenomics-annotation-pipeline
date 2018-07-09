@@ -26,7 +26,7 @@ spring:
     endpoint: http://cluster.phenomics.awsinternal.dev.:9090
 
   affinityconnector:
-    endpoint: http://cluster.phenomics.awsinternal.dev.:9020
+    endpoint: http://cluster.phenomics.awsinternal.dev.
 
   lambdaconnector:
     workerfunctionname: pubmed-ingestion-worker-lambda
