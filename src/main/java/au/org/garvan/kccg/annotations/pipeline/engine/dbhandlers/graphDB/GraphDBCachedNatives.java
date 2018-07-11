@@ -172,7 +172,7 @@ public class GraphDBCachedNatives {
                     "WHERE e.EID in [" + joined + "]\n" +
                     "WITH a \n" +
                     "MATCH (a)-[:CONTAINS]-(e2:Entity)\n" +
-                    "RETURN e2.EID as EID, e2.Text as Text, e2.Type as Type ,count(a) as articleCount \n" +
+                    "RETURN e2.EID as EID, e2.Text as Text, e2.Type as Type ,count(distinct(a)) as articleCount \n" +
                     "ORDER BY articleCount desc \n ";
 
             return printQuery(query);
@@ -209,7 +209,7 @@ public class GraphDBCachedNatives {
             }
             String returnString = query +  "WITH a \n" +
                     "MATCH (a)-[:CONTAINS]-(e2:Entity)\n" +
-                    "RETURN e2.EID as EID, e2.Text as Text, e2.Type as Type ,count(a) as articleCount\n" +
+                    "RETURN e2.EID as EID, e2.Text as Text, e2.Type as Type ,count(distinct(a)) as articleCount\n" +
                     "ORDER BY articleCount desc\n";
 
             return printQuery(returnString);
@@ -251,7 +251,7 @@ public class GraphDBCachedNatives {
                 }
 
             }
-            query = query + "RETURN count(a)";
+            query = query + "RETURN count(distinct(a))";
             return  printQuery(query);
 
 
@@ -289,7 +289,7 @@ public class GraphDBCachedNatives {
             }
 
 
-            String returnClause = String.format("RETURN (a.PMID) as %s, count(e) as %s , ( size(c.SentID) ", GraphDBConstants.CACHED_QUERY_ARTICLE_RESULT_SET_PAID_LABEL, GraphDBConstants.CACHED_QUERY_ARTICLE_RESULT_SET_SEARCH_COUNTS_LABEL);
+            String returnClause = String.format("RETURN distinct(a.PMID) as %s, count(distinct(e)) as %s , ( size(c.SentID) ", GraphDBConstants.CACHED_QUERY_ARTICLE_RESULT_SET_PAID_LABEL, GraphDBConstants.CACHED_QUERY_ARTICLE_RESULT_SET_SEARCH_COUNTS_LABEL);
             String withClause = "WITH a, c, e";
 
             if(filterIds.size()>0)
