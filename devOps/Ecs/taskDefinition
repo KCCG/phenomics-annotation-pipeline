@@ -14,7 +14,12 @@
             "command": null,
             "linuxParameters": null,
             "cpu": 1024,
-            "environment": [],
+            "environment": [
+            {
+                                "name": "PHENOTYPE_RESOURCE_ROOT_PATH",
+                                "value": "/var/lib/"
+                            }
+                            ],
             "ulimits": null,
             "dnsServers": null,
             "mountPoints": [

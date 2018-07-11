@@ -33,6 +33,10 @@ spring:
 
   subscriptionservice:
     subscriptiontime: 2
+
+  querycontroller:
+    historicalflag: false
+
 logging:
   path: ./logs/
   pattern:

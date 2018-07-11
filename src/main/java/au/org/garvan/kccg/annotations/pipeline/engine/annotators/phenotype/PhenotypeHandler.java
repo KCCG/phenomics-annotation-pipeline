@@ -111,7 +111,7 @@ public class PhenotypeHandler {
         this.maxThreads = CRConstants.MAX_THREADS_COUNT;
         this.processNC = CRConstants.PROCESS_NC;
         String path = CRConstants.RESOURCES_PATH;
-        String resourcesRoot = System.getenv("PhenotypeResources");
+        String resourcesRoot = System.getenv("PHENOTYPE_RESOURCE_ROOT_PATH");
         if(Strings.isNullOrEmpty(resourcesRoot)) {
             logger.info("Could not find environment variable for phenotype resources. Switching to default.");
             resourcesRoot = "/var/lib/";

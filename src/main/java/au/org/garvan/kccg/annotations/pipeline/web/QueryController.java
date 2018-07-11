@@ -1,5 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.web;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.graphDB.GraphDBCachedHandler;
 import au.org.garvan.kccg.annotations.pipeline.engine.managers.QueryManager;
 import au.org.garvan.kccg.annotations.pipeline.model.query.*;
 import com.google.common.base.Strings;
@@ -7,7 +8,10 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import javax.ws.rs.DefaultValue;
@@ -22,9 +26,14 @@ import java.util.UUID;
 @RestController
 public class QueryController {
 
+    private static final Logger slf4jLogger = LoggerFactory.getLogger(QueryController.class);
+
+
     @Autowired
     private QueryManager engine;
 
+    @Value("${spring.querycontroller.historicalflag}")
+    private String historicalDefaultFlag;
 
 
     @ApiOperation(value = "searchPaginatedArticles", nickname = "searchPaginatedArticles", notes = "All attributes are optional; when more than one is provided, then search result will satisfy all conditions (Operation AND)")
@@ -67,14 +76,19 @@ public class QueryController {
                                                          @RequestParam(value = "includeHistorical", required = false ) @ApiParam Boolean includeHistorical
     ) {
 
+
+        slf4jLogger.info(String.format("Default historical flag is set to:%s",historicalDefaultFlag));
+
         if(Strings.isNullOrEmpty(query.getQueryId()))
             query.setQueryId(UUID.randomUUID().toString());
         if(query.getSearchItems()==null)
             query.setSearchItems(new ArrayList<>());
         if(query.getFilterItems()==null)
             query.setFilterItems(new ArrayList<>());
-        if(includeHistorical ==null)
-            includeHistorical = false;
+        if(includeHistorical ==null){
+            includeHistorical =  Boolean.parseBoolean(historicalDefaultFlag);
+        }
+
         return engine.processQueryV2(query, pageSize, pageNo, includeHistorical);
     }
 
