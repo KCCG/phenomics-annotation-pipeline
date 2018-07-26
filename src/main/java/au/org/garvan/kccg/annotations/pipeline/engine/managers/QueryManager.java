@@ -115,7 +115,7 @@ public class QueryManager {
                 return constructCachedFinalResultV2(results, cachedFilters, qParams, query);
             } else if (filterCacheHit) {
                 DBManagerResultSet resultSet = new DBManagerResultSet();
-                resultSet = dbManager.searchArticlesWithFiltersV2(query.getQueryId(), query.getSearchItems(), query.getFilterItems(), qParams, false, cachedFilters);
+                resultSet = dbManager.searchArticlesWithFiltersV2(query, qParams, false, cachedFilters);
                 for (RankedArticle entry : resultSet.getRankedArticles()) {
                     if (entry.getArticle() != null)
                         results.add(constructSearchResultV2(entry));
@@ -134,7 +134,7 @@ public class QueryManager {
                 DBManagerResultSet resultSet = new DBManagerResultSet();
                 //Point: CachedFilter object is filled down the line
                 cachedFilters = new FiltersCacheObject();
-                resultSet = dbManager.searchArticlesWithFiltersV2(query.getQueryId(), query.getSearchItems(), query.getFilterItems(), qParams, true, cachedFilters);
+                resultSet = dbManager.searchArticlesWithFiltersV2(query, qParams, true, cachedFilters);
                 for (RankedArticle entry : resultSet.getRankedArticles()) {
                     if (entry.getArticle() != null)
                         results.add(constructSearchResultV2(entry));

@@ -114,17 +114,17 @@ public class DatabaseManager {
 
 
 
-    public DBManagerResultSet searchArticlesWithFiltersV2(String queryId, List<String>searchItems, List<String> filterItems, PaginationRequestParams qParams, Boolean fetchFiltersAndCount, FiltersCacheObject cachedFilters) {
-        DBManagerResultSet resultSet = graphDBCachedHandler.fetchArticlesWithFilters(queryId, searchItems, filterItems, qParams, fetchFiltersAndCount, cachedFilters);
+    public DBManagerResultSet searchArticlesWithFiltersV2(SearchQueryV2 query, PaginationRequestParams qParams, Boolean fetchFiltersAndCount, FiltersCacheObject cachedFilters) {
+        DBManagerResultSet resultSet = graphDBCachedHandler.fetchArticlesWithFilters(query, qParams, fetchFiltersAndCount, cachedFilters);
         List<RankedArticle> rankedArticles = resultSet.getRankedArticles();
         if(fetchFiltersAndCount) {
-            slf4jLogger.info(String.format("Query Id:%s processed by graph DB. Result set contains filters:%d, articles:%d - FetchFilters Flag:%s", queryId, resultSet.getConceptCounts().size(), resultSet.getRankedArticles().size(), fetchFiltersAndCount.toString()));
+            slf4jLogger.info(String.format("Query Id:%s processed by graph DB. Result set contains filters:%d, articles:%d - FetchFilters Flag:%s", query.getQueryId(), resultSet.getConceptCounts().size(), resultSet.getRankedArticles().size(), fetchFiltersAndCount.toString()));
         }
         else {
-            slf4jLogger.info(String.format("Query Id:%s processed by graph DB. Result set contains articles:%d - FetchFilters Flag:%s", queryId, resultSet.getRankedArticles().size(), fetchFiltersAndCount.toString()));
+            slf4jLogger.info(String.format("Query Id:%s processed by graph DB. Result set contains articles:%d - FetchFilters Flag:%s", query.getQueryId(), resultSet.getRankedArticles().size(), fetchFiltersAndCount.toString()));
         }
 
-        slf4jLogger.info(String.format("Query Id:%s Calling dynamoDB to get articles and annotations. ", queryId));
+        slf4jLogger.info(String.format("Query Id:%s Calling dynamoDB to get articles and annotations. ", query.getQueryId()));
 
         for (RankedArticle anArticle : rankedArticles) {
             JSONObject jsonArticle = fetchArticle(anArticle.getPMID());

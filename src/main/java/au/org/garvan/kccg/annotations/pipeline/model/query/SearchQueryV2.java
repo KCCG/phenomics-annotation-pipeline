@@ -37,11 +37,17 @@ public class SearchQueryV2 {
     @ApiModelProperty
     private List<String> filterItems;
 
+    @JsonProperty
+    @ApiModelProperty
+    private Boolean searchAll;
+
+
     public SearchQueryV2 clone(){
        SearchQueryV2 searchQueryV2 =   new SearchQueryV2();
        searchQueryV2.setQueryId(this.queryId);
        searchQueryV2.setSearchItems(this.searchItems.stream().collect(Collectors.toList()));
        searchQueryV2.setFilterItems(this.filterItems.stream().collect(Collectors.toList()));
+       searchQueryV2.setSearchAll(this.searchAll);
        return searchQueryV2;
     }
 

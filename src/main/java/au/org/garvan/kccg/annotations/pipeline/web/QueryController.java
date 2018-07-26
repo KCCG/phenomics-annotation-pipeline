@@ -79,12 +79,16 @@ public class QueryController {
 
         slf4jLogger.info(String.format("Default historical flag is set to:%s",historicalDefaultFlag));
 
+
+
         if(Strings.isNullOrEmpty(query.getQueryId()))
             query.setQueryId(UUID.randomUUID().toString());
         if(query.getSearchItems()==null)
             query.setSearchItems(new ArrayList<>());
         if(query.getFilterItems()==null)
             query.setFilterItems(new ArrayList<>());
+        if(query.getSearchAll()==null)
+            query.setSearchAll(true);
         if(includeHistorical ==null){
             includeHistorical =  Boolean.parseBoolean(historicalDefaultFlag);
         }

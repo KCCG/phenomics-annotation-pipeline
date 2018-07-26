@@ -1,7 +1,9 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.dbhandlers.graphDB;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.utilities.Pair;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.constants.GraphDBConstants;
 import au.org.garvan.kccg.annotations.pipeline.model.query.ConceptFilter;
+import com.amazonaws.services.dynamodbv2.xspec.S;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.neo4j.driver.v1.*;
 import org.slf4j.Logger;
@@ -51,14 +53,14 @@ public class GraphDBCachedNatives {
 
     ////////////////////////////////////////////////////////         Live Server Calls   ///////////////////////////////////////////////////////////////
 
-    public static List<ConceptFilter> runSearchQueryForFilters(List<String> searchIds, List<String> filterIds, boolean isHistorical, List<String> shortListedIds ) {
+    public static List<ConceptFilter> runSearchQueryForFilters(List<String> searchIds, List<String> filterIds, boolean isHistorical, List<String> shortListedIds, boolean searchAll ) {
         List<ConceptFilter> foundFilters = new ArrayList<>();
 
         String query;
         if(searchIds.size()>0 && filterIds.size()==0)
-            query = queryStringBuilder.buildQueryForSearchItemsFilters(searchIds);
+            query = queryStringBuilder.buildQueryForSearchItemsFilters(searchIds, searchAll);
         else
-            query = queryStringBuilder.buildQueryForSearchAndFilterItemsFilters(searchIds, filterIds, shortListedIds);
+            query = queryStringBuilder.buildQueryForSearchAndFilterItemsFilters(searchIds, filterIds, shortListedIds, searchAll);
 
 
         //Switch driver based on caller
@@ -89,7 +91,7 @@ public class GraphDBCachedNatives {
     }
 
 
-    public static Integer runQueryForArticleCount(List<String> searchIds, List<String> filterIds, boolean isHistorical, List<String> shortListedIds) {
+    public static Integer runQueryForArticleCount(List<String> searchIds, List<String> filterIds, boolean isHistorical, List<String> shortListedIds,boolean searchAll ) {
         List<Integer> articleCount = new ArrayList<>();
 
         //Switch driver based on caller
@@ -99,7 +101,7 @@ public class GraphDBCachedNatives {
             session.readTransaction(new TransactionWork<String>() {
                 @Override
                 public String execute(Transaction tx) {
-                    StatementResult result = tx.run(queryStringBuilder.buildQueryForArticleCount(searchIds, filterIds, shortListedIds));
+                    StatementResult result = tx.run(queryStringBuilder.buildQueryForArticleCount(searchIds, filterIds, shortListedIds, searchAll));
                     articleCount.add(Integer.parseInt(result.next().get(0).toString()));
                     return "";
                 }
@@ -110,7 +112,7 @@ public class GraphDBCachedNatives {
 
 
 
-    public static List<Map> runQueryForArticles(List<String> searchIds, List<String> filterIds, Integer skip, Integer limit, boolean isHistorical, List<String> shortListedIds  ) {
+    public static List<Map> runQueryForArticles(List<String> searchIds, List<String> filterIds, Integer skip, Integer limit, boolean isHistorical, List<String> shortListedIds, boolean searchAll  ) {
         List<Map> articles = new ArrayList<>();
 
 
@@ -121,7 +123,7 @@ public class GraphDBCachedNatives {
             session.readTransaction(new TransactionWork<String>() {
                 @Override
                 public String execute(Transaction tx) {
-                    StatementResult result = tx.run(queryStringBuilder.buildQueryForArticlePage(searchIds, filterIds, shortListedIds, skip,limit));
+                    StatementResult result = tx.run(queryStringBuilder.buildQueryForArticlePage(searchIds, filterIds, shortListedIds, skip,limit, searchAll));
                     while (result.hasNext()) {
                         articles.add(result.next().asMap());
 
@@ -162,39 +164,83 @@ public class GraphDBCachedNatives {
      */
     public static class GraphDBQueryStringBuilder {
 
-        public  String buildQueryForSearchItemsFilters(List<String> searchIds) {
-            String joined = searchIds.stream()
-                    .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
-                    .collect(Collectors.joining(", "));
+        public String buildQueryForSearchItemsFilters(List<String> searchIds, boolean searchAll) {
+
+            String query = "";
+            if (searchAll && searchIds.size() > 1) {
+                Pair<String, List<String>> splits = splitSearchItems(searchIds);
+                query = String.format("MATCH(e:Entity {EID:\"%s\"})-[:CONTAINS]-(a:Article)\n", splits.getFirst());
+                String tempQuery;
+                for (String fId : splits.getSecond()) {
+                    tempQuery = "WITH a\n";
+                    tempQuery = tempQuery + String.format("MATCH (:Entity {EID:\"%s\"})-[:CONTAINS]-(a)", fId) + "\n";
+                    query = query + tempQuery;
+                }
+
+                query = query + "WITH a \n" +
+                        "MATCH (a)-[:CONTAINS]-(e2:Entity)\n" +
+                        "RETURN e2.EID as EID, e2.Text as Text, e2.Type as Type ,count(distinct(a)) as articleCount\n" +
+                        "ORDER BY articleCount desc\n";
 
 
-            String query = "MATCH(e:Entity)-[:CONTAINS]-(a:Article)\n" +
-                    "WHERE e.EID in [" + joined + "]\n" +
-                    "WITH a \n" +
-                    "MATCH (a)-[:CONTAINS]-(e2:Entity)\n" +
-                    "RETURN e2.EID as EID, e2.Text as Text, e2.Type as Type ,count(distinct(a)) as articleCount \n" +
-                    "ORDER BY articleCount desc \n ";
+            } else {
 
+
+                String joined = searchIds.stream()
+                        .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
+                        .collect(Collectors.joining(", "));
+
+
+                query = "MATCH(e:Entity)-[:CONTAINS]-(a:Article)\n" +
+                        "WHERE e.EID in [" + joined + "]\n" +
+                        "WITH a \n" +
+                        "MATCH (a)-[:CONTAINS]-(e2:Entity)\n" +
+                        "RETURN e2.EID as EID, e2.Text as Text, e2.Type as Type ,count(distinct(a)) as articleCount \n" +
+                        "ORDER BY articleCount desc \n ";
+            }
             return printQuery(query);
 
         }
 
-        public  String buildQueryForSearchAndFilterItemsFilters(List<String> searchIds, List<String> filterIds, List<String> shortListedIds  ) {
-            String joined = searchIds.stream()
-                    .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
-                    .collect(Collectors.joining(", "));
+        public  String buildQueryForSearchAndFilterItemsFilters(List<String> searchIds, List<String> filterIds, List<String> shortListedIds ,boolean searchAll ) {
+            String query = "";
 
-            String query = "MATCH(e:Entity)-[:CONTAINS]-(a:Article)\n" +
-                    "WHERE e.EID in [" + joined + "]\n";
+            if (searchAll && searchIds.size() > 1) {
+                Pair<String, List<String>> splits = splitSearchItems(searchIds);
+                query = String.format("MATCH(e:Entity {EID:\"%s\"})-[:CONTAINS]-(a:Article)\n", splits.getFirst());
+                //In case a sub filter is already found and injected
+                if(shortListedIds.size()>0){
+                    String articleFilter = shortListedIds.stream()
+                            .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
+                            .collect(Collectors.joining(", "));
+                    query = query + "WHERE a.PMID in [" + articleFilter + "]\n";
+                }
 
-            //In case a sub filter is already found and injected
-            if(shortListedIds.size()>0){
-                String articleFilter = shortListedIds.stream()
+                String tempQuery;
+                for (String fId : splits.getSecond()) {
+                    tempQuery = "WITH a\n";
+                    tempQuery = tempQuery + String.format("MATCH (:Entity {EID:\"%s\"})-[:CONTAINS]-(a)", fId) + "\n";
+                    query = query + tempQuery;
+                }
+            }else {
+
+
+                String joined = searchIds.stream()
                         .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
                         .collect(Collectors.joining(", "));
-                query = query + "AND a.PMID in [" + articleFilter + "]\n";
-            }
 
+                query = "MATCH(e:Entity)-[:CONTAINS]-(a:Article)\n" +
+                        "WHERE e.EID in [" + joined + "]\n";
+
+                //In case a sub filter is already found and injected
+                if(shortListedIds.size()>0){
+                    String articleFilter = shortListedIds.stream()
+                            .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
+                            .collect(Collectors.joining(", "));
+                    query = query + "AND a.PMID in [" + articleFilter + "]\n";
+                }
+
+            }
 
             if(filterIds.size()>0)
             {
@@ -216,7 +262,7 @@ public class GraphDBCachedNatives {
 
         }
 
-        public String buildQueryForArticleCount(List<String> searchIds, List<String> filterIds, List<String> shortListedIds){
+        public String buildQueryForArticleCount(List<String> searchIds, List<String> filterIds, List<String> shortListedIds,boolean searchAll){
 //
 //            MATCH (e:Entity)-[c:CONTAINS]-(a:Article)
 //            WHERE e.EID in ["1100"]
@@ -224,20 +270,42 @@ public class GraphDBCachedNatives {
 //            MATCH (e1:Entity {EID:"1101"})-[c1:CONTAINS]-(a)
 //                    RETURN count(distinct(a))
 
+            String query = "";
+            if (searchAll && searchIds.size() > 1) {
+                Pair<String, List<String>> splits = splitSearchItems(searchIds);
+                query = String.format("MATCH(e:Entity {EID:\"%s\"})-[:CONTAINS]-(a:Article)\n", splits.getFirst());
 
-            String joined = searchIds.stream()
-                    .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
-                    .collect(Collectors.joining(", "));
+                //In case a sub filter is already found and injected
+                if(shortListedIds.size()>0){
+                    String articleFilter = shortListedIds.stream()
+                            .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
+                            .collect(Collectors.joining(", "));
+                    query = query + "WHERE a.PMID in [" + articleFilter + "]\n";
+                }
 
-            String query = "MATCH(e:Entity)-[:CONTAINS]-(a:Article) " +
-                    "WHERE e.EID in [" + joined + "]\n" ;
+                String tempQuery;
+                for (String fId : splits.getSecond()) {
+                    tempQuery = "WITH a\n";
+                    tempQuery = tempQuery + String.format("MATCH (:Entity {EID:\"%s\"})-[:CONTAINS]-(a)", fId) + "\n";
+                    query = query + tempQuery;
+                }
+            }else {
 
-            //In case a sub filter is already found and injected
-            if(shortListedIds.size()>0){
-                String articleFilter = shortListedIds.stream()
+
+                String joined = searchIds.stream()
                         .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
                         .collect(Collectors.joining(", "));
-                query = query + "AND a.PMID in [" + articleFilter + "]\n";
+
+                query = "MATCH(e:Entity)-[:CONTAINS]-(a:Article) " +
+                        "WHERE e.EID in [" + joined + "]\n";
+
+                //In case a sub filter is already found and injected
+                if (shortListedIds.size() > 0) {
+                    String articleFilter = shortListedIds.stream()
+                            .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
+                            .collect(Collectors.joining(", "));
+                    query = query + "AND a.PMID in [" + articleFilter + "]\n";
+                }
             }
 
             if(filterIds.size()>0)
@@ -257,7 +325,7 @@ public class GraphDBCachedNatives {
 
         }
 
-        public String buildQueryForArticlePage(List<String> searchIds, List<String> filterIds,  List<String> shortListedIds , Integer skip, Integer limit){
+        public String buildQueryForArticlePage(List<String> searchIds, List<String> filterIds,  List<String> shortListedIds , Integer skip, Integer limit,boolean searchAll){
 //
 //            MATCH (e:Entity)-[c:CONTAINS]-(a:Article)
 //            WHERE e.EID in ["1100"]
@@ -273,50 +341,105 @@ public class GraphDBCachedNatives {
 //            SKIP 10
 //            LIMIT 10
 
-            String joined = searchIds.stream()
-                    .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
-                    .collect(Collectors.joining(", "));
+            if (searchAll && searchIds.size() > 1) {
+                Pair<String, List<String>> splits = splitSearchItems(searchIds);
+                String query = String.format("MATCH(e:Entity {EID:\"%s\"})-[sc:CONTAINS]-(a:Article)\n", splits.getFirst());
 
-            String query = "MATCH(e:Entity)-[c:CONTAINS]-(a:Article)\n" +
-                    "WHERE e.EID in [" + joined + "]\n";
-
-            //In case a sub filter is already found and injected
-            if(shortListedIds.size()>0){
-                String articleFilter = shortListedIds.stream()
-                        .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
-                        .collect(Collectors.joining(", "));
-                query = query + "AND a.PMID in [" + articleFilter + "]\n";
-            }
-
-
-            String returnClause = String.format("RETURN distinct(a.PMID) as %s, count(distinct(e)) as %s , ( size(c.SentID) ", GraphDBConstants.CACHED_QUERY_ARTICLE_RESULT_SET_PAID_LABEL, GraphDBConstants.CACHED_QUERY_ARTICLE_RESULT_SET_SEARCH_COUNTS_LABEL);
-            String withClause = "WITH a, c, e";
-
-            if(filterIds.size()>0)
-            {
-
-                String tempQuery;
-                Integer iterator = 1;
-                for(String fId:filterIds)
-                {
-                    tempQuery = withClause + "\n";
-                    tempQuery  = tempQuery + String.format("MATCH (e%d:Entity {EID:\"%s\"})-[c%d:CONTAINS]-(a)", iterator, fId, iterator) + "\n";
-                    query = query + tempQuery;
-                    //Update clauses
-                    withClause = withClause + String.format(", c%d ",iterator);
-                    returnClause = returnClause + String.format("+ size(c%d.SentID) ", iterator);
-                    iterator++;
+                //In case a sub filter is already found and injected
+                if(shortListedIds.size()>0){
+                    String articleFilter = shortListedIds.stream()
+                            .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
+                            .collect(Collectors.joining(", "));
+                    query = query + "WHERE a.PMID in [" + articleFilter + "]\n";
                 }
 
+
+                String returnClause = String.format("RETURN distinct(a.PMID) as %s , ( size(sc.SentID) ", GraphDBConstants.CACHED_QUERY_ARTICLE_RESULT_SET_PAID_LABEL);
+                String withClause = "WITH a, sc";
+
+                String tempQuery1;
+                Integer searchIterator = 1;
+                for (String sId : splits.getSecond()) {
+                    tempQuery1 = withClause + "\n";
+                    tempQuery1 = tempQuery1 + String.format("MATCH (se%d:Entity {EID:\"%s\"})-[sc%d:CONTAINS]-(a)", searchIterator, sId, searchIterator) + "\n";
+                    query = query + tempQuery1;
+                    withClause = withClause + String.format(", sc%d ", searchIterator);
+                    returnClause = returnClause + String.format("+ size(sc%d.SentID) ", searchIterator);
+                    searchIterator++;
+                }
+
+                if (filterIds.size() > 0) {
+
+                    String tempQuery;
+                    Integer iterator = 1;
+                    for (String fId : filterIds) {
+                        tempQuery = withClause + "\n";
+                        tempQuery = tempQuery + String.format("MATCH (e%d:Entity {EID:\"%s\"})-[c%d:CONTAINS]-(a)", iterator, fId, iterator) + "\n";
+                        query = query + tempQuery;
+                        //Update clauses
+                        withClause = withClause + String.format(", c%d ", iterator);
+                        returnClause = returnClause + String.format("+ size(c%d.SentID) ", iterator);
+                        iterator++;
+                    }
+
+                }
+
+                returnClause = returnClause + ") as hits \n";
+
+                String orderByClause = "ORDER BY hits desc, a.PMID desc \n";
+
+                String paginationClause = String.format("SKIP %d\nLIMIT %d", skip, limit);
+                String returnString = query + returnClause + orderByClause + paginationClause;
+
+                return printQuery(returnString);
             }
 
-            returnClause = returnClause + ") as hits \n";
+            else {
 
-            String orderByClause = "ORDER BY shits desc, hits desc, a.PMID desc \n";
+                String joined = searchIds.stream()
+                        .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
+                        .collect(Collectors.joining(", "));
 
-            String paginationClause = String.format("SKIP %d\nLIMIT %d", skip, limit);
-            String returnString = query +  returnClause + orderByClause + paginationClause;
-            return  printQuery(returnString);
+                String query = "MATCH(e:Entity)-[c:CONTAINS]-(a:Article)\n" +
+                        "WHERE e.EID in [" + joined + "]\n";
+
+                //In case a sub filter is already found and injected
+                if (shortListedIds.size() > 0) {
+                    String articleFilter = shortListedIds.stream()
+                            .map(plain -> '"' + StringEscapeUtils.escapeJava(plain) + '"')
+                            .collect(Collectors.joining(", "));
+                    query = query + "AND a.PMID in [" + articleFilter + "]\n";
+                }
+
+
+                String returnClause = String.format("RETURN distinct(a.PMID) as %s, count(distinct(e)) as %s , ( size(c.SentID) ", GraphDBConstants.CACHED_QUERY_ARTICLE_RESULT_SET_PAID_LABEL, GraphDBConstants.CACHED_QUERY_ARTICLE_RESULT_SET_SEARCH_COUNTS_LABEL);
+                String withClause = "WITH a, c, e";
+
+                if (filterIds.size() > 0) {
+
+                    String tempQuery;
+                    Integer iterator = 1;
+                    for (String fId : filterIds) {
+                        tempQuery = withClause + "\n";
+                        tempQuery = tempQuery + String.format("MATCH (e%d:Entity {EID:\"%s\"})-[c%d:CONTAINS]-(a)", iterator, fId, iterator) + "\n";
+                        query = query + tempQuery;
+                        //Update clauses
+                        withClause = withClause + String.format(", c%d ", iterator);
+                        returnClause = returnClause + String.format("+ size(c%d.SentID) ", iterator);
+                        iterator++;
+                    }
+
+                }
+
+                returnClause = returnClause + ") as hits \n";
+
+                String orderByClause = "ORDER BY shits desc, hits desc, a.PMID desc \n";
+
+                String paginationClause = String.format("SKIP %d\nLIMIT %d", skip, limit);
+                String returnString = query + returnClause + orderByClause + paginationClause;
+
+                return printQuery(returnString);
+            }
 
 
         }
@@ -324,6 +447,13 @@ public class GraphDBCachedNatives {
         private String printQuery(String query){
             slf4jLogger.debug(String.format("Cypher Query: \n%s", query));
             return query;
+        }
+
+        private Pair<String, List<String>> splitSearchItems(List<String>searchIds)
+        {
+
+            Pair<String, List<String>> splits = new Pair<>(searchIds.get(0), searchIds.subList(1,searchIds.size()));
+            return splits;
         }
 
 

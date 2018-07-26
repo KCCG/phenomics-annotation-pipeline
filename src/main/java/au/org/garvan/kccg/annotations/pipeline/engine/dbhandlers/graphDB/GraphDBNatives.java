@@ -297,11 +297,12 @@ public class GraphDBNatives {
                         if (lex instanceof APGene) {
                             APGene gene = (APGene) lex;
                             GraphEntity geneEntity;
-                            if (finalEntities.containsKey(gene.getHGNCID())) {
-                                geneEntity = finalEntities.get(gene.getHGNCID());
+                            String geneID = String.valueOf(gene.getHGNCID());
+                            if (finalEntities.containsKey(geneID)) {
+                                geneEntity = finalEntities.get(geneID);
                             } else {
                                 geneEntity = new GraphEntity();
-                                geneEntity.setEntityId(String.valueOf(gene.getHGNCID()));
+                                geneEntity.setEntityId(geneID);
                                 geneEntity.setEntityLabel(gene.getApprovedSymbol());
                                 geneEntity.setVersion("2018-06-18");
                                 geneEntity.setStandard("HGNC");

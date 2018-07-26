@@ -18,6 +18,10 @@ public class CacheKeyGenerator {
         Collections.sort(searchIds);
         String searchKeyPart = StringUtils.join(searchIds, ",");
         key = key + searchKeyPart;
+
+        if(searchIds.size()>1 && query.getSearchAll()==true)
+            key = key + ";C-ALL";
+
         if(query.getFilterItems().size()>0) {
             List<String> filterIds = query.getFilterItems();
             Collections.sort(filterIds);
@@ -36,6 +40,10 @@ public class CacheKeyGenerator {
         Collections.sort(searchIds);
         String searchKeyPart = StringUtils.join(searchIds, ",");
         key = key + searchKeyPart;
+
+        if(searchIds.size()>1 && query.getSearchAll()==true)
+            key = key + ";C-ALL";
+
         if(query.getFilterItems().size()>0) {
             List<String> filterIds = query.getFilterItems();
             Collections.sort(filterIds);
@@ -48,11 +56,15 @@ public class CacheKeyGenerator {
 
 
 
-    public static String getL2CacheKey(List<String> searchIds, List<String> filterIds){
+    public static String getL2CacheKey(List<String> searchIds, List<String> filterIds, Boolean searchAll){
         String key= "S-";
         Collections.sort(searchIds);
         String searchKeyPart = StringUtils.join(searchIds, ",");
         key = key + searchKeyPart;
+
+        if(searchIds.size()>1 && searchAll==true)
+            key = key + ";C-ALL";
+
         if(filterIds.size()>0) {
             Collections.sort(filterIds);
             String filterKeyPart = StringUtils.join(filterIds, ",");

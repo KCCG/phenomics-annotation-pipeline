@@ -43,6 +43,7 @@ dependencies {
             "javax.mail:mail:1.4",
             "com.squareup.okhttp3:okhttp:3.6.0",
             "org.neo4j.driver:neo4j-java-driver:1.5.1",
+            "org.slf4j:slf4j-api:1.7.25",
 
             //CR
             "org.jsoup:jsoup:1.8.3",
