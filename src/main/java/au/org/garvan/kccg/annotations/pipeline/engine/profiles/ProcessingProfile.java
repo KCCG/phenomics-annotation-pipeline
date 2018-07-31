@@ -1,5 +1,6 @@
 package au.org.garvan.kccg.annotations.pipeline.engine.profiles;
 
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.enums.AnnotationType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -25,6 +26,12 @@ public class ProcessingProfile {
 
     //Annotations
     private List<AnnotationType> annotationRequests = new ArrayList<>();
+
+
+    public void addAnnotation(AnnotationType annotationType){
+        annotationRequests.add(annotationType);
+    }
+
 
 
 }
