@@ -34,7 +34,7 @@ public class AnnotationApplication {
                 .apiInfo(apiInfo())
                 .select()
                 .apis(RequestHandlerSelectors.any())
-                .paths(regex("/articles|/query.*|/subscription.*|/worker|/annotationLogs|/feedback.*|/annotatedtext"))
+                .paths(regex("/articles|/query.*|/subscription.*|/worker|/annotationLogs|/feedback.*|/annotatedtext|/annotateddocument"))
                 .build();
     }
 
