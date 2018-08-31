@@ -19,6 +19,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.utilities.EngineEnvironmen
 import au.org.garvan.kccg.annotations.pipeline.model.annotation.OnDemandText;
 import au.org.garvan.kccg.annotations.pipeline.model.annotation.RawArticle;
 import au.org.garvan.kccg.annotations.pipeline.model.query.AnnotatedTextDocument;
+import au.org.garvan.kccg.annotations.pipeline.model.query.AnnotatedTextDocumentForAPI;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
@@ -118,7 +119,11 @@ public class ArticleManager {
     }
 
 
-
+    /**
+     * This method is for on demand annotations to be displayed on browsers (Hippo, Exomiser etc) it contains highlighted splits
+     * @param onDemandText
+     * @return
+     */
     public AnnotatedTextDocument processOnDemandText(OnDemandText onDemandText){
 
         APDocument textToBeAnnotated = new APDocument(onDemandText.getText());
@@ -134,6 +139,28 @@ public class ArticleManager {
         return annotatedTextDocument;
 
     }
+
+    /**
+     * This method is for on demand annotations to be supplied for external users via API.
+     * @param onDemandText
+     * @return
+     */
+    public AnnotatedTextDocumentForAPI processOnDemandDocument(OnDemandText onDemandText){
+
+        APDocument textToBeAnnotated = new APDocument(onDemandText.getText());
+        textToBeAnnotated.setProcessingProfile(createPricessingProfile(onDemandText.getAnnotationProfile()));
+        textToBeAnnotated.hatch(textToBeAnnotated.getId());
+        JSONArray jsonAnnotations = getAbstractEntities(textToBeAnnotated);
+
+        AnnotatedTextDocumentForAPI annotatedTextDocument = new AnnotatedTextDocumentForAPI();
+        annotatedTextDocument.setDocumentId(UUID.randomUUID().toString());
+        annotatedTextDocument.setDocumentText(textToBeAnnotated.getCleanedText());
+
+        annotatedTextDocument.fillAnnotations(jsonAnnotations);
+        return annotatedTextDocument;
+
+    }
+
 
     private JSONArray getAbstractEntities(APDocument apDocument){
         JSONArray returnArray = new JSONArray();
@@ -154,11 +181,11 @@ public class ArticleManager {
                 for (APToken token : entry.getValue()){
                     int tokenId = token.getId();
                     for (LexicalEntity lex : token.getLexicalEntityList()) {
-
                         if (lex instanceof APGene) {
                             JSONObject jsonObject = new JSONObject();
                             jsonObject.put("field","articleAbstract");
                             jsonObject.put("standard","HGNC");
+                            jsonObject.put("version","2018-06-18");
                             jsonObject.put("sentId",sentId);
                             jsonObject.put("tokenId",tokenId);
                             jsonObject.put("annotationId",((APGene) lex).getApprovedSymbol());
@@ -196,6 +223,7 @@ public class ArticleManager {
                     JSONObject jsonObject = new JSONObject();
                     jsonObject.put("field", "articleAbstract");
                     jsonObject.put("standard", annotation.getStandard());
+                    jsonObject.put("version",annotation.getVersion());
                     jsonObject.put("sentId", sentId);
                     jsonObject.put("tokenIds", annotation.getTokenIDs());
                     jsonObject.put("globalOffset", constructGlobalOffset(sentDocOffset, annotation.getOffset()));
