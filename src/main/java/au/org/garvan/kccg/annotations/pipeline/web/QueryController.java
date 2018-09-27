@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.ws.rs.DefaultValue;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -88,6 +89,10 @@ public class QueryController {
         if(includeHistorical ==null){
             includeHistorical =  Boolean.parseBoolean(historicalDefaultFlag);
         }
+
+//        //Point: HACK for testing
+//        query.setSearchItems(Arrays.asList("HP:0000787"));
+//        query.setFilterItems(Arrays.asList("MONDO:0005285","MONDO:0008171","MONDO:0013869"));
 
         return engine.processQueryV2(query, pageSize, pageNo, includeHistorical);
     }

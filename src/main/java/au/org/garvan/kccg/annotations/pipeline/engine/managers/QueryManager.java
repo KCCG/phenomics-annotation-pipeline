@@ -6,6 +6,7 @@ import au.org.garvan.kccg.annotations.pipeline.engine.caches.L1cache.ArticleResp
 import au.org.garvan.kccg.annotations.pipeline.engine.caches.L1cache.FiltersResponseCache;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.cache.FiltersCacheObject;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.database.DBManagerResultSet;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.geodata.LinkedGeoData;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.Annotation;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.mappers.APMultiWordAnnotationMapper;
@@ -22,6 +23,7 @@ import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.AutoConfigureOrder;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -38,11 +40,13 @@ public class QueryManager {
     @Autowired
     DatabaseManager dbManager;
 
+    @Autowired
+    GeoLinkManager geoLinkManager;
+
     public void init() {
 
         slf4jLogger.info(String.format("Query Manager init() called."));
     }
-
 
 
     public PaginatedSearchResult processQuery(SearchQueryV1 query, Integer pageSize, Integer pageNo) {
@@ -116,9 +120,13 @@ public class QueryManager {
             } else if (filterCacheHit) {
                 DBManagerResultSet resultSet = new DBManagerResultSet();
                 resultSet = dbManager.searchArticlesWithFiltersV2(query.getQueryId(), query.getSearchItems(), query.getFilterItems(), qParams, false, cachedFilters);
+                //Get Geo Linked Data for the final articles result set.
+                List<String> pubmedIds = resultSet.getRankedArticles().stream().filter(x -> x != null).map(a -> a.getPMID()).collect(Collectors.toList());
+                Map<String, List<LinkedGeoData>> linkedGeoData = geoLinkManager.processArticleIds(query.getQueryId(), pubmedIds);
+
                 for (RankedArticle entry : resultSet.getRankedArticles()) {
                     if (entry.getArticle() != null)
-                        results.add(constructSearchResultV2(entry));
+                        results.add(constructSearchResultV2(entry, linkedGeoData.getOrDefault(entry.getPMID(),new ArrayList<>())));
                 }
                 resultSet.setConceptCounts(cachedFilters.getFinalFilters());
                 //Cache articles
@@ -135,9 +143,13 @@ public class QueryManager {
                 //Point: CachedFilter object is filled down the line
                 cachedFilters = new FiltersCacheObject();
                 resultSet = dbManager.searchArticlesWithFiltersV2(query.getQueryId(), query.getSearchItems(), query.getFilterItems(), qParams, true, cachedFilters);
+
+                List<String> pubmedIds = resultSet.getRankedArticles().stream().filter(x -> x != null).map(a -> a.getPMID()).collect(Collectors.toList());
+                Map<String, List<LinkedGeoData>> linkedGeoData = geoLinkManager.processArticleIds(query.getQueryId(), pubmedIds);
+
                 for (RankedArticle entry : resultSet.getRankedArticles()) {
                     if (entry.getArticle() != null)
-                        results.add(constructSearchResultV2(entry));
+                        results.add(constructSearchResultV2(entry, linkedGeoData.getOrDefault(entry.getPMID(),new ArrayList<>())));
                 }
                 //Cache result
                 FiltersResponseCache.putFilters(query, qParams.getIncludeHistorical(), cachedFilters);
@@ -199,14 +211,14 @@ public class QueryManager {
 
     }
 
-    private SearchQueryEcho getQueryEcho(SearchQueryV2 query){
+    private SearchQueryEcho getQueryEcho(SearchQueryV2 query) {
         List<ConceptFilter> sItems = query.getSearchItems().stream()
-                                            .map(s-> (Utilities.getFilterBasedOnId(s)))
-                                            .collect(Collectors.toList());
+                .map(s -> (Utilities.getFilterBasedOnId(s)))
+                .collect(Collectors.toList());
 
         List<ConceptFilter> fItems = query.getFilterItems().stream()
-                                        .map(f-> Utilities.getFilterBasedOnId(f))
-                                        .collect(Collectors.toList());
+                .map(f -> Utilities.getFilterBasedOnId(f))
+                .collect(Collectors.toList());
 
         SearchQueryEcho searchQueryEcho = new SearchQueryEcho(
                 query.getQueryId(),
@@ -218,13 +230,13 @@ public class QueryManager {
 
     }
 
-    private SearchQueryEcho getQueryEcho(SearchQueryV1 query){
+    private SearchQueryEcho getQueryEcho(SearchQueryV1 query) {
         List<ConceptFilter> sItems = query.getSearchItems().stream()
-                .map(s-> (Utilities.getFilterBasedOnId(s.getId())))
+                .map(s -> (Utilities.getFilterBasedOnId(s.getId())))
                 .collect(Collectors.toList());
 
         List<ConceptFilter> fItems = query.getFilterItems().stream()
-                .map(f-> Utilities.getFilterBasedOnId(f.getId()))
+                .map(f -> Utilities.getFilterBasedOnId(f.getId()))
                 .collect(Collectors.toList());
 
         SearchQueryEcho searchQueryEcho = new SearchQueryEcho(
@@ -273,8 +285,7 @@ public class QueryManager {
     }
 
 
-
-    private SearchResultV2 constructSearchResultV2(RankedArticle rankedArticle) {
+    private SearchResultV2 constructSearchResultV2(RankedArticle rankedArticle, List<LinkedGeoData> geoDataList) {
         Article article = rankedArticle.getArticle();
         List<JSONObject> annotations = rankedArticle.getJsonAnnotations();
         // ^ This change is made to have one DTO throughout the hierarchy for simplicity of code.
@@ -286,6 +297,7 @@ public class QueryManager {
         searchResult.setLanguage(article.getLanguage());
         searchResult.setAuthors(article.getAuthors());
         searchResult.setPublication(article.getPublication());
+        searchResult.setLinkedGeoData(geoDataList);
 
         if (annotations.size() > 0) {
             searchResult.setArticleRank(rankedArticle.getRank());
@@ -313,7 +325,7 @@ public class QueryManager {
 
         if (infix.contains(":")) {
             String originalInfix = infix;
-            String[] splits = infix.split(":",2);
+            String[] splits = infix.split(":", 2);
             if (splits.length > 1) {
                 String suffix = splits[0].toLowerCase();
                 infix = splits[1];
@@ -354,8 +366,7 @@ public class QueryManager {
 
             }
         }
-        if (infix.length()<1)
-        {
+        if (infix.length() < 1) {
             smartQueryType = AnnotationType.ENTITY;
         }
 
@@ -367,7 +378,7 @@ public class QueryManager {
         List<APMultiWordAnnotationMapper> shortListedDrugs = new ArrayList<>();
 
         if (!smartSearch || smartQueryType.equals(AnnotationType.GENE)) {
-            shortlistedGenes =  AnnotationControl.getControlledGeneAnnotations(
+            shortlistedGenes = AnnotationControl.getControlledGeneAnnotations(
                     DocumentPreprocessor.getHGNCGeneHandler().searchGenes(infix));
         }
         if (!smartSearch || smartQueryType.equals(AnnotationType.PHENOTYPE)) {
@@ -443,14 +454,13 @@ public class QueryManager {
         }
 
 
-
         //Show equal number of items from auto-complete list.
         Integer collectedGeneSize = Math.min(smartQueryType.equals(AnnotationType.GENE) ? resultLimit : resultLimit / 4, shortlistedGenes.size());
         Integer remainingBucket = resultLimit - collectedGeneSize;
         Integer collectedPhenotypeSize = Math.min(smartQueryType.equals(AnnotationType.PHENOTYPE) ? resultLimit : remainingBucket / 3, shortListedPhenotypes.size());
         remainingBucket = resultLimit - (collectedGeneSize + collectedPhenotypeSize);
-        Integer collectedDiseaseSize = Math.min(smartQueryType.equals(AnnotationType.DISEASE) ? resultLimit : remainingBucket/2, shortListedDiseases.size());
-        remainingBucket = resultLimit - (collectedGeneSize + collectedPhenotypeSize +collectedDiseaseSize);
+        Integer collectedDiseaseSize = Math.min(smartQueryType.equals(AnnotationType.DISEASE) ? resultLimit : remainingBucket / 2, shortListedDiseases.size());
+        remainingBucket = resultLimit - (collectedGeneSize + collectedPhenotypeSize + collectedDiseaseSize);
         Integer collectedDrugSize = Math.min(smartQueryType.equals(AnnotationType.DRUG) ? resultLimit : remainingBucket, shortListedDrugs.size());
 
 
@@ -539,8 +549,6 @@ public class QueryManager {
 
         return returnList;
     }
-
-
 
 
 }

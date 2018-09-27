@@ -1,6 +1,7 @@
 package au.org.garvan.kccg.annotations.pipeline.model.query;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.annotators.Utilities;
+import au.org.garvan.kccg.annotations.pipeline.engine.entities.geodata.LinkedGeoData;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APGene;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.lexical.APPhenotype;
 import au.org.garvan.kccg.annotations.pipeline.engine.entities.publicational.Author;
@@ -60,6 +61,9 @@ public class SearchResultV2 {
 
     @JsonProperty
     Publication publication;
+
+    @JsonProperty
+    List<LinkedGeoData> linkedGeoData;
 
 
 
