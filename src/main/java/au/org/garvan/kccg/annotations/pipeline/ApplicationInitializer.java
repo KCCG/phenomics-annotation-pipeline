@@ -2,6 +2,7 @@ package au.org.garvan.kccg.annotations.pipeline;
 
 import au.org.garvan.kccg.annotations.pipeline.engine.connectors.lambda.WorkerLambdaConnector;
 import au.org.garvan.kccg.annotations.pipeline.engine.managers.ArticleManager;
+import au.org.garvan.kccg.annotations.pipeline.engine.managers.GeoLinkManager;
 import au.org.garvan.kccg.annotations.pipeline.engine.managers.QueryManager;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.EngineEnvironment;
 import au.org.garvan.kccg.annotations.pipeline.engine.utilities.config.ConfigLoader;
@@ -24,6 +25,12 @@ public class ApplicationInitializer {
 
     @Autowired
     private QueryManager queryManager;
+
+
+    @Autowired
+    private GeoLinkManager geoLinkManager;
+
+
 
     @Autowired
     ConfigLoader configLoader;
@@ -52,6 +59,16 @@ public class ApplicationInitializer {
             log.error("Failed to initialize Query engine.", ex);
             System.exit(1);
         }
+
+        try {
+            geoLinkManager.init();
+            log.info("Initialized geoLinkManager successfully");
+
+        } catch(RuntimeException ex) {
+            log.error("Failed to initialize geoLinkManager.", ex);
+            System.exit(1);
+        }
+
 
         if(EngineEnvironment.getSelfIngestionEnabled())
         {

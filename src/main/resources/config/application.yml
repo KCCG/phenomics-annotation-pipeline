@@ -1,26 +1,27 @@
 spring:
   dbhandlers:
     S3:
-      abstractbucket: test-phenomics-article-abstracts
-      l2cachefiltersbucket: test-phenomics-l2cache-filters
-      l2cachearticlesbucket: test-phenomics-l2cache-articles
+      abstractbucket: phenomics-article-abstracts-prod
+      l2cachefiltersbucket: phenomics-graph-l2cache-filters
+      l2cachearticlesbucket: phenomics-graph-l2cache-articles
     dynamodb:
-      articletablename: test-phenomics-articles
-      annotationtablename: test-phenomics-annotations
-      subscriptiontablename: test-phenomics-subscriptions
-      l2cachetablename: test-phenomics-l2-cache
+      articletablename: phenomics-articles-prod-b2
+      annotationtablename: phenomics-annotations-prod-b2
+      subscriptiontablename: phenomics-subscriptions-prod-b2
+      l2cachetablename: phenomics-l2-cache-b2
     graphdb:
-      endpoint: http://localhost:7474/
-      username:
-      password:
+      endpoint: http://13.236.144.131:7474/
+      username: neo4j
+      password: Neo4j@1Prod
       live:
-        endpoint: bolt://localhost:7687/
-        username:
-        password:
+        endpoint: bolt://13.236.144.131:7687/
+        username: neo4j
+        password: Neo4j@1Prod
       historical:
         endpoint: bolt://52.62.200.154:7687/
         username: neo4j
         password: Neo4j@1Prod
+
 
   notificationconnector:
     endpoint:  http://localhost:9090
@@ -33,7 +34,7 @@ spring:
     subscriptiontime: 2
 
   querycontroller:
-    historicalflag: false
+    historicalflag: true
 
 logging:
   path: ./logs/
